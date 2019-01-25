@@ -1,0 +1,11 @@
+object 10bfe3c38481931ef39c8dd8e484837d137c8c45
+type commit
+tag 5.2.0
+tagger 7rans <transfire@gmail.com> 1356061847 -0500
+
+This release makes a couple of important changes. First the `.ruby` file is no
+longer the supported metadata file. While the format is basically the same,
+the file is now called `.index`. See the {Indexer}[http://github.com/rubyworks/indexer]
+project for more details. One can still use `.setup/name`, `.setup/version`
+and `.setup/loadpath` files instead. In addition, `.setup/testrc.rb` has been
+renamed to `.setup/test.rb`, and for shell-based command use `.setup/test.sh`.
