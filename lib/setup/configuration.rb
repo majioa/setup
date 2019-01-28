@@ -52,6 +52,8 @@ module Setup
     option :siterubyver     , :path, 'directory for aux ruby libraries'
     option :siterubyverarch , :path, 'directory for aux ruby binaries'
 
+    option :gemhome         , :path, 'home directory for ruby gem libraries'
+
     option :rubypath        , :prog, 'path to set to #! line'
     option :rubyprog        , :prog, 'ruby program used for installation'
     option :makeprog        , :prog, 'make program to compile ruby extentions'
@@ -159,7 +161,7 @@ module Setup
           next if 'type' == k
           next if 'installdirs' == k
           k = k.gsub('-','_')
-          __send__("#{k}=", v)
+          __send__("#{k}=", v) if respond_to?("#{k}=")
         end
         # do these last
         if dat['type']
@@ -257,6 +259,9 @@ module Setup
       when 'site'
         @rbdir = siterubyver      #'$siterubyver'
         @sodir = siterubyverarch  #'$siterubyverarch'
+      when 'gem'
+        @rbdir = gemrubylib       #'$gemrubylib'
+        @sodir = gemrubyextarch   #'$gemrubyextarch'
       when 'home'
         self.prefix = File.join(home, '.local')  # TODO: Use XDG
         @rbdir = nil #'$libdir/ruby'
@@ -359,6 +364,33 @@ module Setup
     # Set directory for aux arch ruby binaries
     def siterubyverarch=(path)
       @siterubyverarch = pathname(path)
+    end
+
+    # Returns gem home folder, if not specified sets and returns the default one
+    def gemhome
+      @gemhome ||= ::Gem.paths.home
+    end
+
+    # Set gem home folder
+    def gemhome=(path)
+      @gemhome = pathname(path)
+    end
+
+    # Ruby gem gem libraries folder
+    def gemrubylib
+      @gemrubylib ||= File.join(gemhome, 'gems', Setup::Gem.new.fullname, "lib")
+    end
+
+    # Ruby gem extensions folder
+    def gemrubyextarch
+      @gemrubyextarch ||= (
+        arch = [ ::Gem.platforms.last.cpu, ::Gem.platforms.last.os ].join('-')
+        File.join(gemhome, 'extensions', arch, ::Gem.extension_api_version, Setup::Gem.new.fullname))
+    end
+
+    # Ruby gem specifications folder
+    def gemrubyspec
+      @gemrubyspec ||= File.join(gemhome, 'specifications')
     end
 
     # Directory for commands

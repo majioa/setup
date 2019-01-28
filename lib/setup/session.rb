@@ -5,7 +5,7 @@ require 'setup/configuration'
 require 'setup/compiler'
 require 'setup/installer'
 require 'setup/tester'
-#require 'setup/documentor'
+require 'setup/documentor'
 require 'setup/uninstaller'
 
 module Setup
@@ -150,11 +150,11 @@ module Setup
     end
 
     #
-    #def document
-    #  #return unless configuration.doc?
-    #  log_header('Document')
-    #  documentor.document
-    #end
+    def document
+      return unless configuration.doc?
+      log_header('Document')
+      documentor.document
+    end
 
     #
     def clean
@@ -166,6 +166,7 @@ module Setup
     def distclean
       log_header('Distclean')
       compiler.distclean
+      project.gem.distclean
     end
 
     #

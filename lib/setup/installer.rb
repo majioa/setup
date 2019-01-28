@@ -24,6 +24,7 @@ module Setup
         install_man
         install_doc
         install_etc
+        install_gemspec
         prune_install_record
       end
     end
@@ -31,10 +32,15 @@ module Setup
     # Install binaries (executables).
     def install_bin
       return unless directory?('bin')
+
+      options = {}
+
       report_transfer('bin', config.bindir)
       #io.puts "* bin -> #{config.bindir}" unless quiet?
       files = files('bin')
-      install_files('bin', files, config.bindir, 0755)
+
+      options[:link_to] =  RbConfig::CONFIG['bindir'] if config.bindir != RbConfig::CONFIG['bindir']
+      install_files('bin', files, config.bindir, 0755, options)
       #install_shebang(files, config.bindir)
     end
 
@@ -47,7 +53,7 @@ module Setup
       files = select_dllext(files)
       #install_files('ext', files, config.sodir, 0555)
       files.each do |file|
-        name = File.join(File.dirname(File.dirname(file)), File.basename(file))
+        name = File.join(File.dirname(file), File.basename(file))
         dest = destination(config.sodir, name)
         install_file('ext', file, dest, 0555, install_prefix)
       end
@@ -103,6 +109,18 @@ module Setup
       install_files('doc', files, dir, 0644)
     end
 
+    # Install specification.
+    #
+    def install_gemspec
+      return unless gemspec?
+      dir = config.gemrubyspec
+      report_transfer('gemspec', dir)
+      #io.puts "* .gemspec -> #{dir}" unless quiet?
+      project.gem.store_spec
+      files = [ "#{project.gem.fullname}.gemspec" ]
+      install_files('.gemspecs', files, dir, 0644)
+    end
+
   private
 
     # Display the file transfer taking place.
@@ -117,9 +135,14 @@ module Setup
       end
     end
 
-    # Comfirm a +path+ is a directory and exists.
+    # Confirm a +path+ is a directory and exists.
     def directory?(path)
       File.directory?(path)
+    end
+
+    # Confirm a gemspec exists.
+    def gemspec?
+      !project.gem.spec.nil?
     end
 
     # Get a list of project files given a project subdirectory.
@@ -132,32 +155,34 @@ module Setup
 
     # Extract dynamic link libraries from all ext files.
     def select_dllext(files)
-      ents = files.select do |file| 
-        File.extname(file) == ".#{dllext}"
-      end
+      ents = files.select { |file| File.extname(file) =~ dllext }
+
       if ents.empty? && !files.empty?
         raise Error, "ruby extention not compiled: 'setup.rb compile' first"
       end
+
       ents
     end
 
     # Dynamic link library extension for this system.
     def dllext
-      config.dlext
-      #Configuration::RBCONFIG['DLEXT']
+      # from Configuration::RBCONFIG['DLEXT']
+      dlext = [ config.dlext, 'build_complete' ]
+
+      /\.(#{dlext.join('|')})/
     end
 
     # Install project files.
-    def install_files(dir, list, dest, mode)
+    def install_files(dir, list, dest, mode, options = {})
       #mkdir_p(dest) #, install_prefix)
       list.each do |fname|
         rdest = destination(dest, fname)
-        install_file(dir, fname, rdest, mode, install_prefix)
+        install_file(dir, fname, rdest, mode, install_prefix, options)
       end
     end
 
     # Install a project file.
-    def install_file(dir, from, dest, mode, prefix=nil)
+    def install_file(dir, from, dest, mode, prefix=nil, options = {})
       mkdir_p(File.dirname(dest))
   
       if trace? or trial?
@@ -167,6 +192,8 @@ module Setup
 
       return if trial?
 
+      link_to = options.delete(:link_to)
+
       str = binread(File.join(dir, from))
 
       if diff?(str, dest)
@@ -175,6 +202,11 @@ module Setup
         }
         File.open(dest, 'wb'){ |f| f.write(str) }
         File.chmod(mode, dest)
+      end
+
+      if link_to
+        FileUtils.rm_f(File.join(link_to, from))
+        FileUtils.ln_s(dest, File.join(link_to, from))
       end
 
       record_installation(dest) # record file as installed

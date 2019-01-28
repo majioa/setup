@@ -36,6 +36,7 @@ module Setup
     task 'all'      , "config, compile and install"
     task 'config'   , "save/customize configuration settings"
     task 'compile'  , "compile ruby extentions"
+    task 'document' , "generate ri/rdoc docomentation"
     task 'test'     , "run test suite"
     task 'install'  , "install project files"
     task 'clean'    , "does `make clean' for each extention"
@@ -123,6 +124,11 @@ module Setup
     #
     def optparse_header(parser, options)
       parser.banner = "USAGE: #{File.basename($0)} [command] [options]"
+      parser.separator ""
+      parser.separator "Commands:"
+      self.class.tasks.each do |name, desc|
+        parser.separator "\t" + name + " " * (29 - name.size) + desc
+      end
     end
 
     # Setup options for +all+ task.

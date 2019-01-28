@@ -1,3 +1,5 @@
+require 'setup/gem'
+
 module Setup
 
   # The Project class encapsulates information about the project/package
@@ -35,8 +37,8 @@ module Setup
 
       @dotindex = YAML.load_file(@dotindex_file) if @dotindex_file
 
-      @name     = nil
-      @version  = nil
+      @name     = gem.name
+      @version  = gem.version
       @loadpath = ['lib']
 
       if @dotindex
@@ -79,6 +81,11 @@ module Setup
           Dir.pwd
         end
       )
+    end
+
+    # Returns a gem setup
+    def gem
+      @gem ||= Setup::Gem.new(rootdir)
     end
 
     # Setup.rb uses `ext/**/extconf.rb` as convention for the location of

@@ -28,6 +28,7 @@ module Setup
       extdirs.each do |dir|
         Dir.chdir(dir) do
           make
+          FileUtils.touch('gem.build_complete')
         end
       end
     end
