@@ -2,6 +2,7 @@
 
 require 'fileutils'
 
+require 'yaml'
 VERSION = YAML.load_file('.index')['version']
 
 COMMENT = <<-HERE

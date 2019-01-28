@@ -8,6 +8,40 @@ module Setup
   #
   class Installer < Base
 
+      # Returns an install target
+      def targets
+         @targets ||= (
+            case config.type
+            when 'auto'
+               if project.has_gem?
+                  gem_targets
+               else
+                  site_targets
+               end
+            when 'gem'
+               gem_targets
+            when 'site'
+               site_targets
+            when 'ruby'
+            end.compact)
+      end
+
+      def gem_targets
+         project.sources.map do |source|
+            if source.is_a?(Setup::Source::Gem)
+              Setup::Target::Gem.new(gem: source, root: project.root_source)
+            end
+         end
+      end
+
+      def site_targets
+         project.sources.map do |source|
+            if source.is_a?(Setup::Source::Root)
+              Setup::Target::Site.new(root: project.root_source)
+            end
+         end
+      end
+
     #
     def install_prefix
       config.install_prefix
@@ -22,53 +56,83 @@ module Setup
         install_lib
         install_data
         install_man
-        install_doc
-        install_etc
-        prune_install_record
+        install_ri
+        install_include
+#        install_etc
+        install_gemspec
+#        prune_install_record
       end
     end
 
     # Install binaries (executables).
     def install_bin
-      return unless directory?('bin')
-      report_transfer('bin', config.bindir)
-      #io.puts "* bin -> #{config.bindir}" unless quiet?
-      files = files('bin')
-      install_files('bin', files, config.bindir, 0755)
-      #install_shebang(files, config.bindir)
+      io.puts "* bin ->" unless quiet?
+
+      targets.each do |target|
+        next if !target.source.binfiles.any?
+
+        Dir.chdir(File.join(target.source.root, target.source.bindir)) do
+          io.puts "  - [#{target.source.name}] in #{target.source.bindir}" unless quiet?
+          novel_install_files(target.source.binfiles, target.bindir, options.merge(mode: 0755))
+        end
+
+        if target.lbindir
+          Dir.chdir(File.join(target.source.root, target.source.bindir)) do
+            io.puts "  - [#{target.source.name}] in #{target.source.bindir}" unless quiet?
+            novel_install_files(target.binfiles(options[:chroot]), target.lbindir, options.merge(mode: 0755, symlink: true))
+          end
+        end
+      end
     end
 
     # Install shared extension libraries.
     def install_ext
-      return unless directory?('ext')
-      report_transfer('ext', config.sodir)
-      #io.puts "* ext -> #{config.sodir}" unless quiet?
-      files = files('ext')
-      files = select_dllext(files)
-      #install_files('ext', files, config.sodir, 0555)
-      files.each do |file|
-        name = File.join(File.dirname(File.dirname(file)), File.basename(file))
-        dest = destination(config.sodir, name)
-        install_file('ext', file, dest, 0555, install_prefix)
+      io.puts "* ext ->" unless quiet?
+
+      targets.each do |target|
+        next if !target.source.dlfiles.any?
+
+        io.puts "  - [#{target.source.name}] => #{target.extdir}" unless quiet?
+
+        Dir.chdir(File.join(target.source.root, target.source.extdir)) do
+          io.puts "  - [#{target.source.name}] in #{target.source.extdir}" unless quiet?
+#             require 'pry'; binding.pry
+          target.source.dlfiles.each do |file|
+            novel_install_files([file], target.extdir, options.merge(mode: 0555))
+#            install_files([file], target.extdir, options.merge(mode: 0555, source_dir: target.source.extroot_for(file)))
+          end
+        end
       end
     end
 
     # Install library files.
     def install_lib
-      return unless directory?('lib')
-      report_transfer('lib', config.rbdir)
-      #io.puts "* lib -> #{config.rbdir}" unless quiet?
-      files = files('lib')
-      install_files('lib', files, config.rbdir, 0644)
+      io.puts "* lib ->" unless quiet?
+
+      targets.each do |target|
+        next if !target.source.libfiles.any?
+
+#        require 'pry'; binding.pry
+        Dir.chdir(File.join(target.source.root, target.source.libdir)) do
+          io.puts "  - [#{target.source.name}] in #{target.source.libdir}" unless quiet?
+#        require 'pry'; binding.pry
+          novel_install_files(target.source.libfiles, target.libdir, options)
+        end
+      end
     end
 
     # Install shared data.
     def install_data
-      return unless directory?('data')
-      report_transfer('data', config.datadir)
-      #io.puts "* data -> #{config.datadir}" unless quiet?
-      files = files('data')
-      install_files('data', files, config.datadir, 0644)
+      io.puts "* data ->" unless quiet?
+
+      targets.each do |target|
+        next if !target.source.datafiles.any?
+
+        Dir.chdir(File.join(target.source.root, target.source.datadir)) do
+          io.puts "  - [#{target.source.name}] in #{target.source.datadir}" unless quiet?
+          novel_install_files(target.source.datafiles, target.datadir, options)
+        end
+      end
     end
 
     # Install configuration.
@@ -81,10 +145,44 @@ module Setup
 
     # Install manpages.
     def install_man
-      return unless directory?('man')
-      report_transfer('man', config.mandir)
-      files = files('man')
-      install_files('man', files, config.mandir, 0644)
+      io.puts "* man ->" unless quiet?
+
+      targets.each do |target|
+        next if !target.source.manfiles.any?
+
+        Dir.chdir(File.join(target.source.root, target.source.mandir)) do
+          io.puts "  - [#{target.source.name}] in #{target.source.mandir}" unless quiet?
+          novel_install_files(target.source.manfiles, target.mandir, options.merge(mode: 0644))
+        end
+      end
+    end
+
+    def install_ri
+      io.puts "* ri ->" unless quiet?
+
+      targets.each do |target|
+        next if !target.source.rifiles.any?
+
+#        require 'pry'; binding.pry
+        Dir.chdir(File.join(target.source.root, target.source.ridir)) do
+          io.puts "  - [#{target.source.name}] in #{target.source.ridir}" unless quiet?
+          novel_install_files(target.source.rifiles, target.ridir, options.merge(mode: 0644))
+        end
+      end
+    end
+
+    def install_include
+      io.puts "* include ->" unless quiet?
+
+      targets.each do |target|
+        next if !target.source.includefiles.any?
+
+        Dir.chdir(File.join(target.source.root, target.source.includedir)) do
+          io.puts "  - [#{target.source.name}] in #{target.source.includedir}" unless quiet?
+          target_dir = File.join(target.includedir, target.source.name)
+          novel_install_files(target.source.includefiles, target_dir, options.merge(mode: 0644))
+        end
+      end
     end
 
     # Install documentation.
@@ -94,16 +192,52 @@ module Setup
     # config method for it.
     def install_doc
       return unless config.doc?
-      return unless directory?('doc')
-      return unless project.name
-      dir = File.join(config.docdir, "ruby-#{project.name}")
-      report_transfer('doc', dir)
-      #io.puts "* doc -> #{dir}" unless quiet?
-      files = files('doc')
-      install_files('doc', files, dir, 0644)
+
+      folders = {
+        'dir' => File.join(config.docdir, "#{project.name}"),
+        'ri'  => config.ridir,
+      }
+
+      filters = {
+        'gem' => /(created.rid|~$)/,
+      }
+
+      filter = filters[config.type] || /(cdesc-Object.ri|cache.ri|created.rid|~$)/
+
+      folders.keys.select {|dir| File.directory?(dir) }.each do |dir|
+        report_transfer(dir, folders[dir])
+        # io.puts "* doc -> #{dir}" unless quiet?
+        files = filter_out(files(dir), filter)
+        install_files(dir, files, folders[dir], 0644)
+      end
+    end
+
+    # Install specification.
+    #
+    def install_gemspec
+      io.puts "* .gemspec ->" unless quiet?
+
+      targets.each do |target|
+        if target.source.is_a?(Setup::Source::Gem)
+           io.puts "  - [#{target.source.name}]" unless quiet?
+
+          novel_install_files([target.source.gemspec_file],
+                              target.specdir,
+                              options.merge(mode: 0644,
+                                            as: "#{target.source.fullname}.gemspec"))
+        end
+      end
     end
 
   private
+
+    def paths
+       if project.is_gem?
+         project.gems.map { |gem| gem.gemroot }
+       else
+         [ Dir.pwd ]
+       end
+    end
 
     # Display the file transfer taking place.
     def report_transfer(source, directory)
@@ -117,47 +251,106 @@ module Setup
       end
     end
 
-    # Comfirm a +path+ is a directory and exists.
-    def directory?(path)
-      File.directory?(path)
-    end
+    # Confirm a +path+ is a directory and exists.
+#    def directory?(path)
+#      project.is_gem? || File.directory?(path)
+#    end
+
+    # Confirm a gemspec exists.
+#    def gemspec?
+#      !project.gems.map { |gem| gem.spec }.compact.any?
+#    end
 
     # Get a list of project files given a project subdirectory.
     def files(dir)
-      files = Dir["#{dir}/**/*"]
-      files = files.select{ |f| File.file?(f) }
-      files = files.map{ |f| f.sub("#{dir}/", '') }
-      files
+      paths.each do |root|
+        Dir[File.join(root, dir, '**', '*')]
+          .select{ |f| File.file?(f) }
+          .map{ |f| f.sub("#{dir}/", '') }
+      end.flatten
     end
 
     # Extract dynamic link libraries from all ext files.
     def select_dllext(files)
-      ents = files.select do |file| 
-        File.extname(file) == ".#{dllext}"
-      end
+      ents = files.select { |file| File.extname(file) =~ dllext }
+
       if ents.empty? && !files.empty?
         raise Error, "ruby extention not compiled: 'setup.rb compile' first"
       end
+
       ents
+    end
+
+    # Filtering out the files list according the specified regexp
+    def filter_out files, re
+      files.reject {|f| f =~ re }
     end
 
     # Dynamic link library extension for this system.
     def dllext
-      config.dlext
-      #Configuration::RBCONFIG['DLEXT']
+      # from Configuration::RBCONFIG['DLEXT']
+      dlext = [ config.dlext, 'build_complete' ]
+
+      /\.(#{dlext.join('|')})/
     end
 
-    # Install project files.
-    def install_files(dir, list, dest, mode)
-      #mkdir_p(dest) #, install_prefix)
-      list.each do |fname|
-        rdest = destination(dest, fname)
-        install_file(dir, fname, rdest, mode, install_prefix)
+    # Novel proc to install project files.
+    def novel_install_files(source_files, dest_dir, options = {})
+      chroot = options[:chroot]
+
+#        require 'pry'; binding.pry
+      source_files.each do |file|
+        
+        name = File.basename(options[:as] || file)
+        dir = File.dirname(options[:as] || options[:dir] || file)
+
+        if options[:symlink]
+           dest_file_in = File.expand_path(File.join(dest_dir, name))
+        else
+           dest_file_in = File.expand_path(File.join(dest_dir, dir, name))
+        end
+        dest_file = File.join(chroot, dest_file_in)
+
+        FileUtils.mkdir_p(File.dirname(dest_file))
+        if options[:symlink]
+          io.puts "    #{file} -> [#{chroot}]#{dest_file_in}"
+          FileUtils.ln_s(file, dest_file, force: true)
+        else
+          io.puts "    #{file} => [#{chroot}]#{dest_file_in}"
+          FileUtils.install(file, dest_file, mode: options[:mode])
+        end
       end
     end
 
+    # Install project files.
+    def install_files(source_files, dest_dir, options = {})
+      source_files.each do |file|
+        dest_file = destination(dest_dir, file, options)
+
+
+#        if dest_file
+          FileUtils.mkdir_p(File.dirname(dest_file))
+          if options[:symlink]
+            FileUtils.ln_s(file, dest_file, force: true)
+          else
+            io.puts "'#{file}' -> '#{dest_file}'"
+            FileUtils.install(file, dest_file, mode: options[:mode])
+          end
+#        else
+#          $stderr.puts "Invalid destination '#{dest_dir}' for file '#{file}' and options #{options.inspect}"
+#        end
+      end
+    end
+
+    def options
+       {
+          chroot: Dir.chdir(project.rootdir) { File.expand_path(config.install_prefix) },
+          mode: 0644
+       }
+    end
+
     # Install a project file.
-    def install_file(dir, from, dest, mode, prefix=nil)
+    def install_file(dir, from, dest, mode, prefix=nil, options = {})
       mkdir_p(File.dirname(dest))
   
       if trace? or trial?
@@ -175,6 +368,13 @@ module Setup
         }
         File.open(dest, 'wb'){ |f| f.write(str) }
         File.chmod(mode, dest)
+      end
+
+      if link_to = options.delete(:link_to)
+        dfile = destination(link_to, from)
+        FileUtils.rm_f(dfile)
+        FileUtils.mkdir_p(File.dirname(dfile))
+        FileUtils.ln_s(dest, dfile)
       end
 
       record_installation(dest) # record file as installed
@@ -244,11 +444,11 @@ module Setup
     #realdest = File.join(realdest, from) #if File.dir?(realdest) #File.basename(from)) if File.dir?(realdest)
 
     # Determine actual destination including install_prefix.
-    def destination(dir, file)
-      dest = install_prefix ? File.join(install_prefix, File.expand_path(dir)) : dir
-      dest = File.join(dest, file) #if File.dir?(dest)
-      dest = File.expand_path(dest)
-      dest
+    def destination(dir, file, options = {})
+      dest = File.join(options[:chroot] || '', File.expand_path(dir))
+      matched = /^#{options[:source_dir]}\/?(?<dest_file>.*)/.match(file)
+
+      File.expand_path(File.join(dest, options[:as] || matched && matched[:dest_file] || ''))
     end
 
     # Is a current project file different from a previously
@@ -326,6 +526,16 @@ module Setup
       ensure
         File.unlink tmpfile if File.exist?(tmpfile)
       end
+    end
+
+    #
+    def distclean
+      %w(SetupConfig .gemspecs).each { |f| FileUtils.rm_rf(f) }
+    end
+
+
+    def bindirs
+      config.bindir
     end
 
     #
