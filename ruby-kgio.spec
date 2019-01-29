@@ -1,7 +1,7 @@
 %define     pkgname setup
 
 Name:       ruby-%pkgname
-Version:    5.2.0
+Version:    5.2.1pre0
 Release:    alt1
 
 Summary:    Ruby's Classic Site Installer
@@ -9,6 +9,8 @@ Group:      Development/Ruby
 License:    BSD 2-clause Simplified License
 Url:        https://github.com/rubyworks/setup
 # VCS:      https://github.com/rubyworks/setup.git
+Packager:   Ruby Maintainers Team <ruby@packages.altlinux.org>
+BuildArch:  noarch
 
 Source:     %pkgname-%version.tar
 
@@ -60,5 +62,5 @@ mv .gemspec %pkgname.gemspec
 %ruby_ri_sitedir/
 
 %changelog
-* Fri Jan 25 2019 Pavel Skrylev <majioa@altlinux.org> 5.2.0-alt1
+* Fri Jan 25 2019 Pavel Skrylev <majioa@altlinux.org> 5.2.1pre0-alt1
 - Initial gemified build for Sisyphus.
