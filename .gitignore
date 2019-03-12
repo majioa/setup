@@ -8,3 +8,4 @@ pack
 pkg
 work/sandbox/faux-root
 web
+setup.gemspec
