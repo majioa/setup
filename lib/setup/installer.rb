@@ -92,14 +92,10 @@ module Setup
       targets.each do |target|
         next if !target.source.dlfiles.any?
 
-        io.puts "  - [#{target.source.name}] => #{target.extdir}" unless quiet?
-
-        Dir.chdir(File.join(target.source.root, target.source.extdir)) do
-          io.puts "  - [#{target.source.name}] in #{target.source.extdir}" unless quiet?
-#             require 'pry'; binding.pry
+        Dir.chdir(File.join(target.source.root, target.source.dldir)) do
+          io.puts "  - [#{target.source.name}] in #{target.source.dldir}" unless quiet?
           target.source.dlfiles.each do |file|
             novel_install_files([file], target.extdir, options.merge(mode: 0555))
-#            install_files([file], target.extdir, options.merge(mode: 0555, source_dir: target.source.extroot_for(file)))
           end
         end
       end

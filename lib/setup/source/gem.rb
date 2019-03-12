@@ -81,8 +81,7 @@ class Setup::Source::Gem
 
    def extdir
       @extdir ||= (
-         extfile = spec.extensions.select { |file| /extconf\.rb$/ =~ file }.first
-         extfile && File.dirname(extfile) || nil)
+         spec.extensions.select { |file| /extconf\.rb$/ =~ file }.map { |file| File.dirname(file) }.uniq.first)
    end
 
    def ridir
@@ -90,7 +89,10 @@ class Setup::Source::Gem
    end
 
    def dldir
-      extdir
+      @dldir ||= (
+         dir = ".so.#{name}#{RbConfig::CONFIG['sitearchdir']}"
+
+         File.directory?(File.join(root, dir)) && dir || nil)
    end
 
    def mandir
@@ -175,7 +177,7 @@ class Setup::Source::Gem
 
    def dlfiles
       @dlfiles ||= extdir && (
-         dir = File.join(root, extdir)
+         dir = File.join(root, dldir)
 
          if File.exist?(dir)
             Dir.chdir(dir) do
