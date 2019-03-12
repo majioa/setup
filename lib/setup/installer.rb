@@ -225,6 +225,11 @@ module Setup
       end
     end
 
+    #
+    def distclean
+      %w(SetupConfig .gemspecs).each { |f| FileUtils.rm_rf(f) }
+    end
+
   private
 
     def paths
@@ -522,11 +527,6 @@ module Setup
       ensure
         File.unlink tmpfile if File.exist?(tmpfile)
       end
-    end
-
-    #
-    def distclean
-      %w(SetupConfig .gemspecs).each { |f| FileUtils.rm_rf(f) }
     end
 
 

@@ -178,8 +178,8 @@ module Setup
     def distclean
       log_header('Distclean')
       compiler.distclean
+      documentor.distclean
       installer.distclean
-      project.gems.map(&:distclean)
     end
 
     #

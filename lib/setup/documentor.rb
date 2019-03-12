@@ -141,6 +141,12 @@ module Setup
       end
     end
 
-  end
 
+    def distclean
+      project.sources.each do |source|
+        FileUtils.rm_rf(source.ridir)
+      end
+    end
+
+  end
 end
