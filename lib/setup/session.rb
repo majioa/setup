@@ -203,7 +203,8 @@ module Setup
 
     #
     def project
-      @project ||= configuration.project || Project.new(mode: configuration.mode.to_sym,
+      @project ||= configuration.project || Project.new(config: configuration,
+                                                        mode: configuration.mode.to_sym,
                                                         gem_version_replace: configuration.gem_version_replace)
     end
     #

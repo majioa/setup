@@ -27,31 +27,25 @@ module Setup
   # As of v5.1.0, Setup.rb no longer recognizes the VERSION file
   #
   class Project
-     attr_reader :options
-
-    # Match used to determine the root dir of a project.
-     ROOT_MARKER = '{.index,setup.rb,.setup,lib/,app/,Gemfile,*.gemspec}'
+     attr_reader :options, :config
 
     #
     def initialize options = {}
-      self.sources  = options.delete(:sources)
       @rootdir  = options.delete(:rootdir)
+      self.sources  = options.delete(:sources)
+      @config   = options.delete(:config) || raise
       @options  = options
 
-      @dotindex_file = find('.index')
-
-      @dotindex = YAML.load_file(@dotindex_file) if @dotindex_file
-
-      @name     = root_source.name
-      @version  = root_source.version
+      @name     = root_source&.name
+      @version  = root_source&.version
       @loadpath = ['lib']
 
+      all_sources.each do |source|
+         info = "#{source.type} '#{source.name}' at #{source.root}"
+         puts source.valid? && is_enabled?(source) && info || "[ #{info} ]"
+      end
 
-      if @dotindex
-        @name     = @dotindex['name']
-        @version  = @dotindex['version']
-        @loadpath = (@dotindex['paths'] || {})['load']
-      else
+
         if file = find('.setup/name')
           @name = File.read(file).strip
         end
@@ -61,10 +55,7 @@ module Setup
         if file = find('.setup/loadpath')
           @loadpath = File.read(file).strip
         end
-      end
     end
-
-    attr :dotindex
 
     # The name of the package, used to install docs in system doc/ruby-{name}/ location.
     attr :name
@@ -99,8 +90,16 @@ module Setup
 
     # Returns a source list
     #
+    def all_sources
+       @all_sources ||= Setup::Source.search(rootdir, options)
+    end
+
+    # Returns a source list
+    #
     def sources
-       @sources ||= Setup::Source.search(rootdir, options)
+       @sources ||= all_sources.select do |source|
+          source.valid? && is_enabled?(source)
+       end
     end
 
     # Sets a source list from config
@@ -126,6 +125,9 @@ module Setup
       sources.any? {|source| source.is_a?(Setup::Source::Gem) }
     end
 
+    def is_enabled? source
+      !config.ignore_names.include?(source.name)
+    end
     #
     #
     def compilable?

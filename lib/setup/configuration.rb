@@ -87,6 +87,8 @@ module Setup
 
     option :'gem-version-replace' , :pick, 'make replacements in the found specs from the comma-separated list'
 
+    option :'ignore-names'  , :pick, 'ignore sources with the specified comma-separated name list'
+
     # custom property
     #
     def install_prefix
@@ -107,6 +109,20 @@ module Setup
       else
         value
       end
+    end
+
+    def ignore_names= value
+      @ignore_names =
+      if value.is_a?(String)
+        tokens = (value || '').split(/[,;:]/)
+        tokens.map(&:strip).select {|x| x.size > 0 }
+      else
+        value
+      end
+    end
+
+    def ignore_names
+       @ignore_names || []
     end
 
     # custom property
@@ -312,7 +328,7 @@ module Setup
     end
 
     def project= value
-      @project ||= value && Setup::Project.new(value.merge(value.delete(:options)))
+       @project ||= value && Setup::Project.new({config: self}.merge(value.merge(value.delete(:options))))
     end
 
     #
