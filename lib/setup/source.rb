@@ -2,12 +2,18 @@ require 'setup'
 
 module Setup::Source
    autoload(:Gem, 'setup/source/gem')
-   autoload(:Root, 'setup/source/root')
+   autoload(:Rakefile, 'setup/source/rakefile')
+   autoload(:Gemfile, 'setup/source/gemfile')
 
    class << self
       def search dir, options = {}
-         self.constants.map do |const|
+         %i(Gem Gemfile Rakefile).map do |const|
             self.const_get(const).search(dir, options)
+         end.flatten.group_by do |source|
+            source.root
+         end.map do |_, sources_in|
+            gem_sources = sources_in.select { |source| source.is_a?(Setup::Source::Gem) }
+            gem_sources.empty? && sources_in.first || gem_sources
          end.flatten
       end
    end

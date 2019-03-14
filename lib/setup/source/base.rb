@@ -1,17 +1,7 @@
-class Setup::Source::Root
+require 'setup/source'
+
+class Setup::Source::Base
    attr_reader :root
-
-   class << self
-      def search dir, _ = {}
-         self.new(root: dir)
-      end
-   end
-
-   def gemfile
-      @gemfile ||= root && (
-         file = "#{root}/Gemfile"
-         File.exist?(file) && file) || nil
-   end
 
    def fullname
       @fullname ||= root.split('/').last
@@ -30,21 +20,29 @@ class Setup::Source::Root
    end
 
    def doc_sourcedirs
-      %w(app config).select { |file| File.directory?(file) }
+      %w(app lib config).select { |file| if_exist(file) }
    end
 
    # dirs
 
+   def etcdir
+      @etcdir ||= if_exist('etc')
+   end
+
    def libdir
-      @libdir ||= 'lib'
+      @libdir ||= if_exist('lib')
+   end
+
+   def datadir
+      '.'
    end
 
    def bindir
-      @bindir ||= exedir || 'bin'
+      @bindir ||= exedir || if_exist('bin')
    end
 
    def extdir
-      @extdir ||= '.'
+      @extdir
    end
 
    def ridir
@@ -56,13 +54,11 @@ class Setup::Source::Root
    end
 
    def mandir
-      @mandir ||= mandirs.first
+      @mandir ||= %w(man Documentation doc).find { |dir| if_exist(dir) }
    end
 
-   def mandirs
-      @mandirs ||= %w(man Documentation doc).select do |dir|
-         File.directory?(File.join(root, dir))
-      end
+   def includedir
+      extdir
    end
 
    # files
@@ -76,6 +72,10 @@ class Setup::Source::Root
              Dir.glob("*/**/*.rb").select { |file| File.file?(file) }
            end
          end || [])
+   end
+
+   def datafiles
+      []
    end
 
    def rifiles
@@ -115,10 +115,6 @@ class Setup::Source::Root
          end) || []
    end
 
-   def datafiles
-      []
-   end
-
    def includefiles
       []
    end
@@ -127,16 +123,10 @@ class Setup::Source::Root
       doc_sourcedirs
    end
 
-   # custom
-
-   def extroot_for file
-      extroots.find { |extroot| extroot == file[0...extroot.size] }
-   end
-
    # questionaries
 
    def valid?
-      !gemfile.nil?
+      false
    end
 
    def compilable?
@@ -145,15 +135,19 @@ class Setup::Source::Root
 
    def to_h
       {
-         type: 'root',
+         type: type,
          root: root,
       }
    end
 
+   def type
+      self.class.to_s.split('::').last.downcase
+   end
+
    protected
 
-   def extroots
-      @extroots ||= extfiles.map { |extfile| File.dirname(extfile) }
+   def if_exist dir
+      File.directory?(dir) && dir || nil
    end
 
    def dlext
@@ -161,7 +155,7 @@ class Setup::Source::Root
    end
 
    def exedir
-      @exedir ||= File.join(root, 'exe')
+      @exedir ||= if_exist('exe')
    end
 
    #

@@ -70,14 +70,7 @@ module Setup
 
     # Locate project root.
     def rootdir
-      @rootdir ||= (
-        root = Dir.glob(File.join(Dir.pwd, ROOT_MARKER), File::FNM_CASEFOLD).first
-        if !root
-          raise Error, "not a project directory"
-        else
-          Dir.pwd
-        end
-      )
+      @rootdir ||= Dir.pwd
     end
 
     def to_h
@@ -107,8 +100,10 @@ module Setup
     def sources= value
        @sources = value&.map do |source_in|
           case source_in.delete(:type)
-          when 'root'
-             Setup::Source::Root.new(source_in)
+          when 'rakefile'
+             Setup::Source::Rakefile.new(source_in)
+          when 'gemfile'
+             Setup::Source::Gemfile.new(source_in)
           when 'gem'
              Setup::Source::Gem.new(source_in)
           end
@@ -118,7 +113,7 @@ module Setup
     # Returns a root source
     #
     def root_source
-      @root_source ||= sources.find { |source| source.is_a?(Setup::Source::Root) }
+      @root_source ||= sources.find { |source| rootdir == source.root }
     end
 
     def has_gem?

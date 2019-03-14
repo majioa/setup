@@ -1,9 +1,9 @@
-require 'setup/source'
+require 'setup/source/base'
 
 require 'tempfile'
 require 'yaml'
 
-class Setup::Source::Gem
+class Setup::Source::Gem < Setup::Source::Base
    BIN_IGNORES = %w(test)
 
    attr_reader :root, :spec, :mode, :replace_list
@@ -16,7 +16,7 @@ class Setup::Source::Gem
             gemspecs.reduce(nil) do |s, gemspec|
                s || gemspec::RE =~ f &&
                    (spec = gemspec.parse(f)) &&
-                   spec.platform == 'ruby' && #(require 'pry';binding.pry; true) &&
+                    spec.platform == 'ruby' && #(require 'pry';binding.pry; true) &&
                     self.new(root: File.dirname(f),
                     spec: spec,
                     mode: options[:mode],
