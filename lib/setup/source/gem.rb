@@ -176,7 +176,7 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def dlfiles
-      @dlfiles ||= extdir && (
+      @dlfiles ||= dldir && (
          dir = File.join(root, dldir)
 
          if File.exist?(dir)
