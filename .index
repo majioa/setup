@@ -11,6 +11,7 @@ authors:
 - name: Minero Aoki
   email: aamine@loveruby.net
 organizations:
+- name: AltLinux
 - name: Rubyworks
 requirements:
 - groups:
@@ -58,6 +59,9 @@ paths:
   load:
   - lib
 copyrights:
+- holder: AltLinux
+  year: '2019'
+  license: BSD-2-Clause
 - holder: Rubyworks
   year: '2009'
   license: BSD-2-Clause
@@ -67,7 +71,7 @@ copyrights:
 created: '2008-08-01'
 summary: Setup.rb as a stand-alone application.
 title: Setup
-version: 5.999.1
+version: 5.999.2
 name: setup
 description: ! "Every Rubyist is aware of Minero Aoki's ever useful setup.rb script.
   \nIt's how most of us used to install our Ruby programs before RubyGems\ncame along.
@@ -76,4 +80,4 @@ description: ! "Every Rubyist is aware of Minero Aoki's ever useful setup.rb scr
   script that one can distribute with\na project, Setup also works as a stand-alone
   application. Instead of\ndistributing setup.rb with a package, just instruct your
   users to install\nRuby Setup and use it instead."
-date: '2012-12-20'
+date: '2019-03-15'
