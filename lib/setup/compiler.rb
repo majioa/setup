@@ -31,10 +31,14 @@ module Setup
           Dir.chdir(dir) do
             puts "[#{dir}]$ make #{config.makeprog}"
             make
-            FileUtils.mkdir_p File.join(source.root, ".so.#{source.name}")
-            make('install', DESTDIR: File.join(source.root, ".so.#{source.name}"))
-            Dir.glob(File.join(source.root, ".so.#{source.name}/**/*.so")).each do |file|
-              FileUtils.touch(File.join(File.dirname(file), 'gem.build_complete'))
+
+            # post compile
+            if Dir.glob("**/*.so").any?
+              FileUtils.mkdir_p File.join(source.root, ".so.#{source.name}")
+              make('install', DESTDIR: File.join(source.root, ".so.#{source.name}"))
+              Dir.glob(File.join(source.root, ".so.#{source.name}/**/*.so")).each do |file|
+                FileUtils.touch(File.join(File.dirname(file), 'gem.build_complete'))
+              end
             end
           end
         end
