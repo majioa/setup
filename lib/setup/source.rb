@@ -1,10 +1,6 @@
 require 'setup'
 
 module Setup::Source
-   autoload(:Gem, 'setup/source/gem')
-   autoload(:Rakefile, 'setup/source/rakefile')
-   autoload(:Gemfile, 'setup/source/gemfile')
-
    class << self
       def search dir, options = {}
          %i(Gem Gemfile Rakefile).map do |const|
@@ -18,3 +14,7 @@ module Setup::Source
       end
    end
 end
+
+require 'setup/source/gem'
+require 'setup/source/rakefile'
+require 'setup/source/gemfile'
