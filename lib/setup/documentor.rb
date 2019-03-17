@@ -148,5 +148,7 @@ module Setup
       end
     end
 
+    alias_method :clean, :distclean
+
   end
 end

@@ -172,6 +172,7 @@ module Setup
     def clean
       log_header('Clean')
       compiler.clean
+      documentor.clean
     end
 
     #
