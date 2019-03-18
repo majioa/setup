@@ -254,6 +254,10 @@ module Setup
       parser.on('-m', '--mode MODE', "file accounting mode (flex,strict)") do |bool|
         configuration.mode = bool
       end
+      # replace shebang line
+      parser.on('-s', '--shebang SHEBANG', "replace a shebang line for a newly installed executables (<blank>,auto,env,ruby,<custom>)") do |shebang|
+        configuration.shebang = shebang
+      end
     end
 
     # Setup options for +document+ task.

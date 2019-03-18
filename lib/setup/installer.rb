@@ -73,7 +73,7 @@ module Setup
 
         Dir.chdir(File.join(target.source.root, target.source.bindir)) do
           io.puts "  - [#{target.source.name}] in #{target.source.bindir}" unless quiet?
-          novel_install_files(target.source.binfiles, target.bindir, options.merge(mode: 0755))
+          novel_install_files(target.source.binfiles, target.bindir, options.merge(mode: 0755, shebang: config.shebang))
         end
 
         if target.lbindir
@@ -301,7 +301,6 @@ module Setup
 
 #        require 'pry'; binding.pry
       source_files.each do |file|
-        
         name = File.basename(options[:as] || file)
         dir = File.dirname(options[:as] || options[:dir] || file)
 
@@ -316,11 +315,56 @@ module Setup
         if options[:symlink]
           io.puts "    #{file} -> [#{chroot}]#{dest_file_in}"
           FileUtils.ln_s(file, dest_file, force: true)
+        elsif options[:shebang]
+          io.puts "    #{file} -> [#{chroot}]#{dest_file_in}"
+          install_reshebanged(file, dest_file, shebang: options[:shebang], mode: options[:mode])
         else
           io.puts "    #{file} => [#{chroot}]#{dest_file_in}"
           FileUtils.install(file, dest_file, mode: options[:mode])
         end
       end
+    end
+
+    def install_reshebanged file, dest_file, shebang: raise, mode: nil
+       content = IO.binread(file)
+       lines_in = content.split("\n")
+
+       if shebang && shebang_in = shebang_for(lines_in.first)
+          lines = [ shebang_line(shebang) ] + lines_in[1..-1]
+          File.open(dest_file, "wb") { |f| f.write(lines.join("\n")) }
+          FileUtils.chmod(mode, dest_file)
+       else
+          FileUtils.install(file, dest_file, mode: options[:mode])
+       end
+    end
+
+    def shebang_line shebang
+       "#!" + case shebang
+       when 'auto'
+          [ path_to('ruby') ]
+       when 'ruby'
+          [ path_to('ruby') ]
+       when 'env'
+          [ path_to('env'), 'ruby' ]
+       else
+          [ shebang ]
+       end.join(" ")
+    end
+
+    def path_to shebang
+       case shebang
+       when 'ruby'
+          File.join(RbConfig::CONFIG['bindir'], RbConfig::CONFIG['ruby_install_name'])
+       when 'env'
+          File.join(RbConfig::CONFIG['bindir'], 'env')
+       else
+          ''
+       end
+   end
+
+
+    def shebang_for line
+       /^#!.*/.match(line)&.[](0)
     end
 
     # Install project files.

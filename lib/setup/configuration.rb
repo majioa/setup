@@ -64,8 +64,6 @@ module Setup
 
     option :extconfopt      , :opts, 'options to pass-thru to extconf.rb'
 
-    option :shebang         , :pick, 'shebang line (#!) editing mode (all,ruby,never)'
-
     option :no_test, :t     , :bool, 'run pre-installation tests'
     # TODO: remove no_ri option in future version
     #option :no_ri,   :d     , :bool, 'generate ri documentation (deprecated and ignored)'
@@ -88,6 +86,8 @@ module Setup
     option :'gem-version-replace' , :pick, 'make replacements in the found specs from the comma-separated list'
 
     option :'ignore-names'  , :pick, 'ignore sources with the specified comma-separated name list'
+
+    option :shebang         , :pick, 'replace a shebang line for a newly installed executables ("",auto,env,ruby,<custom>)'
 
     # custom property
     #
@@ -123,6 +123,10 @@ module Setup
 
     def ignore_names
        @ignore_names || []
+    end
+
+    def shebang= value
+       @shebang = !value.nil? && !value.empty? && value || nil
     end
 
     # custom property
@@ -608,20 +612,6 @@ module Setup
     #
     def extconfopt=(string)
       @extconfopt = string
-    end
-
-    # Default is +ruby+.
-    def shebang
-      @shebang ||= 'ruby'
-    end
-
-    # There are three options: +all+, +ruby+, +never+.
-    def shebang=(val)
-      if %w(all ruby never).include?(val)
-        @shebang = val
-      else
-        raise Error, "bad config: use SHEBANG=(all|ruby|never) [#{val}]"
-      end
     end
 
     # 
