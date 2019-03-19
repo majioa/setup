@@ -6,6 +6,7 @@ module Setup::Gemspec::Cmake
 
       def parse rakefile
          log = `cmake`
+      rescue Errno::ENOENT
       end
    end
 end
