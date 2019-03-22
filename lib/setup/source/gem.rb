@@ -6,7 +6,7 @@ require 'yaml'
 class Setup::Source::Gem < Setup::Source::Base
    BIN_IGNORES = %w(test)
 
-   attr_reader :root, :spec, :mode, :replace_list
+   attr_reader :root, :spec, :mode
 
    class << self
       def search dir, options = {}
@@ -15,7 +15,7 @@ class Setup::Source::Gem < Setup::Source::Base
          specs = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).map do |f|
             gemspecs.reduce(nil) do |s, gemspec|
                s || gemspec::RE =~ f &&
-                   (spec = gemspec.parse(f)) &&
+                   (spec = gemspec.parse(f)) && #(require 'pry';binding.pry; true) &&
                     spec.platform == 'ruby' && #(require 'pry';binding.pry; true) &&
                     self.new(root: File.dirname(f),
                     spec: spec,
@@ -42,15 +42,13 @@ class Setup::Source::Gem < Setup::Source::Base
 
    def gemspec_file
       gemspec_file = Tempfile.new('gem.')
-      new_spec = spec
-      new_spec.dependencies.replace(deps_but(replace_list))
-      gemspec_file.puts(new_spec.to_ruby)
+      gemspec_file.puts(dsl.to_ruby)
       gemspec_file.rewind
       gemspec_file.path
    end
 
    def dsl
-      @dsl ||= Setup::DSL.new(source: self)
+      @dsl ||= Setup::DSL.new(source: self, replace_list: replace_list)
    end
 
    # many dirs
@@ -256,16 +254,6 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    protected
-
-   def deps_but replace_list
-      spec.dependencies.map do |dep|
-         new_req = replace_list.reduce(nil) do |s, (name, req)|
-            s || name == dep.name && req
-         end
-
-         new_req && Gem::Dependency.new(dep.name, Gem::Requirement.new([new_req]), dep.type) || dep
-      end
-   end
 
    def extroots
       @extroots ||= extfiles.map { |extfile| File.dirname(extfile) }

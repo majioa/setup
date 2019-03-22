@@ -11,7 +11,7 @@ class Setup::Source::Gemfile < Setup::Source::Base
    end
 
    def dsl
-      @dsl ||= Setup::DSL.new(source: self)
+      @dsl ||= Setup::DSL.new(source: self, replace_list: replace_list)
    end
 
    def valid?

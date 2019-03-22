@@ -36,9 +36,9 @@ module Kernel
   def ` cmd
     tokens = cmd.split(/\s+/)
 
-    $stderr.puts '----'
-    $stderr.puts tokens
-    $stderr.puts '===='
+#    $stderr.puts '----'
+#    $stderr.puts tokens
+#    $stderr.puts '===='
 
     res = __old_system_call(cmd)
 

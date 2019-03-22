@@ -1,7 +1,7 @@
 require 'setup/source'
 
 class Setup::Source::Base
-   attr_reader :root, :dsl
+   attr_reader :root, :dsl, :replace_list
 
    def fullname
       @fullname ||= root.split('/').last
@@ -201,7 +201,8 @@ class Setup::Source::Base
    end
 
    #
-   def initialize(root: Dir.pwd)
+   def initialize root: Dir.pwd, replace_list: {}
       @root = root
+      @replace_list = replace_list || {}
    end
 end

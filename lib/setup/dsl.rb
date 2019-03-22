@@ -10,7 +10,7 @@ class Setup::DSL
    DEFAULT_GROUP_NAME = :development
 
    # attributes
-   attr_reader :source
+   attr_reader :source, :replace_list
 
    def gemfile
       File.join(source.root, 'Gemfile')
@@ -35,11 +35,11 @@ class Setup::DSL
    end
 
    def deps
-      source.deps(:runtime)
+      deps_but(source.deps(:runtime), replace_list)
    end
 
    def all_deps
-      source.deps
+      deps_but(source.deps, replace_list)
    end
 
    def ruby
@@ -54,10 +54,27 @@ class Setup::DSL
       !dsl.nil?
    end
 
+   def to_ruby
+      spec = source.spec.dup
+      spec.dependencies.replace(deps_but(source.deps, replace_list))
+      spec.to_ruby
+   end
+
    protected
 
+   def deps_but deps, replace_list
+      deps.map do |dep|
+         new_req = replace_list.reduce(nil) do |s, (name, req)|
+            s || name == dep.name && req
+         end
+
+         new_req && Gem::Dependency.new(dep.name, Gem::Requirement.new([new_req]), dep.type) || dep
+      end
+   end
+
    #
-   def initialize source: raise
+   def initialize source: raise, replace_list: {}
       @source = source
+      @replace_list = replace_list
    end
 end
