@@ -49,6 +49,10 @@ class Setup::Source::Gem < Setup::Source::Base
       gemspec_file.path
    end
 
+   def dsl
+      @dsl ||= Setup::DSL.new(source: self)
+   end
+
    # many dirs
 
    def require_pure_paths
@@ -97,15 +101,6 @@ class Setup::Source::Gem < Setup::Source::Base
 
    def mandir
       @mandir ||= mandirs.first
-   end
-
-   def mandirs
-      @mandirs ||= %w(man Documentation doc).select do |dir|
-         fulldir = File.join(root, dir)
-
-         File.directory?(fulldir) &&
-         Dir.glob("#{fulldir}/**/*.{1,2,3,4,5,6,7,8}").select { |file| File.file?(file) }.any?
-      end
    end
 
    def includedir
@@ -246,6 +241,18 @@ class Setup::Source::Gem < Setup::Source::Base
          mode: mode,
          replace_list: replace_list
       }
+   end
+
+   def required_ruby_version
+      spec&.required_ruby_version || super
+   end
+
+   def required_rubygems_version
+      spec&.required_rubygems_version || super
+   end
+
+   def deps groups = nil
+      spec&.dependencies&.select { |dep| !groups || [ groups ].flatten.include?(dep.type) }
    end
 
    protected

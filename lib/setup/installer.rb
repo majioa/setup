@@ -8,40 +8,9 @@ module Setup
   #
   class Installer < Base
 
-      # Returns an install target
-      def targets
-         @targets ||= (
-            case config.type
-            when 'auto'
-               if project.has_gem?
-                  gem_targets
-               else
-                  site_targets
-               end
-            when 'gem'
-               gem_targets
-            when 'site'
-               site_targets
-            when 'ruby'
-            end.compact)
-      end
-
-      def gem_targets
-         project.sources.map do |source|
-            if source.is_a?(Setup::Source::Gem)
-              Setup::Target::Gem.new(gem: source, root: project.root_source)
-            end
-         end
-      end
-
-      def site_targets
-         project.sources.map do |source|
-            if source.is_a?(Setup::Source::Root)
-              Setup::Target::Site.new(root: project.root_source)
-            end
-         end
-      end
-
+     def targets
+        project.targets
+     end
     #
     def install_prefix
       config.install_prefix
@@ -79,7 +48,7 @@ module Setup
         if target.lbindir
           Dir.chdir(File.join(target.source.root, target.source.bindir)) do
             io.puts "  - [#{target.source.name}] in #{target.source.bindir}" unless quiet?
-            novel_install_files(target.binfiles(options[:chroot]), target.lbindir, options.merge(mode: 0755, symlink: true))
+            novel_install_files(target.binfiles, target.lbindir, options.merge(mode: 0755, symlink: true))
           end
         end
       end

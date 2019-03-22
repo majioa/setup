@@ -8,6 +8,7 @@ require 'setup/installer'
 require 'setup/tester'
 require 'setup/documentor'
 require 'setup/uninstaller'
+require 'setup/deps'
 
 module Setup
 
@@ -200,6 +201,30 @@ module Setup
       puts configuration
     end
 
+    def provides
+      io.puts("Provides:") unless quiet?
+
+      depper.provs.each do |target, provs|
+         io.puts("<#{target}>:") unless quiet?
+
+         provs.map { |_, prov_list| prov_list }.flatten.uniq.each do |prov|
+            puts(prov)
+         end
+      end
+    end
+
+    def requires
+      io.puts("Requires:") unless quiet?
+
+      depper.reqs.each do |target, reqs|
+         io.puts("<#{target}>:") unless quiet?
+
+         reqs.map { |_, req_list| req_list }.flatten.uniq.each do |req|
+            io.puts(req)
+         end
+      end
+    end
+
     # #  C O N T R O L L E R S / M O D E L S  # #
 
     #
@@ -231,6 +256,10 @@ module Setup
     #
     def uninstaller
       @uninstaller ||= Uninstaller.new(project, configuration, options)
+    end
+    #
+    def depper
+      @depper ||= Deps.new(project: project, options: options)
     end
 
     # #  S U P P O R T  # #

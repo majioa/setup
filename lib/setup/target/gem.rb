@@ -1,16 +1,20 @@
 require 'setup/target'
 
 class Setup::Target::Gem
-   attr_reader :gem, :home, :root
+   attr_reader :source, :home, :options
 
-   def source
-      gem
+   def root
+      source.root
+   end
+
+   def public_executables
+      @public_executables ||= (lbindir && lbinfiles || binfiles).select { |file| source.binfiles.include?(File.basename(file)) }
    end
 
    # dirs
 
    def libdir
-      File.join(home, 'gems', gem.fullname, gem.require_dir)
+      File.join(home, 'gems', source.fullname, source.require_dir)
    end
 
    def lbindir
@@ -20,19 +24,19 @@ class Setup::Target::Gem
    end
 
    def datadir
-      File.join(home, 'gems', gem.fullname)
+      File.join(home, 'gems', source.fullname)
    end
 
    def bindir
-      File.exist?(exedir) && exedir || File.join(home, 'gems', gem.fullname, 'bin')
+      File.exist?(exedir) && exedir || File.join(home, 'gems', source.fullname, 'bin')
    end
 
    def extdir
-      File.join(home, 'extensions', RbConfig::CONFIG["sitearch"], ::Gem.extension_api_version, gem.fullname)
+      File.join(home, 'extensions', RbConfig::CONFIG["sitearch"], ::Gem.extension_api_version, source.fullname)
    end
 
    def ridir
-      File.join(home, 'doc', gem.fullname, 'ri')
+      File.join(home, 'doc', source.fullname, 'ri')
    end
 
    def specdir
@@ -49,19 +53,27 @@ class Setup::Target::Gem
 
    # files
 
-   def binfiles chroot = '/'
+   def binfiles
       Dir.glob(File.join(chroot, bindir, '*')).map { |file| /^#{chroot}(?<pure>.*)/.match(file)[:pure] }
+   end
+
+   def lbinfiles
+      Dir.glob(File.join(chroot, lbindir, '*')).map { |file| /^#{chroot}(?<pure>.*)/.match(file)[:pure] }
+   end
+
+   def chroot
+      options[:chroot] || '/'
    end
 
    protected
 
    def exedir
-      File.join(home, 'gems', gem.fullname, 'exe')
+      File.join(home, 'gems', source.fullname, 'exe')
    end
 
-   def initialize gem: raise, root: nil, home: ENV['GEM_HOME'] || ::Gem.paths.home
-      @gem = gem
-      @root = root
+   def initialize source: raise, home: ENV['GEM_HOME'] || ::Gem.paths.home, options: {}
+      @source = source
+      @options = options
       @home = home
    end
 end

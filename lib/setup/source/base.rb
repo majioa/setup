@@ -1,7 +1,7 @@
 require 'setup/source'
 
 class Setup::Source::Base
-   attr_reader :root
+   attr_reader :root, :dsl
 
    def fullname
       @fullname ||= root.split('/').last
@@ -61,17 +61,28 @@ class Setup::Source::Base
       extdir
    end
 
+   # dirs
+   #
+   def mandirs
+      @mandirs ||= %w(man Documentation doc).select do |dir|
+         fulldir = File.join(root, dir)
+
+         File.directory?(fulldir) &&
+         Dir.glob("#{fulldir}/**/*.{1,2,3,4,5,6,7,8}").select { |file| File.file?(file) }.any?
+      end
+   end
+
    # files
 
    def libfiles
-      @libfiles ||= (
+      @libfiles ||= libdir && (
          dir = File.join(root, libdir)
 
          if File.exist?(dir)
            Dir.chdir(dir) do
              Dir.glob("*/**/*.rb").select { |file| File.file?(file) }
            end
-         end || [])
+         end || []) || []
    end
 
    def datafiles
@@ -98,14 +109,14 @@ class Setup::Source::Base
    end
 
    def binfiles
-      @binfiles ||= (
+      @binfiles ||= bindir && (
          dir = File.join(root, bindir)
 
          if File.exist?(dir)
             Dir.chdir(dir) do
                Dir.glob("**/*").select { |file| File.file?(file) }
             end
-         end || [])
+         end || []) || []
    end
 
    def manfiles
@@ -142,6 +153,37 @@ class Setup::Source::Base
 
    def type
       self.class.to_s.split('::').last.downcase
+   end
+
+   def required_rubygems_version
+      ">= 0"
+   end
+
+   def required_ruby_version
+      Gem::Requirement.new(dsl&.instance_variable_get(:@ruby_version)&.engine_versions) || ">= 0"
+   end
+
+   def required_ruby
+      dsl&.instance_variable_get(:@ruby_version)&.engine || "ruby"
+   end
+
+   def lockfile
+      @lockfile ||= (
+         root && File.join(root, 'Gemfile.lock') || Tempfile.new('Gemfile.lock').path)
+   end
+
+   def definition
+      dsl&.dsl&.to_definition(lockfile, true)
+   end
+
+   def deps groups_in = nil
+      groups = groups_in && (
+         [ groups_in ].flatten.map { |g| g == :runtime && (definition.groups - %i(development test)) || group }.flatten
+         ) || definition.groups
+
+      definition.dependencies.select do |dep|
+         (dep.groups & groups).any? && dep.should_include? && !dep.autorequire&.all?
+      end
    end
 
    protected

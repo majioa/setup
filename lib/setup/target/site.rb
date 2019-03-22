@@ -1,14 +1,18 @@
 class Setup::Target::Site
-   attr_reader :home, :root
+   attr_reader :source, :options
 
-   def source
-      root
+   def root
+      source.root
+   end
+
+   def public_executables
+      @public_executables ||= binfiles.select { |file| source.binfiles.include?(File.basename(file)) }
    end
 
    # dirs
 
    def libdir
-      File.join(RbConfig::CONFIG['sitelibdir'], root.name)
+      File.join(RbConfig::CONFIG['sitelibdir'], source.name)
    end
 
    def lbindir
@@ -16,15 +20,15 @@ class Setup::Target::Site
    end
 
    def bindir
-      File.join(RbConfig::CONFIG['bindir'], root.name)
+      RbConfig::CONFIG['bindir']
    end
 
    def extdir
-      File.join(RbConfig::CONFIG['sitearchdir'], root.name)
+      File.join(RbConfig::CONFIG['sitearchdir'], source.name)
    end
 
    def ridir
-      File.join(RbConfig::CONFIG['ridir'], root.name)
+      File.join(RbConfig::CONFIG['ridir'], source.name)
    end
 
    def specdir
@@ -37,13 +41,18 @@ class Setup::Target::Site
 
    # files
 
-   def binfiles chroot = '/'
+   def binfiles
       Dir.glob(File.join(chroot, bindir, '*')).map { |file| /^#{chroot}(?<pure>.*)/.match(file)[:pure] }
+   end
+
+   def chroot
+      options[:chroot] || '/'
    end
 
    protected
 
-   def initialize root: raise
-      @root = root
+   def initialize source: raise, options: {}
+      @source = source
+      @options = options
    end
 end

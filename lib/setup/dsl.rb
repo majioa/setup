@@ -1,101 +1,63 @@
 require 'fileutils'
+require 'tempfile'
 
-require 'setup/source'
+require 'setup'
 
-module Setup
+# DSL service for Setup.rb.
+class Setup::DSL
+   # class TooManyGemspecsError < StandardError; end
 
-  # DSL service for Setup.rb.
+   DEFAULT_GROUP_NAME = :development
 
-  class DSL
-    # class TooManyGemspecsError < StandardError; end
+   # attributes
+   attr_reader :source
 
-    DEFAULT_GROUP_NAME = :development
+   def gemfile
+      File.join(source.root, 'Gemfile')
+   end
 
-    #
-    attr_reader :gem
-
-    #
-    def initialize(root: Dir.pwd, gem: nil)
-      @gem = gem || Setup::Source.search(gemroot).first
-      @root = root
-    end
-
-    def root
-      gem.valid? && gem.root || @root
-    end
-
-    def gemfile
-       File.join(root, 'Gemfile')
-    end
-
-    def dsl
+   def dsl
       @dsl ||= (
-        begin
-          require 'bundler'
+         begin
+            require 'bundler'
 
-          dsl = Bundler::Dsl.new
-          dsl.eval_gemfile(gemfile)
-          dsl
-        rescue LoadError,
-               Bundler::GemNotFound,
-               Bundler::GemfileNotFound,
-               Bundler::VersionConflict,
-               Bundler::Dsl::DSLError,
-               ::Gem::InvalidSpecificationException => e
-          nil
-        end)
-    end
+            dsl = Bundler::Dsl.new
+            dsl.eval_gemfile(gemfile)
+            dsl
+         rescue LoadError,
+                Bundler::GemNotFound,
+                Bundler::GemfileNotFound,
+                Bundler::VersionConflict,
+                Bundler::Dsl::DSLError,
+                ::Gem::InvalidSpecificationException => e
+           nil
+         end)
+   end
 
-    def lockfile
-      @lockfile ||= (
-        root && File.join(root, 'Gemfile.lock') || Tempfile.new('Gemfile.lock').path)
-    end
+   def deps
+      source.deps(:runtime)
+   end
 
-    def definition
-      dsl&.to_definition(lockfile, true)
-    end
+   def all_deps
+      source.deps
+   end
 
-    def local_deps_for *groups_in
-      groups = [ *groups_in ].flatten.map { |g| g.to_sym == DEFAULT_GROUP_NAME && [ g, :default ] || g }.flatten
+   def ruby
+      { type: source.required_ruby, version: source.required_ruby_version }
+   end
 
-      if groups.include?(:all)
-        definition.dependencies
-      else
-        definition.dependencies.select do |dep|
-          (groups.empty? && dep.groups || (dep.groups & groups)).any?
-        end
-      end.select { |dep| dep.should_include? && !dep.autorequire&.all? }
-    end
+   def rubygems
+      { version: source.required_rubygems_version }
+   end
 
-    def deps
-      if gem.valid?
-        gem.spec.dependencies.select { |dep| dep.type == :runtime }
-      else
-        local_deps_for(definition.groups - %i(development test))
-      end
-    end
+   def valid?
+      !dsl.nil?
+   end
 
-    def all_deps
-      if gem.valid?
-        gem.spec.dependencies
-      else
-        local_deps_for :all
-      end
-    end
+   protected
 
-    def ruby
-      type = dsl&.instance_variable_get(:@ruby_version)&.engine || "ruby"
-      version = gem.spec.required_ruby_version ||
-                Gem::Requirement.new(dsl&.instance_variable_get(:@ruby_version)&.engine_versions) ||
-                ">= 0"
-
-      { type: type, version: version }
-    end
-
-    def rubygems
-      { version: gem.spec.required_rubygems_version || ">= 0" }
-    end
-
-  end
-
+   #
+   def initialize source: raise
+      @source = source
+   end
 end

@@ -48,6 +48,8 @@ module Setup
     task 'clean'    , "does `make clean' for each extention"
     task 'distclean', "does `make distclean' for each extention"
     task 'uninstall', "uninstall previously installed files"
+    task 'provides' , "show provides for all or specified sources"
+    task 'requires' , "show requires for all or specffied sources"
 
     # Run command.
 
@@ -232,11 +234,8 @@ module Setup
     def optparse_install(parser, options)
       parser.separator ''
       parser.separator 'Install options:'
-      parser.on('--install_prefix PATH', 'alternate install prefix location') do |val|
-        configuration.install_prefix = val
-      end
-      parser.on('--root PATH', 'alternate chroot location') do |val|
-        configuration.root = val
+      parser.on('--chroot PATH', 'alternate chroot location') do |val|
+        configuration.chroot = val
       end
       # install prefix overrides target prefix when installing
       parser.on('--prefix PATH', 'install to alternate root location') do |val|
@@ -319,6 +318,10 @@ module Setup
         $DEBUG = true
       end
 
+      parser.on('--install_prefix PATH', 'alternate install prefix location') do |val|
+        configuration.install_prefix = val
+      end
+
       # pre action
       parser.on('--pre LIST', 'Issue rake tasks from the comma-separated list before the action') do |val|
         configuration.pre = val.split(',')
@@ -332,6 +335,36 @@ module Setup
       # ignore name list
       parser.on('--ignore-names LIST', 'Ignore sources by a name specified in the comma-separated list') do |val|
         configuration.ignore_names = val
+      end
+
+      # use source
+      parser.on('--use SOURCE', 'Apply the following options to the source named by this one') do |val|
+        configuration.current_source_name = val
+      end
+
+      # use source's set
+      parser.on('--set SET', 'Apply the following options to the set named by this one') do |val|
+        configuration.current_set = val
+      end
+
+      # infer source and its set from package name
+      parser.on('--package PACKAGE', 'Apply the following options to the set named by this one') do |val|
+        configuration.package = val
+      end
+
+      # use source's set
+      parser.on('--alias ALIASES', 'Aliases thr current source with the new names') do |val|
+        configuration.alias = val
+      end
+
+      # use source's set
+      parser.on('--join JOINS', 'Join the following sets into a single one for the current source') do |val|
+        configuration.join = val
+      end
+
+      # set custom root folder for current module
+      parser.on('--root PATH', 'Set custom root folder for current module') do |val|
+        configuration.root = val
       end
 
       parser.separator ""

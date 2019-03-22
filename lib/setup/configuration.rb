@@ -75,7 +75,7 @@ module Setup
     #option :testrunner      , :pick, 'Runner to use for testing (auto|console|tk|gtk|gtk2)'
 
     option :install_prefix  , :path, 'install to alternate root location'
-    option :root            , :path, 'a chroot location, defaulting to <install_prefix>'
+    option :chroot          , :path, 'a chroot location, defaulting to <install_prefix>'
 
     option :installdirs     , :pick, 'install location mode (auto,site,std,home,gem)'
     option :type            , :pick, 'install location mode (auto,site,std,home,gem)'
@@ -88,6 +88,11 @@ module Setup
     option :'ignore-names'  , :pick, 'ignore sources with the specified comma-separated name list'
 
     option :shebang         , :pick, 'replace a shebang line for a newly installed executables ("",auto,env,ruby,<custom>)'
+
+    option :use             , :pick, 'apply the following to the module options'
+    option :root            , :path, 'set custom root folder for current module'
+    option :aliases         , :pick, ''
+    option :joins           , :pick, ''
 
     # custom property
     #
@@ -131,8 +136,57 @@ module Setup
 
     # custom property
     #
-    def root
-      @root ||= install_prefix || '/'
+    def chroot
+      @chroot ||= install_prefix || '/'
+    end
+
+    def alias= value
+       @aliases = (@aliases || {}).merge(current_source_name => (value.split(/[:;,]/) | [ current_source_name ].compact))
+    end
+
+    def alias source_name = nil
+       name = source_name || current_source_name
+       @aliases[name] || []
+    end
+
+    def joins
+       @joins || {}
+    end
+
+    def join= value
+       @joins = joins.merge(current_source_name => value.split(/[:;,]/))
+    end
+
+    def join source_name = nil
+       joins[source_name || current_source_name]
+    end
+
+    def package= value
+       match = /^(?<prefix>gem-|ruby-)?(?<name>.*?)(?<suffix>-devel|-doc)?$/.match(value)
+       self.current_source_name = match[:name]
+       self.current_set = match[:suffix] && match[:suffix].sub('-', '') || match[:prefix] && 'lib' || 'bin'
+    end
+
+    def current_set= value
+       @current_set = !value.nil? && !value.empty? && value || nil
+    end
+
+    def current_set
+       join&.include?(@current_set) && join || @current_set
+    end
+
+    def current_source_name= value
+       @current_source_name = !value.nil? && !value.empty? && (
+          aliases = (@aliases || {}).values.find { |a| a.include?(value) }
+          (@aliases || {}).rassoc(aliases)&.first || value) || nil
+    end
+
+    def current_source_name
+       @current_source_name
+    end
+
+    def root= value
+       @root = (root || {}).merge(current_source_name => value)
     end
 
     # Turn all of CONFIG into methods.

@@ -27,7 +27,7 @@ module Setup
   # As of v5.1.0, Setup.rb no longer recognizes the VERSION file
   #
   class Project
-     attr_reader :options, :config
+     attr_reader :config
 
     #
     def initialize options = {}
@@ -42,7 +42,7 @@ module Setup
 
       all_sources.each do |source|
          info = "#{source.type} '#{source.name}' at #{source.root}"
-         puts source.valid? && is_enabled?(source) && info || "[ #{info} ]"
+         $stderr.puts source.valid? && is_enabled?(source) && info || "[ #{info} ]"
       end
 
 
@@ -150,6 +150,27 @@ module Setup
       Dir.glob(File.join(rootdir, glob), flags).first
     end
 
-  end
+    def chroot
+       File.expand_path(config.install_prefix)
+    end
 
+    def options
+       @options.merge(chroot: chroot)
+    end
+
+      # Returns an install target
+      def targets
+         @targets ||= (
+            sources.map do |source|
+               case source
+               when Setup::Source::Gem
+                  Setup::Target::Gem.new(source: source, options: options)
+               when Setup::Source::Gemfile
+                  Setup::Target::Site.new(source: source, options: options)
+               when Setup::Source::Rakefile
+                  Setup::Target::Site.new(source: source, options: options)
+               end
+            end)
+      end
+  end
 end
