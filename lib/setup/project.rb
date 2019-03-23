@@ -55,6 +55,9 @@ module Setup
         if file = find('.setup/loadpath')
           @loadpath = File.read(file).strip
         end
+
+        # post create hook
+        autoalias
     end
 
     # The name of the package, used to install docs in system doc/ruby-{name}/ location.
@@ -156,6 +159,16 @@ module Setup
 
     def options
        @options.merge(chroot: chroot)
+    end
+
+    def autoalias
+       sources.each do |source|
+          name = source.name.gsub(/[_-]+/, '-')
+          if name != source.name
+             config.current_source_name = source.name
+             config.alias = name
+          end
+       end
     end
 
       # Returns an install target

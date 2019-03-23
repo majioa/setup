@@ -141,12 +141,16 @@ module Setup
     end
 
     def alias= value
-       @aliases = (@aliases || {}).merge(current_source_name => (value.split(/[:;,]/) | [ current_source_name ].compact))
+       aliases[current_source_name] = (value.split(/[:;,]/) | [ current_source_name ].compact)
     end
 
     def alias source_name = nil
        name = source_name || current_source_name
-       @aliases[name] || []
+       aliases[name] || []
+    end
+
+    def aliases
+       @aliases || {}
     end
 
     def joins
