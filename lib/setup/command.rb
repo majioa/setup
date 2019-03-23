@@ -132,9 +132,13 @@ module Setup
     def pre task
       if defined? Rake
         begin
+          stdout = $stdout
+          $stdout = $stderr
           load('Rakefile')
         rescue Exception => e
           $stderr.puts("ERROR[#{e.class}]: #{e.message}")
+        ensure
+          $stdout = stdout
         end
 
         configuration.pre&.map do |task_name|

@@ -10,9 +10,13 @@ module Setup::Gemspec::Hoe
          if defined? Hoe
             if !hoe && File.exist?(rakefile)
                begin
+                  stdout = $stdout
+                  $stdout = $stderr
                   load rakefile
                rescue Exception => e
                   $stderr.puts "ERROR[#{e.class}]: #{e.message}"
+               ensure
+                  $stdout = stdout
                end
             end
 
