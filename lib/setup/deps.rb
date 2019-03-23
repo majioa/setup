@@ -62,7 +62,7 @@ class Setup::Deps
             cond && (req_in.is_a?(Proc) && req_in[self, target] || req_in) || []
          end.flatten
 
-         [ set, reqs ]
+         [ set, reqs.uniq ]
       end.to_h
    end
 

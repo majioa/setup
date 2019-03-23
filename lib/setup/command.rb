@@ -358,7 +358,7 @@ module Setup
 
       # use source's set
       parser.on('--alias ALIASES', 'Aliases thr current source with the new names') do |val|
-        configuration.alias = val
+        configuration.current_alias = val
       end
 
       # use source's set

@@ -140,21 +140,20 @@ module Setup
       @chroot ||= install_prefix || '/'
     end
 
-    def alias= value
-       aliases[current_source_name] = (value.split(/[:;,]/) | [ current_source_name ].compact)
+    def current_alias= value
+       aliases[current_source_name] = current_alias | value.split(/[:;,]/)
     end
 
-    def alias source_name = nil
-       name = source_name || current_source_name
-       aliases[name] || []
+    def current_alias
+       aliases[current_source_name] || [ current_source_name ].compact
     end
 
     def aliases
-       @aliases || {}
+       @aliases ||= {}
     end
 
     def joins
-       @joins || {}
+       @joins ||= {}
     end
 
     def join= value
@@ -181,8 +180,8 @@ module Setup
 
     def current_source_name= value
        @current_source_name = !value.nil? && !value.empty? && (
-          aliases = (@aliases || {}).values.find { |a| a.include?(value) }
-          (@aliases || {}).rassoc(aliases)&.first || value) || nil
+          als = aliases.values.find { |a| a.include?(value) }
+          aliases.rassoc(als)&.first || value) || nil
     end
 
     def current_source_name

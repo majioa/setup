@@ -166,7 +166,7 @@ module Setup
           name = source.name.gsub(/[_-]+/, '-')
           if name != source.name
              config.current_source_name = source.name
-             config.alias = name
+             config.current_alias = name
           end
        end
     end
