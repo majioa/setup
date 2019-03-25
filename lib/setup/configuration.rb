@@ -141,7 +141,7 @@ module Setup
     end
 
     def current_alias= value
-       aliases[current_source_name] = current_alias | value.split(/[:;,]/)
+       aliases[current_source_name] = current_alias | (value.is_a?(Array) && value || value.split(/[:;,]/))
     end
 
     def current_alias

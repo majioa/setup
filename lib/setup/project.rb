@@ -168,6 +168,9 @@ module Setup
              config.current_source_name = source.name
              config.current_alias = name
           end
+
+          # autoaliasing binaries
+          config.current_alias = source.binfiles
        end
     end
 
