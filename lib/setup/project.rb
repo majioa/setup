@@ -163,7 +163,7 @@ module Setup
 
     def autoalias
        sources.each do |source|
-          name = source.name.gsub(/[_-]+/, '-')
+          name = source.name.gsub(/[_\-\.]+/, '-')
           if name != source.name
              config.current_source_name = source.name
              config.current_alias = name
