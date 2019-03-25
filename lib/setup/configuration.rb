@@ -160,8 +160,8 @@ module Setup
        @joins = joins.merge(current_source_name => value.split(/[:;,]/))
     end
 
-    def join source_name = nil
-       joins[source_name || current_source_name]
+    def join
+       joins[current_source_name] || joins[nil] || []
     end
 
     def package= value
@@ -175,7 +175,7 @@ module Setup
     end
 
     def current_set
-       join&.include?(@current_set) && join || @current_set
+       join.include?(@current_set) && join || @current_set
     end
 
     def current_source_name= value
