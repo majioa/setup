@@ -100,7 +100,20 @@ class Setup::Deps
 
    def deps_ruby_exec target
 #      require 'pry'; binding.pry
-      target.source.binfiles.map { |file| File.join(target.source.root, target.source.bindir, file) }.select { |file| File.exist?(file)}.map { |file| IO.read(file).split("\n").first }.uniq.map {|file| /#!(?<exec>\S+)/.match(file)[:exec] }
+      target.source.binfiles.map do |file|
+         File.join(target.source.root, target.source.bindir, file)
+      end.select do |file|
+         File.exist?(file)
+      end.map do |file|
+         IO.read(file).split("\n").first
+      end.uniq.map do |line|
+         if match = /#!\s*(?<exec>\S+)/.match(line)
+            match[:exec]
+         else
+            $stderr.puts "Invalid shebang line '#{line}'"
+            nil
+         end
+      end.uniq
    end
 
    def deps_execs target
