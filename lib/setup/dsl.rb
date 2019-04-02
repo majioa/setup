@@ -21,7 +21,7 @@ class Setup::DSL
          begin
             require 'bundler'
 
-            dsl = Bundler::Dsl.new
+            dsl = Dir.chdir(source.root) { Bundler::Dsl.new }
             dsl.eval_gemfile(gemfile)
             dsl
          rescue LoadError,
