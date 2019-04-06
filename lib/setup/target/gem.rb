@@ -4,7 +4,7 @@ class Setup::Target::Gem
    attr_reader :source, :home, :options
 
    def root
-      source.root
+      chroot
    end
 
    def public_executables

@@ -9,7 +9,7 @@ class Setup::Deps
          proc { |target| target.source.valid? }                    => proc { |this, target| this.deps_gem_dsl(target.source.dsl) },
       },
       'bin' => {
-         proc { |target| target.source.binfiles.any? }             => proc { |this, target| this.deps_ruby_exec(target) },
+         proc { |target| target.public_executables.any? }          => proc { |this, target| this.deps_ruby_exec(target) },
          proc { |target| target.source.binfiles.any? &&
                          target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_gem(target) },
       },
@@ -99,13 +99,16 @@ class Setup::Deps
    end
 
    def deps_ruby_exec target
-      target.source.binfiles.map do |file|
-         File.join(target.source.root, target.source.bindir, file)
-      end.select do |file|
-         File.exist?(file)
+      target.public_executables.map do |file|
+         File.join(target.root, file)
       end.map do |file|
-         IO.read(file, mode: 'rb').split("\n").first
-      end.uniq.map do |line|
+         if File.symlink?(file)
+            realfile = File.readlink(file)
+            IO.read(File.join(target.root, realfile), mode: 'rb').split("\n").first
+         elsif File.exist?(file)
+            IO.read(file, mode: 'rb').split("\n").first
+         end
+      end.compact.uniq.map do |line|
          if match = /#!\s*(?<exec>\S+)/.match(line)
             match[:exec]
          else
