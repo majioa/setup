@@ -162,16 +162,22 @@ module Setup
     end
 
     def autoalias
+       source_names = sources.map(&:name)
+
        sources.each do |source|
+          config.current_source_name = source.name
+
           name = source.name.gsub(/[_\-\.]+/, '-')
           if name != source.name
-             config.current_source_name = source.name
              config.current_alias = name
           end
 
-          # autoaliasing binaries
-          config.current_alias = source.binfiles
+          # autoaliasing binaries to the source name but when no other source name matches to a binfile
+          config.current_alias = source.binfiles - (source.binfiles & source_names)
        end
+
+       # turn current source name to common
+       config.current_source_name = nil
     end
 
       # Returns an install target
