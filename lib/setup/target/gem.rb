@@ -32,7 +32,9 @@ class Setup::Target::Gem
    end
 
    def extdir
-      File.join(home, 'extensions', RbConfig::CONFIG["sitearch"], ::Gem.extension_api_version, source.fullname)
+      arch = [ ::Gem.platforms.last.cpu, ::Gem.platforms.last.os ].join('-')
+
+      File.join(home, 'extensions', arch, ::Gem.extension_api_version, source.fullname)
    end
 
    def ridir
