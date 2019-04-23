@@ -33,7 +33,7 @@ class Setup::Deps
 
    def targets
       if name = project.config.current_source_name
-         project.targets.select { |target| target.source.name == name }
+         project.targets.select { |target| target.source.has_name?(name) }
       else
          project.targets
       end

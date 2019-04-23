@@ -1,7 +1,7 @@
 require 'setup/source'
 
 class Setup::Source::Base
-   attr_reader :root, :dsl, :replace_list
+   attr_reader :root, :dsl, :replace_list, :aliases
 
    def fullname
       @fullname ||= root.split('/').last
@@ -148,6 +148,7 @@ class Setup::Source::Base
       {
          type: type,
          root: root,
+         aliases: aliases,
       }
    end
 
@@ -186,6 +187,10 @@ class Setup::Source::Base
       end
    end
 
+   def has_name? name
+      self.name == name || aliases && aliases.include?(name)
+   end
+
    protected
 
    def if_exist dir
@@ -201,8 +206,9 @@ class Setup::Source::Base
    end
 
    #
-   def initialize root: Dir.pwd, replace_list: {}
-      @root = root
+   def initialize root: nil, replace_list: {}, aliases: nil
+      @root = root || Dir.pwd
       @replace_list = replace_list || {}
+      @aliases = aliases
    end
 end

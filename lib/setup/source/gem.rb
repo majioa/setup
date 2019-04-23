@@ -21,6 +21,7 @@ class Setup::Source::Gem < Setup::Source::Base
                     spec: spec,
                     mode: options[:mode],
                     version: options[:version_replaces][spec.name] || options[:version_replaces][nil],
+                    aliases: (options[:aliases][nil] || []) | (options[:aliases][spec.name] || []),
                     replace_list: options[:gem_version_replace]) || nil
             end
          end.compact
@@ -233,13 +234,10 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def to_h
-      {
-         type: 'gem',
+      super.merge(
          spec: spec.to_yaml,
-         root: root,
          mode: mode,
-         replace_list: replace_list
-      }
+         replace_list: replace_list)
    end
 
    def required_ruby_version
@@ -269,11 +267,11 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    #
-   def initialize root: nil, spec: nil, mode: nil, replace_list: {}, version: nil
+   def initialize root: nil, spec: nil, mode: nil, replace_list: {}, version: nil, aliases: nil
+      super(root: root, replace_list: replace_list, aliases: aliases)
+
       @spec = spec.is_a?(String) && YAML.load(spec) || spec
-      @root = root || Dir.pwd
       @mode = mode
-      @replace_list = replace_list || {}
       @spec.version = Gem::Version.new(version) if version
    end
 end

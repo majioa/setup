@@ -32,8 +32,8 @@ module Setup
     #
     def initialize options = {}
       @rootdir  = options.delete(:rootdir)
-      self.sources  = options.delete(:sources)
       @config   = options.delete(:config) || raise
+      self.sources  = options.delete(:sources)
       @options  = options
 
       @name     = root_source&.name
