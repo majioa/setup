@@ -1,4 +1,4 @@
-class Setup::Target::Site
+class Setup::Target::Ruby
    attr_reader :home
 
    def libdir
