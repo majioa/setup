@@ -24,6 +24,8 @@ module Setup
 
     #
     def compile
+      chrpath_path = `which chrpath`.strip
+
       project.sources.each do |source|
         source.extfiles.each do |extfile|
           dir = File.join(source.root, File.dirname(extfile))
@@ -38,6 +40,9 @@ module Setup
               make('install', DESTDIR: File.join(source.root, ".so.#{source.name}"))
               Dir.glob(File.join(source.root, ".so.#{source.name}/**/*.so")).each do |file|
                 FileUtils.touch(File.join(File.dirname(file), 'gem.build_complete'))
+
+                # remove RPATH if any
+                bash(chrpath_path, '-d', file) if !chrpath_path.empty?
               end
             end
           end
