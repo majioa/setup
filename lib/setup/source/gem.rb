@@ -20,6 +20,7 @@ class Setup::Source::Gem < Setup::Source::Base
                     self.new(root: File.dirname(f),
                     spec: spec,
                     mode: options[:mode],
+                    version: options[:version_replaces][spec.name] || options[:version_replaces][nil],
                     replace_list: options[:gem_version_replace]) || nil
             end
          end.compact
@@ -268,10 +269,11 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    #
-   def initialize root: nil, spec: nil, mode: nil, replace_list: {}
+   def initialize root: nil, spec: nil, mode: nil, replace_list: {}, version: nil
       @spec = spec.is_a?(String) && YAML.load(spec) || spec
       @root = root || Dir.pwd
       @mode = mode
       @replace_list = replace_list || {}
+      @spec.version = Gem::Version.new(version) if version
    end
 end

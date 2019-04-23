@@ -27,7 +27,7 @@ module Setup
   # As of v5.1.0, Setup.rb no longer recognizes the VERSION file
   #
   class Project
-     attr_reader :config
+     attr_reader :config, :version_replaces
 
     #
     def initialize options = {}

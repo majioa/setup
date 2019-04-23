@@ -91,6 +91,7 @@ module Setup
 
     option :use             , :pick, 'apply the following to the module options'
     option :root            , :path, 'set custom root folder for current module'
+    option :'version-replace' , :pick, 'replace version for the current source explicitly'
     option :aliases         , :pick, ''
     option :joins           , :pick, ''
 
@@ -154,6 +155,18 @@ module Setup
 
     def joins
        @joins ||= {}
+    end
+
+    def version_replaces
+       @version_replaces ||= {}
+    end
+
+    def version_replace= value
+       @version_replaces = version_replaces.merge(current_source_name => value.to_s.strip)
+    end
+
+    def version_replace
+       version_replaces[current_source_name] || version_replaces[nil] || []
     end
 
     def join= value

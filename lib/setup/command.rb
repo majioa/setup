@@ -336,6 +336,11 @@ module Setup
         configuration.gem_version_replace = val
       end
 
+      # gem version replace
+      parser.on('--version-replace VERSION', 'Replace version for the current source explicitly') do |val|
+        configuration.version_replace = val
+      end
+
       # ignore name list
       parser.on('--ignore-names LIST', 'Ignore sources by a name specified in the comma-separated list') do |val|
         configuration.ignore_names = val
