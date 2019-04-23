@@ -1,14 +1,13 @@
 module Setup::Gemspec
    class << self
       def kinds
-         %i(Specific Rakefile Hoe Olddoc Cmake Gem)
+         %i(Specific Rakefile Olddoc Cmake Gem)
       end
    end
 end
 
 require 'setup/gemspec/specific'
 require 'setup/gemspec/rakefile'
-require 'setup/gemspec/hoe'
 require 'setup/gemspec/olddoc'
 require 'setup/gemspec/cmake'
 require 'setup/gemspec/gem'

@@ -1,6 +1,11 @@
 module Setup::Gemspec::Rakefile
    RE = /\/Rakefile$/
 
+   MATCHERS = {
+      proc { defined? Hoe } => proc { ObjectSpace.each_object(Hoe).map { |h| h.spec }.compact.first },
+      proc { true } => proc { |space| space.constants.map {|x| space.const_get(x) }.find { |x| x.is_a?(Gem::Specification) } }
+   }
+
    class << self
       def parse rakefile
          if File.file?(rakefile)
@@ -21,8 +26,9 @@ module Setup::Gemspec::Rakefile
             rescue Exception => e
                $stderr.puts "[setup.rb] -> #{e.class}: #{e.message}"
             else
-               space = const_get(module_name)
-               space.constants.map {|x| space.const_get(x) }.find { |x| x.is_a?(Gem::Specification) }
+               MATCHERS.reduce(nil) do |spec, (query, speccer)|
+                  spec || query[] && speccer[const_get(module_name)] || nil
+               end
             ensure
                $stdout = stdout
             end
