@@ -13,10 +13,8 @@ module Setup
           dir = File.join(source.root, File.dirname(extfile))
 
           Dir.chdir(dir) do
-            if !FileUtils.uptodate?('Makefile', ['extconf.rb'])
-              puts "[#{dir}]$ ruby extconf.rb -- --use-system-libraries --enable-debug-build"
-              ruby("extconf.rb", '--', '--use-system-libraries', '--enable-debug-build')
-            end
+            puts "[#{dir}]$ ruby extconf.rb -- --use-system-libraries --enable-debug-build"
+            ruby("extconf.rb", '--', '--use-system-libraries', '--enable-debug-build')
           end
         end
       end
