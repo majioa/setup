@@ -1,3 +1,6 @@
+# Hoe based gemspec detection module
+# Sample gems are: hoe, racc
+#
 module Setup::Gemspec::Hoe
    RE = /\/Rakefile$/
 

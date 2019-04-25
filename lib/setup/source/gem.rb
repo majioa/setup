@@ -12,30 +12,31 @@ class Setup::Source::Gem < Setup::Source::Base
       def search dir, options = {}
          gemspecs = Setup::Gemspec.kinds.map { |const| Setup::Gemspec.const_get(const) }
 
-         dir_hash = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).map do |f|
+         gemspec_files = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).map do |f|
             gemspecs.map do |gemspec|
                gemspec::RE =~ f && [ gemspec, f ] || nil
             end
          end.flatten(1).compact.sort_by do |(gemspec, _)|
             gemspecs.index(gemspec)
-         end.group_by do |(_, f)|
-            File.dirname(f)
          end
 
-         specs = dir_hash.map do |(dir, gemspecs)|
-            gemspecs.to_h.reduce(nil) do |spec, (gemspec, f)|
-               spec || (spec = gemspec.parse(f)) && #(require 'pry';binding.pry; true) &&
-                        spec.platform == 'ruby' && #(require 'pry';binding.pry; true) &&
-                        self.new(root: dir,
-                                 spec: spec,
-                                 mode: options[:mode],
-                                 version: options[:version_replaces][spec.name] || options[:version_replaces][nil],
-                                 aliases: (options[:aliases][nil] || []) | (options[:aliases][spec.name] || []),
-                                 replace_list: options[:gem_version_replace]) || nil
-            end
-         end.compact
+         specs = gemspec_files.map do |gemspec, f|
+            #require 'pry';binding.pry
+            new_if_valid(gemspec.parse(f), File.dirname(f), options)
+         end.flatten(1).compact
 
          specs.map { |x| x.name }.uniq.map { |name| specs.find { |spec| spec.name == name } }
+      end
+
+      def new_if_valid spec, dir, options = {}
+         if spec && spec.platform == 'ruby'
+            self.new(root: dir,
+                     spec: spec,
+                     mode: options[:mode],
+                     version: options[:version_replaces][spec.name] || options[:version_replaces][nil],
+                     aliases: (options[:aliases][nil] || []) | (options[:aliases][spec.name] || []),
+                     replace_list: options[:gem_version_replace])
+         end
       end
    end
 
