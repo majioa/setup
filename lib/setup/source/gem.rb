@@ -12,17 +12,26 @@ class Setup::Source::Gem < Setup::Source::Base
       def search dir, options = {}
          gemspecs = Setup::Gemspec.kinds.map { |const| Setup::Gemspec.const_get(const) }
 
-         specs = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).map do |f|
-            gemspecs.reduce(nil) do |s, gemspec|
-               s || gemspec::RE =~ f &&
-                   (spec = gemspec.parse(f)) && #(require 'pry';binding.pry; true) &&
-                    spec.platform == 'ruby' && #(require 'pry';binding.pry; true) &&
-                    self.new(root: File.dirname(f),
-                    spec: spec,
-                    mode: options[:mode],
-                    version: options[:version_replaces][spec.name] || options[:version_replaces][nil],
-                    aliases: (options[:aliases][nil] || []) | (options[:aliases][spec.name] || []),
-                    replace_list: options[:gem_version_replace]) || nil
+         dir_hash = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).map do |f|
+            gemspecs.map do |gemspec|
+               gemspec::RE =~ f && [ gemspec, f ] || nil
+            end
+         end.flatten(1).compact.sort_by do |(gemspec, _)|
+            gemspecs.index(gemspec)
+         end.group_by do |(_, f)|
+            File.dirname(f)
+         end
+
+         specs = dir_hash.map do |(dir, gemspecs)|
+            gemspecs.to_h.reduce(nil) do |spec, (gemspec, f)|
+               spec || (spec = gemspec.parse(f)) && #(require 'pry';binding.pry; true) &&
+                        spec.platform == 'ruby' && #(require 'pry';binding.pry; true) &&
+                        self.new(root: dir,
+                                 spec: spec,
+                                 mode: options[:mode],
+                                 version: options[:version_replaces][spec.name] || options[:version_replaces][nil],
+                                 aliases: (options[:aliases][nil] || []) | (options[:aliases][spec.name] || []),
+                                 replace_list: options[:gem_version_replace]) || nil
             end
          end.compact
 

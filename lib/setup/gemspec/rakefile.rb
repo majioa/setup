@@ -8,7 +8,7 @@ module Setup::Gemspec::Rakefile
 
    class << self
       def parse rakefile
-         if File.file?(rakefile)
+         if rakefile && File.file?(rakefile)
             begin
                stdout = $stdout
                $stdout = $stderr

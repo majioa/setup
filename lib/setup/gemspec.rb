@@ -1,7 +1,7 @@
 module Setup::Gemspec
    class << self
       def kinds
-         %i(Specific Olddoc Rakefile Cmake Gem)
+         %i(Specific Rakefile Olddoc Cmake Gem)
       end
    end
 end
