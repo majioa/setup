@@ -298,8 +298,8 @@ module Setup
        content = IO.binread(file)
        lines_in = content.split("\n")
 
-       if shebang && shebang_in = shebang_for(lines_in.first)
-          lines = [ shebang_line(shebang) ] + lines_in[1..-1]
+       if shebang && args_in = shebang_args(lines_in.first)
+          lines = [ shebang_line(shebang, args_in) ] + lines_in[1..-1]
           File.open(dest_file, "wb") { |f| f.write(lines.join("\n")) }
           FileUtils.chmod(mode, dest_file)
        else
@@ -307,34 +307,37 @@ module Setup
        end
     end
 
-    def shebang_line shebang
-       "#!" + case shebang
-       when 'auto'
-          [ path_to('ruby') ]
-       when 'ruby'
-          [ path_to('ruby') ]
-       when 'env'
-          [ path_to('env'), 'ruby' ]
-       else
-          [ shebang ]
-       end.join(" ")
-    end
+      def shebang_line shebang, args_in = nil
+         "#!" + (case shebang
+            when 'auto'
+               [ path_to('ruby') ]
+            when 'ruby'
+               [ path_to('ruby') ]
+            when 'env'
+               [ path_to('env'), '-S', 'ruby' ]
+            else
+               [ shebang ]
+            end + args_in).compact.join(" ")
+      end
 
-    def path_to shebang
-       case shebang
-       when 'ruby'
-          File.join(RbConfig::CONFIG['bindir'], RbConfig::CONFIG['ruby_install_name'])
-       when 'env'
-          File.join(RbConfig::CONFIG['bindir'], 'env')
-       else
-          ''
-       end
-   end
+      def path_to shebang
+         case shebang
+         when 'ruby'
+            File.join(RbConfig::CONFIG['bindir'], RbConfig::CONFIG['ruby_install_name'])
+         when 'env'
+            File.join(RbConfig::CONFIG['bindir'], 'env')
+         else
+            ''
+         end
+      end
 
+      def shebang_args line_in
+         line = /^#!.*/.match(line_in)&.[](0) || ''
 
-    def shebang_for line
-       /^#!.*/.match(line)&.[](0)
-    end
+         line.split(/\s+/).reduce(nil) do |res, x|
+            res && res << x || x =~ /^-/ && [ x ] || nil
+         end
+      end
 
     # Install project files.
     def install_files(source_files, dest_dir, options = {})
