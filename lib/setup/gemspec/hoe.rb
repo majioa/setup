@@ -1,9 +1,9 @@
-module Setup::Gemspec::Rakefile
+module Setup::Gemspec::Hoe
    RE = /\/Rakefile$/
 
    class << self
       def parse rakefile
-         if rakefile && File.file?(rakefile)
+         if rakefile && File.file?(rakefile) && defined? Hoe
             begin
                stdout = $stdout
                $stdout = $stderr
@@ -14,15 +14,16 @@ module Setup::Gemspec::Rakefile
                mod_code = <<-END
                   module #{module_name}
                      extend(Rake::DSL)
-                     class_eval(IO.read('#{rakefile}'))
+                     # NOTE this forces not to share namespace but avoid exception when calling
+                     # main space methods, see Rakefile of racc gem
+                     load('#{rakefile}')
                   end
                END
                module_eval(mod_code)
             rescue Exception => e
                $stderr.puts "[setup.rb] -> #{e.class}: #{e.message}"
             else
-               space = const_get(module_name)
-               space.constants.map {|x| space.const_get(x) }.find { |x| x.is_a?(Gem::Specification) }
+               ObjectSpace.each_object(Hoe).map { |h| h.spec }.compact.first
             ensure
                $stdout = stdout
             end
