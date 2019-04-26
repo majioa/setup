@@ -14,7 +14,11 @@ module Setup::Gemspec::Rakefile
                mod_code = <<-END
                   module #{module_name}
                      extend(Rake::DSL)
-                     class_eval(IO.read('#{rakefile}'))
+
+                     # in some cases __dir__ is nil inside the Rakefile, but should not
+                     __dir__ ||= '.'
+
+                     eval(IO.read('#{rakefile}'))
                   end
                END
                module_eval(mod_code)
