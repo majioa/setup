@@ -307,7 +307,7 @@ module Setup
        end
     end
 
-      def shebang_line shebang, args_in = nil
+      def shebang_line shebang, args_in = []
          "#!" + (case shebang
             when 'auto'
                [ path_to('ruby') ]
@@ -336,7 +336,7 @@ module Setup
 
          line.split(/\s+/).reduce(nil) do |res, x|
             res && res << x || x =~ /^-/ && [ x ] || nil
-         end
+         end || []
       end
 
     # Install project files.
