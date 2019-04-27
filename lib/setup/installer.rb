@@ -336,7 +336,7 @@ module Setup
 
          line.split(/\s+/).reduce(nil) do |res, x|
             res && res << x || x =~ /^-/ && [ x ] || nil
-         end
+         end || []
       end
 
     # Install project files.
