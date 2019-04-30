@@ -1,6 +1,7 @@
 #
 # Ruby Extensions
 #
+Encoding.default_external = Encoding::UTF_8
 
 # Is this needed any more?
 class << File #:nodoc: all
@@ -42,7 +43,7 @@ module Kernel
 
     res = __old_system_call(cmd)
 
-    if tokens.first == 'git' && tokens[1] == 'ls-files' && res.empty?
+    if res.empty? && tokens.first == 'git' && tokens[1] == 'ls-files'
       mask = tokens[2..-1].select { |t| t !~ /^-/ }.first&.sub('*', '**/*') || '**/*'
       list = Dir.glob(mask, File::FNM_DOTMATCH).select { |x| File.file?(x) }
       char = tokens.include?('-z') && "\0" || "\n"
