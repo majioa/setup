@@ -52,7 +52,7 @@ class Setup::Source::Gem < Setup::Source::Base
       spec && spec.version.to_s
    end
 
-   def gemspec_file
+   def gemspec_path
       gemspec_file = Tempfile.new('gem.')
       gemspec_file.puts(dsl.to_ruby)
       gemspec_file.rewind

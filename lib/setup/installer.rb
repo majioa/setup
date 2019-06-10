@@ -29,6 +29,7 @@ module Setup
         install_include
 #        install_etc
         install_gemspec
+        install_gemfile
 #        prune_install_record
       end
     end
@@ -184,12 +185,28 @@ module Setup
 
       targets.each do |target|
         if target.source.is_a?(Setup::Source::Gem)
-           io.puts "  - [#{target.source.name}]" unless quiet?
+          io.puts "  - [#{target.source.name}]" unless quiet?
 
-          novel_install_files([target.source.gemspec_file],
+          novel_install_files([target.source.gemspec_path],
                               target.specdir,
                               options.merge(mode: 0644,
                                             as: "#{target.source.fullname}.gemspec"))
+        end
+      end
+    end
+
+    # Install specification.
+    #
+    def install_gemfile
+      io.puts "* gemfile ->" unless quiet?
+
+      targets.each do |target|
+        if target.source.is_a?(Setup::Source::Gemfile)
+          io.puts "  - [#{target.source.name}]" unless quiet?
+
+          novel_install_files([target.source.gemfile_path],
+                              target.root,
+                              options.merge(mode: 0644, as: "Gemspec"))
         end
       end
     end

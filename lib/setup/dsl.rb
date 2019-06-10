@@ -60,6 +60,14 @@ class Setup::DSL
       spec.to_ruby
    end
 
+   def to_gemfile
+      deps = source.deps.replace(deps_but(source.deps, replace_list))
+      deps.map do |dep|
+         reqs = dep.requirement.requirements.map {|r| "'#{r[0]} #{r[1]}'" }.join(", ")
+         "gem '#{dep.name}', #{reqs}"
+      end.join("\n")
+   end
+
    protected
 
    def deps_but deps, replace_list
