@@ -178,7 +178,7 @@ module Setup
     end
 
     def package= value
-       match = /^(?<prefix>gem-|ruby-)?(?<name>.*?)(?<suffix>-devel|-doc)?$/.match(value)
+       match = /^(?<prefix>gem-|ruby-|rails-engine)?(?<name>.*?)(?<suffix>-devel|-doc)?$/.match(value)
        self.current_source_name = match[:name]
        self.current_set = match[:suffix] && match[:suffix].sub('-', '') || match[:prefix] && 'lib' || 'bin'
     end
