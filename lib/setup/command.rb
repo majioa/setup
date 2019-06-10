@@ -136,7 +136,7 @@ module Setup
           $stdout = $stderr
           load('Rakefile')
         rescue Exception => e
-          $stderr.puts("ERROR[#{e.class}]: #{e.message}")
+          $stderr.puts("WARN [#{e.class}]: #{e.message}")
         ensure
           $stdout = stdout
         end

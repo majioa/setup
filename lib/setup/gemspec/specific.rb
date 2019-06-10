@@ -11,7 +11,7 @@ module Setup::Gemspec::Specific
 
          spec
       rescue Exception => e
-         $stderr.puts "ERROR[#{e.class}]: #{e.message}"
+         $stderr.puts "WARN [#{e.class}]: #{e.message}"
       end
 
       def fix_preloaded_for file

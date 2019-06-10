@@ -9,7 +9,7 @@ module Setup::Gemspec::Gem
 
          spec
       rescue Exception => e
-         $stderr.puts "ERROR[#{e.class}]: #{e.message}"
+         $stderr.puts "WARN [#{e.class}]: #{e.message}"
       end
    end
 end
