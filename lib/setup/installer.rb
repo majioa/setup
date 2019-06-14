@@ -205,8 +205,8 @@ module Setup
           io.puts "  - [#{target.source.name}]" unless quiet?
 
           novel_install_files([target.source.gemfile_path],
-                              target.root,
-                              options.merge(mode: 0644, as: "Gemspec"))
+                              target.datadir,
+                              options.merge(mode: 0644, as: "Gemfile"))
         end
       end
     end
