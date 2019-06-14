@@ -5,6 +5,7 @@ require 'yaml'
 
 class Setup::Source::Gem < Setup::Source::Base
    BIN_IGNORES = %w(test)
+   OPTION_KEYS = %i(root spec mode version replace_list aliases)
 
    attr_reader :root, :spec, :mode
 
@@ -246,8 +247,7 @@ class Setup::Source::Gem < Setup::Source::Base
    def to_h
       super.merge(
          spec: spec.to_yaml,
-         mode: mode,
-         replace_list: replace_list)
+         mode: mode)
    end
 
    def required_ruby_version

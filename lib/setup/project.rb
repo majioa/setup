@@ -104,13 +104,27 @@ module Setup
        @sources = value&.map do |source_in|
           case source_in.delete(:type)
           when 'rakefile'
-             Setup::Source::Rakefile.new(source_in)
+             new_source(Setup::Source::Rakefile, source_in)
           when 'gemfile'
-             Setup::Source::Gemfile.new(source_in)
+             new_source(Setup::Source::Gemfile, source_in)
           when 'gem'
-             Setup::Source::Gem.new(source_in)
+             new_source(Setup::Source::Gem, source_in)
           end
        end
+    end
+
+    # options for the object
+    #
+    def new_source type, object_options_in
+       type.new(options_for(type, object_options_in))
+    end
+
+    # options for the object
+    #
+    def options_for type, object_options_in
+       option_keys = type.const_get(:OPTION_KEYS) || []
+       options_in = config.to_h.map { |(key, value)| [ key.to_sym, value ] }.to_h.merge(object_options_in)
+       option_keys.map { |key| [ key, options_in[ key ]] }.to_h
     end
 
     # Returns a root source

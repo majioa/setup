@@ -1,6 +1,8 @@
 require 'setup/source'
 
 class Setup::Source::Base
+   OPTION_KEYS = %i(root replace_list aliases)
+
    attr_reader :root, :dsl, :replace_list, :aliases
 
    def fullname
@@ -149,6 +151,7 @@ class Setup::Source::Base
          type: type,
          root: root,
          aliases: aliases,
+         replace_list: replace_list,
       }
    end
 
