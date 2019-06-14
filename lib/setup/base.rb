@@ -73,9 +73,7 @@ module Setup
 
     # Shellout executation.
     def bash(*args_in)
-      $stderr.puts args_in.join(' ') if trace?
-      args = args_in.map {|x|x.is_a?(Hash) && x.map {|k, v| [k.to_s, v] }.to_h || x }
-      system(*args) or raise RuntimeError, "system(#{args.map{|a| a.inspect }.join(' ')}) failed"
+      self.class.bash(*args_in)
     end
 
     # DEPRECATE
@@ -134,6 +132,20 @@ module Setup
       Dir.rmdir(path)
     end
 
+    class << self
+      def trace? ; @trace ; end
+
+      # Shellout executation.
+      def bash(*args_in)
+        $stderr.puts args_in.join(' ') if trace?
+        args = args_in.map {|x|x.is_a?(Hash) && x.map {|k, v| [k.to_s, v] }.to_h || x }
+        unless res = system(*args)
+          $stderr.puts "ERROR: Shell command '#{args.join(' ')}' execution error"
+          system(*args) or raise RuntimeError, "system(#{args.map{|a| a.inspect }.join(' ')}) failed"
+        end
+      end
+    end
+
   end
 
   #
@@ -141,4 +153,3 @@ module Setup
   end
 
 end
-

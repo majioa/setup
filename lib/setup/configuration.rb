@@ -94,6 +94,7 @@ module Setup
     option :'version-replace' , :pick, 'replace version for the current source explicitly'
     option :aliases         , :pick, ''
     option :joins           , :pick, ''
+    option :compat          , :pick, 'generate the configations but use compatible script instead to act'
 
     # custom property
     #

@@ -12,7 +12,7 @@ class Setup::Target::Site
    # dirs
 
    def libdir
-      File.join(RbConfig::CONFIG['sitelibdir'], source.name)
+      File.join(RbConfig::CONFIG['sitelibdir'])
    end
 
    def lbindir
@@ -24,11 +24,15 @@ class Setup::Target::Site
    end
 
    def extdir
-      File.join(RbConfig::CONFIG['sitearchdir'], source.name)
+      File.join(RbConfig::CONFIG['sitearchdir'])
    end
 
    def ridir
       File.join(RbConfig::CONFIG['ridir'], source.name)
+   end
+
+   def datadir
+      File.join(RbConfig::CONFIG['datadir'], source.name)
    end
 
    def specdir

@@ -96,7 +96,19 @@ module Setup
 
         Dir.chdir(File.join(target.source.root, target.source.datadir)) do
           io.puts "  - [#{target.source.name}] in #{target.source.datadir}" unless quiet?
+            # require 'pry'; binding.pry
           novel_install_files(target.source.datafiles, target.datadir, options)
+        end
+
+        if target.libdir
+          Dir.chdir(File.join(target.source.root, target.source.datadir)) do
+            io.puts "  - [#{target.source.name}] in #{target.source.libdir}" unless quiet?
+
+#            require 'pry'; binding.pry
+            novel_install_files(target.libdir, target.datadir, options.merge(mode: 0755,
+                                                                             symlink: true,
+                                                                             as: 'lib'))
+          end
         end
       end
     end
@@ -282,7 +294,8 @@ module Setup
     end
 
     # Novel proc to install project files.
-    def novel_install_files(source_files, dest_dir, options = {})
+    def novel_install_files(source_files_in, dest_dir, options = {})
+      source_files = [ source_files_in ].flatten
       chroot = options[:chroot]
 
 #        require 'pry'; binding.pry

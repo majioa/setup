@@ -117,6 +117,10 @@ module Setup
 
       pre(task)
 
+      if configuration.compat
+        Setup::Base.bash(configuration.compat, task, "--prefix=#{configuration.install_prefix}")
+      end
+
       begin
         session.__send__(task)
       rescue Error => err
@@ -374,6 +378,11 @@ module Setup
       # set custom root folder for current module
       parser.on('--root PATH', 'Set custom root folder for current module') do |val|
         configuration.root = val
+      end
+
+      # generate the configations but use compatible script instead to act
+      parser.on('--compat SCRIPT', 'generate the configations but use compatible script instead to act') do |val|
+        configuration.compat = val
       end
 
       parser.separator ""

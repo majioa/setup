@@ -54,7 +54,7 @@ class Setup::Deps
 
    def target_reqs target, sets_in = nil
       sets = sets_in && [ sets_in ].flatten || REQS.keys
-#      require 'pry'; binding.pry
+      # require 'pry'; binding.pry
 
       REQS.select { |set, _| sets.include?(set) }.map do |set, data|
          reqs = data.map do |cond_in, req_in|

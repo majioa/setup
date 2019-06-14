@@ -40,7 +40,7 @@ class Setup::Source::Base
    end
 
    def bindir
-      @bindir ||= exedir || if_exist('bin')
+      @bindir ||= exedir
    end
 
    def extdir
@@ -74,6 +74,11 @@ class Setup::Source::Base
       end
    end
 
+   def supdirs
+      @supdirs ||= %w(bin app db locale tasks config public script log vendor webpack
+                      Rakefile package.json Procfile config.ru).select { |file| if_exist(file) }
+   end
+
    # files
 
    def libfiles
@@ -88,7 +93,17 @@ class Setup::Source::Base
    end
 
    def datafiles
-      []
+      @datafiles ||= supdirs.map do |dir|
+         if File.directory?(File.join(root, dir))
+            Dir.chdir(root) do
+               Dir.glob("#{dir}/**/*").select { |file| File.file?(file) }
+            end
+         elsif File.file?(File.join(root, dir))
+            Dir.chdir(root) do
+               Dir.glob(dir).select { |file| File.file?(file) }
+            end
+         end
+      end.compact.flatten
    end
 
    def rifiles
@@ -197,7 +212,7 @@ class Setup::Source::Base
    protected
 
    def if_exist dir
-      File.directory?(dir) && dir || nil
+      File.exist?(dir) && dir || nil
    end
 
    def dlext
