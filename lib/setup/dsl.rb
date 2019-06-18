@@ -61,7 +61,6 @@ class Setup::DSL
    end
 
    def to_gemfile
-      deps = source.deps.replace(deps_but(source.deps, replace_list))
       deps.map do |dep|
          reqs = dep.requirement.requirements.map {|r| "'#{r[0]} #{r[1]}'" }.join(", ")
          "gem '#{dep.name}', #{reqs}"
