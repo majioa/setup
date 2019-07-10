@@ -46,10 +46,10 @@ module Setup::Gemspec::Olddoc
          oldspec = IO.read(specfile)
          newspec = oldspec.split("\n").map {|x| x.gsub('wrong', 'old').gsub('Wrong','Old') }
          if oldspec != newspec
-           File.open(specfile, 'w+') {|file| file.puts newspec }
-           if File.exist?('.wrongdoc.yml')
-             FileUtils.mv('.wrongdoc.yml', '.olddoc.yml')
-           end
+            File.open(specfile, 'w+') {|file| file.puts newspec }
+            if File.exist?('.wrongdoc.yml')
+               FileUtils.mv('.wrongdoc.yml', '.olddoc.yml')
+            end
          end
 
          if specfile && match_in?(specfile, /\.(gem-)?manifest/)

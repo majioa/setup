@@ -1,12 +1,19 @@
 # Hoe based gemspec detection module
 # Sample gems are: hoe, racc
 #
+
 module Setup::Gemspec::Hoe
    RE = /\/Rakefile$/
 
+
    class << self
+      def has_hoe?
+         require('hoe') && defined? Hoe
+      rescue Exception
+      end
+
       def parse rakefile
-         if rakefile && File.file?(rakefile) && defined? Hoe
+         if File.file?(rakefile) && has_hoe?
             begin
                stdout = $stdout
                $stdout = $stderr
@@ -24,7 +31,7 @@ module Setup::Gemspec::Hoe
                END
                module_eval(mod_code)
             rescue Exception => e
-               $stderr.puts "[setup.rb] -> #{e.class}: #{e.message}"
+               $stderr.puts "[setup.rb]{self.class} -> #{e.class}: #{e.message}"
             else
                ObjectSpace.each_object(Hoe).map { |h| h.spec }.compact.first
             ensure
