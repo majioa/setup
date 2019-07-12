@@ -10,14 +10,14 @@ class Setup::Deps
       },
       'bin' => {
          proc { |target| target.public_executables.any? }          => proc { |this, target| this.deps_ruby_exec(target) },
-         proc { |target| target.source.binfiles.any? &&
+         proc { |target| target.source.exefiles.any? &&
                          target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_gem(target) },
       },
       'doc' => {
          proc { |target| target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_gem(target) },
       },
       'devel' => {
-         proc { |target| target.source.includefiles.any? &&
+         proc { |target| target.source.inctree.any? &&
                          target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_gem(target) },
       }
    }

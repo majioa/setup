@@ -33,28 +33,22 @@ module Setup
     # @todo Should we run rdoc programmatically instead of shelling out?
     #
     def exec_ri
-      project.sources.reject { |s| s.doc_sourcefiles.empty? }.each do |source|
+      project.sources.reject { |s| s.docsrcfiles.empty? }.each do |source|
         options = if source.is_a?(Setup::Source::Gem)
           ["--ri"]
         else
           ["--ri-site"]
-        end | ['-q', '-o', source.ridir]
+        end + ['-q', '-o', source.default_ridir]
 
         Dir.chdir(source.root) do
-          source.doc_sourcefiles.each do |dir|
-            if !documentate(options, dir)
-              documentate_files options, dir
+          source.docsrctree.each do |dir, files|
+            if dir == '.' || !documentate(options, dir)
+              Dir.chdir(dir) do
+                files.each { |file| documentate(options, file) }
+              end
             end
           end
         end
-      end
-    end
-
-    def documentate_files options, dir
-      Dir.glob("#{dir}/**/*.{rb,h,c}").each do |file|
-        next if !File.file?(file)
-
-        documentate(options, file)
       end
     end
 
@@ -144,7 +138,7 @@ module Setup
 
     def distclean
       project.sources.each do |source|
-        FileUtils.rm_rf(source.ridir)
+        FileUtils.rm_rf(source.default_ridir)
       end
     end
 

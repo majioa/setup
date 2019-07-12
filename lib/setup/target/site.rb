@@ -6,7 +6,7 @@ class Setup::Target::Site
    end
 
    def public_executables
-      @public_executables ||= binfiles.select { |file| source.binfiles.include?(File.basename(file)) }
+      @public_executables ||= exefiles.select { |file| source.exefiles.include?(File.basename(file)) }
    end
 
    # dirs
@@ -15,11 +15,11 @@ class Setup::Target::Site
       File.join(RbConfig::CONFIG['sitelibdir'])
    end
 
-   def lbindir
+   def lexedir
       nil
    end
 
-   def bindir
+   def exedir
       RbConfig::CONFIG['bindir']
    end
 
@@ -35,6 +35,10 @@ class Setup::Target::Site
       File.join(RbConfig::CONFIG['datadir'], source.name)
    end
 
+   def confdir
+      File.join(RbConfig::CONFIG['sysconfdir'], source.name)
+   end
+
    def specdir
       nil
    end
@@ -43,14 +47,22 @@ class Setup::Target::Site
       RbConfig::CONFIG['mandir']
    end
 
+   def incdir
+      RbConfig::CONFIG['includedir']
+   end
+
    # files
 
-   def binfiles
-      Dir.glob(File.join(chroot, bindir, '*')).map { |file| /^#{chroot}(?<pure>.*)/.match(file)[:pure] }
+   def exefiles
+      Dir.glob(File.join(chroot, exedir, '*')).map { |file| /^#{chroot}(?<pure>.*)/.match(file)[:pure] }
    end
 
    def chroot
       options[:chroot] || '/'
+   end
+
+   def is_lib_separated?
+      true
    end
 
    protected

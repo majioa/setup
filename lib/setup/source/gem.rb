@@ -7,6 +7,17 @@ class Setup::Source::Gem < Setup::Source::Base
    BIN_IGNORES = %w(test)
    OPTION_KEYS = %i(root spec mode version replace_list aliases)
 
+   EXE_DIRS = ->(s) { s.spec.bindir || s.exedir || nil }
+   EXT_DIRS = ->(s) do
+      s.spec.extensions.select do |file|
+         /extconf\.rb$/ =~ file
+      end.map do |file|
+         File.dirname(file)
+      end.uniq
+   end
+   LIB_DIRS = ->(s) { s.require_pure_paths }
+   DOCSRC_DIRS = ->(s) { s.require_pure_paths }
+
    attr_reader :root, :spec, :mode
 
    class << self
@@ -22,7 +33,6 @@ class Setup::Source::Gem < Setup::Source::Base
          end
 
          specs = gemspec_files.map do |gemspec, f|
-            #require 'pry';binding.pry
             new_if_valid(gemspec.parse(f), File.dirname(f), options)
          end.flatten(1).compact
 
@@ -64,171 +74,31 @@ class Setup::Source::Gem < Setup::Source::Base
       @dsl ||= Setup::DSL.new(source: self, replace_list: replace_list)
    end
 
-   # many dirs
+   # tree
 
-   def require_pure_paths
-      @require_pure_paths ||= (
-         paths = spec.require_paths.select { |path| path !~ /\// }
-         paths.any? && paths || ['lib'])
+   def datatree
+      # TODO deep_merge
+      @datatree ||= super { { '.' => spec.files } }
    end
 
-   def doc_sourcedirs
-      require_pure_paths
+   def exttree
+      @exttree ||= { '.' => spec.extensions.select { |file| /extconf\.rb$/ =~ file } }
    end
 
-   # single dir
-
-   def require_dir
-      require_pure_paths.first
+   def exetree
+      @exetree ||= Dir.chdir(root) do
+         exedirs.map { |dir| [ dir, Dir.chdir(File.join(root, dir)) { Dir.glob("{#{spec.executables.join(',')}}") } ] }.to_h
+      end
    end
 
-   def libdir
-      @libdir ||= mode == :lust && 'lib' || require_dir
-   end
-
-   def datadir
-      '.'
-   end
-
-   def bindir
-      @bindir ||= spec.bindir || exedir || 'bin'
-   end
-
-   def extdir
-      @extdir ||= (
-         spec.extensions.select { |file| /extconf\.rb$/ =~ file }.map { |file| File.dirname(file) }.uniq.first)
-   end
-
-   def ridir
-      @ridir ||= ".ri.#{name}"
-   end
-
-   def dldir
-      @dldir ||= (
-         dir = ".so.#{name}#{RbConfig::CONFIG['sitearchdir']}"
-
-         File.directory?(File.join(root, dir)) && dir || nil)
-   end
-
-   def mandir
-      @mandir ||= mandirs.first
-   end
-
-   def includedir
-      extdir
-   end
-
-   # files
-
-   def libfiles
-      @libfiles ||= (
-         dir = File.join(root, libdir)
-
-         if File.exist?(dir)
-           Dir.chdir(dir) do
-             files_in = Dir.glob("**/*").select { |file| File.file?(file) }
-             if mode == :strict
-                files_declared = spec.files.select {|file| file =~ /^#{libdir}\// }.map { |file| /^#{libdir}\/(?<rest>.*)/ =~ file ; rest }
-                (files_declared & files_in)
-             else files_in
-             end
-           end
-         end || [])
-   end
-
-   def datafiles
-      @datafiles ||= (
-         Dir.chdir(File.join(root, datadir)) do
-         f =
-         if mode == :strict
-           files_in = Dir.glob("**/*").select { |file| File.file?(file) }
-           spec.files.reject {|file| file =~ /^#{libdir}\// }
-           # strict list based on files
-           #files_in = spec.files.any? && spec.files.select { |file| /\.rb$/ !~ file && /^(#{non_data_pure_paths.join('|')})\// !~ file }
-           # (files_in ||
-           # (Dir.glob("**/*").select { |file| !/^#{datadir}\/?(#{non_data_pure_paths.join('|')})\/.*/.match(file) } +
-           #  Dir.glob("#{root}/{#{require_pure_paths.join(',')}}/**/*").select { |file| /\.rb$/ !~ file }))
-         else
-           # method based on files including "require_pure_paths"
-           files_in = spec.files.select { |file| /\.rb$/ !~ file && /^(#{non_data_pure_paths.join('|')})\// !~ file }
-
-           (files_in.any? && files_in ||
-            (Dir.glob("**/*").select { |file| !/^#{datadir}\/?(#{non_data_pure_paths.join('|')})\/.*/.match(file) }))
-          end.select { |file| File.file?(file) }
-          f
-         end)
-   end
-
-   def rifiles
-      @rifiles ||= (
-         dir = File.join(root, ridir)
-
-         if File.exist?(dir)
-           Dir.chdir(dir) do
-             Dir.glob("**/*.ri").select { |file| File.file?(file) }
-           end
-         end || [])
-   end
-
-   def extfiles
-      @extfiles ||= extdir && (
-         dir = File.join(root, extdir)
-
-         if File.exist?(dir)
-            Dir.chdir(dir) do
-               spec.extensions.select { |file| /extconf\.rb$/ =~ file }
-            end
-         end || []) || []
-   end
-
-   def dlfiles
-      @dlfiles ||= dldir && (
-         dir = File.join(root, dldir)
-
-         if File.exist?(dir)
-            Dir.chdir(dir) do
-              Dir.glob("**/*.{#{dlext},build_complete}").select { |file| File.file?(file) }
-            end
-         end || []) || []
-   end
-
-   def binfiles
-      @binfiles ||= spec.executables.map { |x| x.split('/').last }
-   end
-
-   def manfiles
-      @manfiles ||= mandir && (
-         dir = File.join(root, mandir)
-
-         if File.exist?(dir)
-            Dir.chdir(dir) do
-               Dir.glob("**/*.{1,2,3,4,5,6,7,8}").select { |file| File.file?(file) }
-            end
-         end || []) || []
-   end
-
-   def includefiles
-      @includefiles ||= includedir && (
-         dir = File.join(root, includedir)
-         if File.exist?(dir)
-            Dir.chdir(dir) do
-               Dir.glob("**/*.h{,pp}").select { |file| File.file?(file) }
-            end
-         end || []) || []
-   end
-
-   def doc_sourcefiles
-      doc_sourcedirs + spec.extra_rdoc_files
+   def docsrctree
+      @docsrctree ||= super { { '.' => spec.extra_rdoc_files } }
    end
 
    # custom
 
    def extroot_for file
       extroots.find { |extroot| extroot == file[0...extroot.size] }
-   end
-
-   def non_data_pure_paths
-      %w(spec test bin exe feature acceptance docs man Documentation benchmarks ri examples yardoc ext autotest .git tmp vendor sample) + require_pure_paths
    end
 
    # Queries
@@ -262,18 +132,20 @@ class Setup::Source::Gem < Setup::Source::Base
       spec&.dependencies&.select { |dep| !groups || [ groups ].flatten.include?(dep.type) }
    end
 
+   def require_pure_paths
+      @require_pure_paths ||= (
+         paths = spec.require_paths.select { |path| path !~ /\// }
+         paths.any? && paths || ['lib'])
+   end
+
    protected
 
    def extroots
       @extroots ||= extfiles.map { |extfile| File.dirname(extfile) }
    end
 
-   def dlext
-      RbConfig::CONFIG['DLEXT']
-   end
-
    def exedir
-      @exedir ||= File.exist?(File.join(root, 'exe')) && 'exe' || nil
+      @exedir ||= if_exist('exe')
    end
 
    #

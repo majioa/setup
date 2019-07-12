@@ -5,13 +5,13 @@ class Setup::Target::Ruby
       spec_path(home && File.join(home, 'lib'), RbConfig::CONFIG['rubylibdir'])
    end
 
-   def lbindir
-      lbindir = RbConfig::CONFIG['bindir']
+   def lexedir
+      lexedir = RbConfig::CONFIG['bindir']
 
-      lbindir != bindir && lbindir || nil
+      lexedir != exedir && lexedir || nil
    end
 
-   def bindir
+   def exedir
       spec_path(home && File.join(home, 'bin'), RbConfig::CONFIG['bindir'])
    end
 
@@ -21,6 +21,30 @@ class Setup::Target::Ruby
 
    def ridir
       spec_path(home && File.join(home, 'doc'), RbConfig::CONFIG['ridir'])
+   end
+
+   def datadir
+      File.join(RbConfig::CONFIG['datadir'], source.name)
+   end
+
+   def confdir
+      File.join(RbConfig::CONFIG['sysconfdir'], source.name)
+   end
+
+   def specdir
+      nil
+   end
+
+   def mandir
+      RbConfig::CONFIG['mandir']
+   end
+
+   def incdir
+      RbConfig::CONFIG['includedir']
+   end
+
+   def is_lib_separated?
+      true
    end
 
    protected

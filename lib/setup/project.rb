@@ -187,7 +187,7 @@ module Setup
           end
 
           # autoaliasing binaries to the source name but when no other source name matches to a binfile
-          config.current_alias = source.binfiles - (source.binfiles & source_names)
+          config.current_alias = source.exefiles - (source.exefiles & source_names)
        end
 
        # turn current source name to common

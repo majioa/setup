@@ -5,6 +5,36 @@ class Setup::Source::Base
 
    attr_reader :root, :dsl, :replace_list, :aliases
 
+   DL_DIRS     = ->(s) { ".so.#{s.name}#{RbConfig::CONFIG['sitearchdir']}" }
+   RI_DIRS     = ->(s) { [ s.default_ridir, 'ri' ] }
+   INC_DIRS    = %w(ext)
+   EXT_DIRS    = %w(ext)
+   LIB_DIRS    = %w(lib)
+   APP_DIRS    = %w(app webpack script public)
+   EXE_DIRS    = %w(bin exe)
+   CONF_DIRS   = %w(etc config conf)
+   TEST_DIRS   = %w(tests test spec features acceptance autotest)
+   MAN_DIRS    = %w(doc docs Documentation man docs-source)
+   SUP_DIRS    = %w(util yardoc benchmarks examples .git tmp vendor sample)
+   DATA_DIRS   = %w(.)
+   DOCSRC_DIRS = ->(s) { s.libdirs | s.appdirs | s.exedirs | s.confdirs }
+
+   DL_RE       = ->(_) { /\.(#{RbConfig::CONFIG['DLEXT']}|build_complete)$/ }
+   RI_RE       = /\.ri$/
+   INC_RE      = /\.(h|hpp)$/
+   MAN_RE      = /\.[1-8]$/
+   EXT_RE      = /\bextconf.rb$/
+   DATA_RE     = ->(s) do
+         dirs = s.extdirs | s.libdirs | s.appdirs | s.exedirs |
+            s.confdirs | s.testdirs | s.mandirs | s.supdirs |
+            s.ridirs | s.dldirs | s.incdirs
+
+         dirs.empty? && /.*/ || /^(?!.*#{dirs.join('\b|').gsub('.', '\\\\.')}\b)/
+      end
+   DOCSRC_RE = /\.rb$/
+
+   GROUPS = constants.select { |c| c =~ /_DIRS/ }.map { |c| c.to_s.sub('_DIRS', '').downcase }
+
    def fullname
       @fullname ||= root.split('/').last
    end
@@ -21,134 +51,40 @@ class Setup::Source::Base
          version)
    end
 
-   def doc_sourcedirs
-      %w(app lib config).select { |file| if_exist(file) }
-   end
-
-   # dirs
-
-   def etcdir
-      @etcdir ||= if_exist('etc')
-   end
-
-   def libdir
-      @libdir ||= if_exist('lib')
-   end
-
-   def datadir
-      '.'
-   end
-
-   def bindir
-      @bindir ||= exedir
-   end
-
-   def extdir
-      @extdir
-   end
-
-   def ridir
-      @ridir ||= ".ri.#{name}"
-   end
-
-   def dldir
-      extdir
-   end
-
-   def mandir
-      @mandir ||= %w(man Documentation doc).find { |dir| if_exist(dir) }
-   end
-
-   def includedir
-      extdir
-   end
-
    # dirs
    #
-   def mandirs
-      @mandirs ||= %w(man Documentation doc).select do |dir|
-         fulldir = File.join(root, dir)
+   GROUPS.each do |kind|
+      func = <<-DEF
+         def #{kind}dirs &block
+            @#{kind}dirs ||= dirs(:#{kind}, &block)
+         end
+      DEF
 
-         File.directory?(fulldir) &&
-         Dir.glob("#{fulldir}/**/*.{1,2,3,4,5,6,7,8}").select { |file| File.file?(file) }.any?
-      end
-   end
-
-   def supdirs
-      @supdirs ||= %w(bin app db locale tasks config public script log vendor webpack
-                      Rakefile package.json Procfile config.ru).select { |file| if_exist(file) }
+      eval(func)
    end
 
    # files
-
-   def libfiles
-      @libfiles ||= libdir && (
-         dir = File.join(root, libdir)
-
-         if File.exist?(dir)
-           Dir.chdir(dir) do
-             Dir.glob("*/**/*.rb").select { |file| File.file?(file) }
-           end
-         end || []) || []
-   end
-
-   def datafiles
-      @datafiles ||= supdirs.map do |dir|
-         if File.directory?(File.join(root, dir))
-            Dir.chdir(root) do
-               Dir.glob("#{dir}/**/*").select { |file| File.file?(file) }
-            end
-         elsif File.file?(File.join(root, dir))
-            Dir.chdir(root) do
-               Dir.glob(dir).select { |file| File.file?(file) }
-            end
+   #
+   GROUPS.each do |kind|
+      func = <<-DEF
+         def #{kind}files &block
+            @#{kind}files ||= files(:#{kind}, &block)
          end
-      end.compact.flatten
+      DEF
+
+      eval(func)
    end
 
-   def rifiles
-      @rifiles ||= (
-         dir = File.join(root, ridir)
+   # tree
+   #
+   GROUPS.each do |kind|
+      func = <<-DEF
+         def #{kind}tree &block
+            @#{kind}tree ||= tree(:#{kind}, &block)
+         end
+      DEF
 
-         if File.exist?(dir)
-           Dir.chdir(dir) do
-             Dir.glob("**/*.ri").select { |file| File.file?(file) }
-           end
-         end || [])
-   end
-
-   def extfiles
-      []
-   end
-
-   def dlfiles
-      []
-   end
-
-   def binfiles
-      @binfiles ||= bindir && (
-         dir = File.join(root, bindir)
-
-         if File.exist?(dir)
-            Dir.chdir(dir) do
-               Dir.glob("**/*").select { |file| File.file?(file) }
-            end
-         end || []) || []
-   end
-
-   def manfiles
-      @manfiles ||= !mandirs.empty? && (
-         Dir.chdir(root) do
-            Dir.glob("#{mandirs.join(',')}/**/*.{1,2,3,4,5,6,7,8}").select { |file| File.file?(file) }
-         end) || []
-   end
-
-   def includefiles
-      []
-   end
-
-   def doc_sourcefiles
-      doc_sourcedirs
+      eval(func)
    end
 
    # questionaries
@@ -209,18 +145,64 @@ class Setup::Source::Base
       self.name == name || aliases && aliases.include?(name)
    end
 
+   def if_file file
+      File.file?(File.join(root, file)) && file || nil
+   end
+
+   def if_exist file
+      File.exist?(File.join(root, file)) && file || nil
+   end
+
+   def if_dir dir
+      File.directory?(File.join(root, dir)) && dir || nil
+   end
+
+   def default_ridir
+      ".ri.#{name}"
+   end
+
    protected
-
-   def if_exist dir
-      File.exist?(dir) && dir || nil
-   end
-
-   def dlext
-      RbConfig::CONFIG['DLEXT']
-   end
 
    def exedir
       @exedir ||= if_exist('exe')
+   end
+
+   def dirs kind, &block
+      dirlist_in = [ self.class.const_get("#{kind.upcase}_DIRS") ].flatten
+
+      dirlist_in.map do |dir_in|
+         file = dir_in.is_a?(Proc) ? dir_in[self] : dir_in
+      end.flatten.compact.select { |file| if_dir(file) }
+   end
+
+   def tree kind, &block
+      re_in = self.class.const_get("#{kind.upcase}_RE") rescue nil
+      re = re_in.is_a?(Proc) && re_in[self] || re_in || /.*/
+
+      tree_in = send("#{kind}dirs").map do |dir|
+         [ dir, Dir.chdir(File.join(root, dir)) { Dir.glob('**/**/*') } ]
+      end.to_h
+
+      if block_given?
+         # TODO deep_merge
+         tree_in = tree_in.merge(yield)
+      end
+
+      tree_in.map do |dir, files_in|
+         files = Dir.chdir(File.join(root, dir)) do
+            files_in.select do |file|
+               re =~ file && File.file?(file)
+            end
+         end
+
+         # require 'pry';binding.pry
+
+         [ dir, files ]
+      end.to_h
+   end
+
+   def files kind, &block
+      send("#{kind}tree", &block).map { |(_, values)| values }.flatten
    end
 
    #

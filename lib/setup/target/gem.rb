@@ -8,33 +8,37 @@ class Setup::Target::Gem
    end
 
    def public_executables
-      @public_executables ||= (lbindir && lbinfiles || binfiles).select { |file| source.binfiles.include?(File.basename(file)) }
+      @public_executables ||= (lexedir && lexefiles || exefiles).select { |file| source.exefiles.include?(File.basename(file)) }
    end
 
    # dirs
 
    def libdir
-      File.join(home, 'gems', source.fullname, source.require_dir)
+      File.join(home, 'gems', source.fullname, source.require_pure_paths)
    end
 
-   def lbindir
-      lbindir = RbConfig::CONFIG['bindir']
+   def lexedir
+      lexedir = RbConfig::CONFIG['bindir']
 
-      lbindir != bindir && lbindir || nil
+      lexedir != exedir && lexedir || nil
    end
 
    def datadir
       File.join(home, 'gems', source.fullname)
    end
 
-   def bindir
-      File.exist?(exedir) && exedir || File.join(home, 'gems', source.fullname, 'bin')
+   def exedir
+      File.exist?(_exedir) && _exedir || File.join(home, 'gems', source.fullname, 'bin')
    end
 
    def extdir
       arch = [ ::Gem.platforms.last.cpu, ::Gem.platforms.last.os ].join('-')
 
       File.join(home, 'extensions', arch, ::Gem.extension_api_version, source.fullname)
+   end
+
+   def confdir
+      File.join(home, 'gems', source.fullname, 'config')
    end
 
    def ridir
@@ -49,27 +53,31 @@ class Setup::Target::Gem
       RbConfig::CONFIG['mandir']
    end
 
-   def includedir
+   def incdir
       RbConfig::CONFIG['includedir']
    end
 
    # files
 
-   def binfiles
-      Dir.glob(File.join(chroot, bindir, '*')).map { |file| /^#{chroot}(?<pure>.*)/.match(file)[:pure] }
+   def exefiles
+      Dir.glob(File.join(chroot, exedir, '*')).map { |file| /^#{chroot}(?<pure>.*)/.match(file)[:pure] }
    end
 
-   def lbinfiles
-      Dir.glob(File.join(chroot, lbindir, '*')).map { |file| /^#{chroot}(?<pure>.*)/.match(file)[:pure] }
+   def lexefiles
+      Dir.glob(File.join(chroot, lexedir, '*')).map { |file| /^#{chroot}(?<pure>.*)/.match(file)[:pure] }
    end
 
    def chroot
       options[:chroot] || '/'
    end
 
+   def is_lib_separated?
+      false
+   end
+
    protected
 
-   def exedir
+   def _exedir
       File.join(home, 'gems', source.fullname, 'exe')
    end
 

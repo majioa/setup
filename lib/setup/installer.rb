@@ -20,52 +20,56 @@ module Setup
     # Install package.
     def install
       Dir.chdir(rootdir) do
-        install_bin
-        install_ext
+        install_exe
+        install_dl
         install_lib
         install_data
         install_man
         install_ri
-        install_include
-#        install_etc
+        install_inc
+        install_conf
         install_gemspec
         install_gemfile
-#        prune_install_record
       end
     end
 
     # Install binaries (executables).
-    def install_bin
-      io.puts "* bin ->" unless quiet?
+    def install_exe
+      io.puts "* {exe} ->" unless quiet?
 
       targets.each do |target|
-        next if !target.source.binfiles.any?
+        next if !target.source.exetree.any?
 
-        Dir.chdir(File.join(target.source.root, target.source.bindir)) do
-          io.puts "  - [#{target.source.name}] in #{target.source.bindir}" unless quiet?
-          novel_install_files(target.source.binfiles, target.bindir, options.merge(mode: 0755, shebang: config.shebang))
+        target.source.exetree.each do |dir, files|
+          Dir.chdir(File.join(target.source.root, dir)) do
+            io.puts "  % #{target.source.name} < #{dir}" unless quiet?
+            novel_install_files(files, target.exedir, options.merge(mode: 0755, shebang: config.shebang))
+          end
         end
 
-        if target.lbindir
-          Dir.chdir(File.join(target.source.root, target.source.bindir)) do
-            io.puts "  - [#{target.source.name}] in #{target.source.bindir}" unless quiet?
-            novel_install_files(target.binfiles, target.lbindir, options.merge(mode: 0755, symlink: true))
+        if target.lexedir
+          Dir.chdir(target.source.root) do
+            io.puts "  % #{target.source.name}" unless quiet?
+            novel_install_files(target.exefiles, target.lexedir, options.merge(mode: 0755, symlink: true))
           end
         end
       end
     end
 
     # Install shared extension libraries.
-    def install_ext
-      io.puts "* ext ->" unless quiet?
+    def install_dl
+      io.puts "* {dl} ->" unless quiet?
 
       targets.each do |target|
-        next if !target.source.dlfiles.any?
+        next if !target.source.dltree.any?
 
-        Dir.chdir(File.join(target.source.root, target.source.dldir)) do
-          io.puts "  - [#{target.source.name}] in #{target.source.dldir}" unless quiet?
-          target.source.dlfiles.each do |file|
-            novel_install_files([file], target.extdir, options.merge(mode: 0555))
+        # require 'pry'; binding.pry
+        target.source.dltree.each do |dir, files|
+          Dir.chdir(File.join(target.source.root, dir)) do
+            io.puts "  % #{target.source.name} < #{dir}" unless quiet?
+            files.each do |file|
+              novel_install_files([ file ], target.extdir, options.merge(mode: 0555))
+            end
           end
         end
       end
@@ -73,38 +77,38 @@ module Setup
 
     # Install library files.
     def install_lib
-      io.puts "* lib ->" unless quiet?
+      io.puts "* {lib} ->" unless quiet?
 
       targets.each do |target|
-        next if !target.source.libfiles.any?
+        next if !target.source.libtree.any?
 
-#        require 'pry'; binding.pry
-        Dir.chdir(File.join(target.source.root, target.source.libdir)) do
-          io.puts "  - [#{target.source.name}] in #{target.source.libdir}" unless quiet?
-#        require 'pry'; binding.pry
-          novel_install_files(target.source.libfiles, target.libdir, options)
+        target.source.libtree.each do |dir, files|
+          Dir.chdir(File.join(target.source.root, dir)) do
+            io.puts "  % #{target.source.name} < #{dir}" unless quiet?
+            novel_install_files(files, target.libdir, options)
+          end
         end
       end
     end
 
     # Install shared data.
     def install_data
-      io.puts "* data ->" unless quiet?
+      io.puts "* {data} ->" unless quiet?
 
       targets.each do |target|
-        next if !target.source.datafiles.any?
+        next if !target.source.datatree.any?
+        # require 'pry'; binding.pry
 
-        Dir.chdir(File.join(target.source.root, target.source.datadir)) do
-          io.puts "  - [#{target.source.name}] in #{target.source.datadir}" unless quiet?
-            # require 'pry'; binding.pry
-          novel_install_files(target.source.datafiles, target.datadir, options)
+        target.source.datatree.each do |dir, files|
+          Dir.chdir(File.join(target.source.root, dir)) do
+            io.puts "  % #{target.source.name} < #{dir}" unless quiet?
+
+            novel_install_files(files, File.join(target.datadir, dir), options)
+          end
         end
 
-        if target.libdir
-          Dir.chdir(File.join(target.source.root, target.source.datadir)) do
-            io.puts "  - [#{target.source.name}] in #{target.source.libdir}" unless quiet?
-
-#            require 'pry'; binding.pry
+        if target.libdir && target.is_lib_separated?
+          Dir.chdir(target.source.root) do
             novel_install_files(target.libdir, target.datadir, options.merge(mode: 0755,
                                                                              symlink: true,
                                                                              as: 'lib'))
@@ -114,51 +118,68 @@ module Setup
     end
 
     # Install configuration.
-    def install_etc
-      return unless directory?('etc')
-      report_transfer('etc', config.sysconfdir)
-      files = files('etc')
-      install_files('etc', files, config.sysconfdir, 0644)
+    def install_conf
+      io.puts "* {conf} ->" unless quiet?
+
+      targets.each do |target|
+        next if !target.source.conftree.any?
+
+        target.source.conftree.each do |dir, files|
+          Dir.chdir(File.join(target.source.root, dir)) do
+            io.puts "  % #{target.source.name} < #{dir}" unless quiet?
+
+            novel_install_files(files, File.join(target.confdir, dir), options.merge(mode: 0755))
+          end
+        end
+      end
     end
 
     # Install manpages.
     def install_man
-      io.puts "* man ->" unless quiet?
+      io.puts "* {man} ->" unless quiet?
 
       targets.each do |target|
-        next if !target.source.manfiles.any?
+        next if !target.source.mantree.any?
 
-        Dir.chdir(File.join(target.source.root, target.source.mandir)) do
-          io.puts "  - [#{target.source.name}] in #{target.source.mandir}" unless quiet?
-          novel_install_files(target.source.manfiles, target.mandir, options.merge(mode: 0644))
+        target.source.mantree.each do |dir, files|
+          Dir.chdir(File.join(target.source.root, dir)) do
+            io.puts "  % #{target.source.name} < #{dir}" unless quiet?
+
+            novel_install_files(files, target.mandir, options.merge(mode: 0644))
+          end
         end
       end
     end
 
     def install_ri
-      io.puts "* ri ->" unless quiet?
+      io.puts "* {ri} ->" unless quiet?
 
       targets.each do |target|
-        next if !target.source.rifiles.any?
+        next if !target.source.ritree.any?
 
-#        require 'pry'; binding.pry
-        Dir.chdir(File.join(target.source.root, target.source.ridir)) do
-          io.puts "  - [#{target.source.name}] in #{target.source.ridir}" unless quiet?
-          novel_install_files(target.source.rifiles, target.ridir, options.merge(mode: 0644))
+        target.source.ritree.each do |dir, files|
+          Dir.chdir(File.join(target.source.root, dir)) do
+            io.puts "  % #{target.source.name} < #{dir}" unless quiet?
+
+            novel_install_files(files, target.ridir, options.merge(mode: 0644))
+          end
         end
       end
     end
 
-    def install_include
-      io.puts "* include ->" unless quiet?
+    def install_inc
+      io.puts "* {include} ->" unless quiet?
 
       targets.each do |target|
-        next if !target.source.includefiles.any?
+        next if !target.source.inctree.any?
 
-        Dir.chdir(File.join(target.source.root, target.source.includedir)) do
-          io.puts "  - [#{target.source.name}] in #{target.source.includedir}" unless quiet?
-          target_dir = File.join(target.includedir, target.source.name)
-          novel_install_files(target.source.includefiles, target_dir, options.merge(mode: 0644))
+        target.source.inctree.each do |dir, files|
+          Dir.chdir(File.join(target.source.root, dir)) do
+            io.puts "  % #{target.source.name} < #{dir}" unless quiet?
+
+            target_dir = File.join(target.incdir, target.source.name)
+            novel_install_files(files, target_dir, options.merge(mode: 0644))
+          end
         end
       end
     end
@@ -193,11 +214,11 @@ module Setup
     # Install specification.
     #
     def install_gemspec
-      io.puts "* .gemspec ->" unless quiet?
+      io.puts "* {.gemspec} ->" unless quiet?
 
       targets.each do |target|
         if target.source.is_a?(Setup::Source::Gem)
-          io.puts "  - [#{target.source.name}]" unless quiet?
+          io.puts "  %#{target.source.name}" unless quiet?
 
           novel_install_files([target.source.gemspec_path],
                               target.specdir,
@@ -210,11 +231,11 @@ module Setup
     # Install specification.
     #
     def install_gemfile
-      io.puts "* gemfile ->" unless quiet?
+      io.puts "* {gemfile} ->" unless quiet?
 
       targets.each do |target|
         if target.source.is_a?(Setup::Source::Gemfile)
-          io.puts "  - [#{target.source.name}]" unless quiet?
+          io.puts "  %#{target.source.name}" unless quiet?
 
           novel_install_files([target.source.gemfile_path],
                               target.datadir,
@@ -313,6 +334,7 @@ module Setup
         FileUtils.mkdir_p(File.dirname(dest_file))
         if options[:symlink]
           io.puts "    #{file} -> [#{chroot}]#{dest_file_in}"
+          FileUtils.rm_rf(dest_file)
           FileUtils.ln_s(file, dest_file, force: true)
         elsif options[:shebang]
           io.puts "    #{file} -> [#{chroot}]#{dest_file_in}"
@@ -339,9 +361,7 @@ module Setup
 
       def shebang_line shebang, args_in = []
          "#!" + (case shebang
-            when 'auto'
-               [ path_to('ruby') ]
-            when 'ruby'
+            when 'auto', 'ruby'
                [ path_to('ruby') ]
             when 'env'
                [ path_to('env'), '-S', 'ruby' ]
