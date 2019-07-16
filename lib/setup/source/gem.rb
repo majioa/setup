@@ -134,7 +134,7 @@ class Setup::Source::Gem < Setup::Source::Base
 
    def require_pure_paths
       @require_pure_paths ||= (
-         paths = spec.require_paths.select { |path| path !~ /\// }
+         paths = spec.require_paths.select { |path| path !~ /^\// }
          paths.any? && paths || ['lib'])
    end
 
