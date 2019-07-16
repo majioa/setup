@@ -8,7 +8,9 @@ module Setup::Gemspec::Hoe
 
    class << self
       def has_hoe?
-         require('hoe') && defined? Hoe
+         require('hoe')
+
+         defined? Hoe
       rescue Exception
       end
 
@@ -31,7 +33,7 @@ module Setup::Gemspec::Hoe
                END
                module_eval(mod_code)
             rescue Exception => e
-               $stderr.puts "[setup.rb]{self.class} -> #{e.class}: #{e.message}"
+               $stderr.puts "[setup.rb] #{self.class} -> #{e.class}: #{e.message}"
             else
                ObjectSpace.each_object(Hoe).map { |h| h.spec }.compact.first
             ensure
