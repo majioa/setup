@@ -9,6 +9,7 @@ module Setup::Gemspec::Rakefile
                $stdout = $stderr
 
                require 'rake'
+               require 'rubygems/package_task'
 
                module_name = "M" + Random.srand.to_s
                mod_code = <<-END
@@ -26,7 +27,8 @@ module Setup::Gemspec::Rakefile
                $stderr.puts "[setup.rb] -> #{e.class}: #{e.message}"
             else
                space = const_get(module_name)
-               space.constants.map {|x| space.const_get(x) }.find { |x| x.is_a?(Gem::Specification) }
+               space.constants.map {|x| space.const_get(x) }.find { |x| x.is_a?(Gem::Specification) } ||
+                  ObjectSpace.each_object(Gem::PackageTask).map { |h| h.gem_spec }.compact.first
             ensure
                $stdout = stdout
             end
