@@ -92,9 +92,35 @@ module Setup
     option :use             , :pick, 'apply the following to the module options'
     option :root            , :path, 'set custom root folder for current module'
     option :'version-replace' , :pick, 'replace version for the current source explicitly'
-    option :aliases         , :pick, ''
-    option :joins           , :pick, ''
     option :compat          , :pick, 'generate the configations but use compatible script instead to act'
+
+
+    %w(dl ri inc ext lib app exe conf test man sup data docsrc).map do |kind|
+      funcs = <<-DEF
+        option "src#{kind}dirs", :path, "Redefined directories for #{kind} space for the current source or at whole"
+
+        def src#{kind}dirses= value
+          @src#{kind}dirses = value || {}
+        end
+
+        def src#{kind}dirses
+          @src#{kind}dirses ||= {}
+        end
+
+        def src#{kind}dirs= value
+          @src#{kind}dirses = src#{kind}dirses.merge(current_source_name =>
+                                                    (value.is_a?(Array) &&
+                                                     value ||
+                                                     value.split(/[:;,]/)))
+        end
+
+        def src#{kind}dirs
+          src#{kind}dirses[current_source_name] || src#{kind}dirses[nil] || []
+        end
+      DEF
+
+      class_eval(funcs)
+    end
 
     # custom property
     #

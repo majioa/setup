@@ -31,9 +31,9 @@ module Setup
 
     #
     def initialize options = {}
+      self.sources  = options.delete(:sources)
       @rootdir  = options.delete(:rootdir)
       @config   = options.delete(:config) || raise
-      self.sources  = options.delete(:sources)
       @options  = options
 
       @name     = root_source&.name
@@ -84,13 +84,13 @@ module Setup
        }
     end
 
-    # Returns a source list
+    # Returns all the source list
     #
     def all_sources
        @all_sources ||= Setup::Source.search(rootdir, options)
     end
 
-    # Returns a source list
+    # Returns the valid source list
     #
     def sources
        @sources ||= all_sources.select do |source|
@@ -116,16 +116,17 @@ module Setup
     # options for the object
     #
     def new_source type, object_options_in
-       type.new(options_for(type, object_options_in))
+       # TODO enable back options_for
+       type.new(type.source_options(object_options_in))
     end
 
     # options for the object
     #
-    def options_for type, object_options_in
-       option_keys = type.const_get(:OPTION_KEYS) || []
-       options_in = config.to_h.map { |(key, value)| [ key.to_sym, value ] }.to_h.merge(object_options_in)
-       option_keys.map { |key| [ key, options_in[ key ]] }.to_h
-    end
+#    def options_for type, object_options_in
+#       option_keys = type.const_get(:OPTION_KEYS) || []
+#       options_in = config.to_h.map { |(key, value)| [ key.to_sym, value ] }.to_h.merge(object_options_in)
+#       option_keys.map { |key| [ key, options_in[ key ]] }.to_h
+#    end
 
     # Returns a root source
     #

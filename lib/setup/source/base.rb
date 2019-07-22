@@ -3,8 +3,6 @@ require 'setup/source'
 class Setup::Source::Base
    OPTION_KEYS = %i(root replace_list aliases)
 
-   attr_reader :root, :dsl, :replace_list, :aliases
-
    DL_DIRS     = ->(s) { ".so.#{s.name}#{RbConfig::CONFIG['sitearchdir']}" }
    RI_DIRS     = ->(s) { [ s.default_ridir, 'ri' ] }
    INC_DIRS    = %w(ext)
@@ -30,10 +28,58 @@ class Setup::Source::Base
             s.ridirs | s.dldirs | s.incdirs
 
          dirs.empty? && /.*/ || /^(?!.*#{dirs.join('\b|').gsub('.', '\\\\.')}\b)/
-      end
+end
    DOCSRC_RE = /\.rb$/
 
    GROUPS = constants.select { |c| c =~ /_DIRS/ }.map { |c| c.to_s.sub('_DIRS', '').downcase }
+
+   PASSIN_OPTIONS = {
+      aliases: ->(o, name) { o.is_a?(Hash) && [ o[nil], o[name] ].flatten.compact.uniq || o },
+      version_replaces: true,
+      gem_version_replace: true,
+      spec: true,
+      root: true
+   }
+
+   PROC_OPTIONS = %i(srcridirs srcincdirs srcextdirs srclibdirs srcappdirs srcexedirs
+                     srcconfdirs srctestdirs srcmandirs srcsupdirs srcdatadirs srcdocsrcdirs)
+
+   attr_reader :options
+
+   class << self
+      def name_for options_in
+         fullname = (options_in[:root] || "").split('/').last
+         /^(?<name>.*)-([\d\.]+)$/ =~ fullname
+         name || fullname
+      end
+
+      def source_options options_in = {}
+         name = name_for(options_in)
+
+         parsed = PROC_OPTIONS.map do |oname|
+            onames = oname.pluralize
+            opt = options_in[onames]
+            value = opt && (opt[name] || opt[nil]) || nil
+
+            value && [ oname, value ] || nil
+         end.compact.to_h
+
+         PASSIN_OPTIONS.map do |oname, rule|
+            value_in = options_in[oname]
+
+            value = case rule
+            when true
+               value_in
+            when Proc
+               rule[value_in, name]
+            else
+               nil
+            end
+
+            value && [ oname, value ] || nil
+         end.compact.to_h.merge(parsed)
+      end
+   end
 
    def fullname
       @fullname ||= root.split('/').last
@@ -51,12 +97,28 @@ class Setup::Source::Base
          version)
    end
 
+   def root
+      options[:root]
+   end
+
+   def dsl
+      options[:dsl]
+   end
+
+   def replace_list
+      options[:replace_list]
+   end
+
+   def aliases
+      options[:aliases]
+   end
+
    # dirs
    #
    GROUPS.each do |kind|
       func = <<-DEF
          def #{kind}dirs &block
-            @#{kind}dirs ||= dirs(:#{kind}, &block)
+            @#{kind}dirs ||= dirs(:#{kind}, options[:src#{kind}dirs], &block)
          end
       DEF
 
@@ -98,12 +160,7 @@ class Setup::Source::Base
    end
 
    def to_h
-      {
-         type: type,
-         root: root,
-         aliases: aliases,
-         replace_list: replace_list,
-      }
+      options.merge(type: type)
    end
 
    def type
@@ -167,11 +224,15 @@ class Setup::Source::Base
       @exedir ||= if_exist('exe')
    end
 
-   def dirs kind, &block
-      dirlist_in = [ self.class.const_get("#{kind.upcase}_DIRS") ].flatten
+   def dirs kind, dirs_in = nil, &block
+      dirlist_am = [
+         dirs_in,
+         options[:"src#{kind}dirs"],
+         self.class.const_get("#{kind.upcase}_DIRS")
+      ].compact.first
 
-      dirlist_in.map do |dir_in|
-         file = dir_in.is_a?(Proc) ? dir_in[self] : dir_in
+      [ dirlist_am ].flatten.map do |dir_am|
+         file = dir_am.is_a?(Proc) ? dir_am[self] : dir_am
       end.flatten.compact.select { |file| if_dir(file) }
    end
 
@@ -195,7 +256,7 @@ class Setup::Source::Base
             end
          end
 
-         # require 'pry';binding.pry
+#         require 'pry';binding.pry #if kind == 'lib'
 
          [ dir, files ]
       end.to_h
@@ -206,9 +267,8 @@ class Setup::Source::Base
    end
 
    #
-   def initialize root: nil, replace_list: {}, aliases: nil
-      @root = root || Dir.pwd
-      @replace_list = replace_list || {}
-      @aliases = aliases
+   def initialize options_in = {}
+      @options = { root: Dir.pwd,
+                   replace_list: {} }.merge(options_in)
    end
 end

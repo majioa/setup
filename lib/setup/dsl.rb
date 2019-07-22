@@ -80,8 +80,8 @@ class Setup::DSL
    end
 
    #
-   def initialize source: raise, replace_list: {}
+   def initialize source: raise, replace_list: nil
       @source = source
-      @replace_list = replace_list
+      @replace_list = replace_list || {}
    end
 end

@@ -5,7 +5,7 @@ require 'yaml'
 
 class Setup::Source::Gem < Setup::Source::Base
    BIN_IGNORES = %w(test)
-   OPTION_KEYS = %i(root spec mode version replace_list aliases)
+   OPTION_KEYS = %i(root spec version replace_list aliases)
 
    EXE_DIRS = ->(s) { s.spec.bindir || s.exedir || nil }
    EXT_DIRS = ->(s) do
@@ -18,10 +18,23 @@ class Setup::Source::Gem < Setup::Source::Base
    LIB_DIRS = ->(s) { s.require_pure_paths }
    DOCSRC_DIRS = ->(s) { s.require_pure_paths }
 
-   attr_reader :root, :spec, :mode
+   attr_reader :spec
 
    class << self
-      def search dir, options = {}
+      def spec_for options_in = {}
+         spec_in = options_in[:spec]
+         spec = spec_in.is_a?(String) && YAML.load(spec_in) || spec_in
+         spec.version = Gem::Version.new(version) if options_in[:version]
+         spec.require_paths = options_in[:srclibdirs] if options_in[:srclibdirs]
+
+         spec
+      end
+
+      def name_for options_in = {}
+         spec_for(options_in).name
+      end
+
+      def search dir, options_in = {}
          gemspecs = Setup::Gemspec.kinds.map { |const| Setup::Gemspec.const_get(const) }
 
          gemspec_files = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).map do |f|
@@ -33,21 +46,16 @@ class Setup::Source::Gem < Setup::Source::Base
          end
 
          specs = gemspec_files.map do |gemspec, f|
-            new_if_valid(gemspec.parse(f), File.dirname(f), options)
+            new_if_valid(gemspec.parse(f), { root: File.dirname(f) }.merge(options_in))
          end.flatten(1).compact
 
          specs.map { |x| x.name }.uniq.map { |name| specs.find { |spec| spec.name == name } }
       end
 
-      def new_if_valid spec, dir, options = {}
+      def new_if_valid spec, options_in = {}
          if spec && spec.platform == 'ruby'
-            self.new(root: dir,
-                     spec: spec,
-                     mode: options[:mode],
-                     version: options[:version_replaces][spec.name] || options[:version_replaces][nil],
-                     aliases: (options[:aliases][nil] || []) | (options[:aliases][spec.name] || []),
-                     replace_list: options[:gem_version_replace])
-         end
+            self.new(source_options({ spec: spec }.merge(options_in)))
+   end
       end
    end
 
@@ -115,9 +123,7 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def to_h
-      super.merge(
-         spec: spec.to_yaml,
-         mode: mode)
+      super.merge(spec: spec.to_yaml)
    end
 
    def required_ruby_version
@@ -149,11 +155,9 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    #
-   def initialize root: nil, spec: nil, mode: nil, replace_list: {}, version: nil, aliases: nil
-      super(root: root, replace_list: replace_list, aliases: aliases)
+   def initialize options_in = {}
+      super
 
-      @spec = spec.is_a?(String) && YAML.load(spec) || spec
-      @mode = mode
-      @spec.version = Gem::Version.new(version) if version
+      @spec = self.class.spec_for(options_in)
    end
 end

@@ -227,13 +227,21 @@ module Setup
 
     # #  C O N T R O L L E R S / M O D E L S  # #
 
+    def project_options
+      %w(dl ri inc ext lib app exe conf test man sup data docsrc).map do |kind|
+        name = "src#{kind}dirses"
+        dirs = configuration.send(name)
+        dirs && [ name.to_sym, dirs ]
+      end.compact.to_h.merge(config: configuration,
+                             mode: configuration.mode.to_sym,
+                             aliases: configuration.aliases,
+                             version_replaces: configuration.version_replaces,
+                             gem_version_replace: configuration.gem_version_replace)
+    end
+
     #
     def project
-      @project ||= configuration.project || Project.new(config: configuration,
-                                                        mode: configuration.mode.to_sym,
-                                                        aliases: configuration.aliases,
-                                                        version_replaces: configuration.version_replaces,
-                                                        gem_version_replace: configuration.gem_version_replace)
+      @project ||= configuration.project || Project.new(project_options)
     end
     #
     def configuration

@@ -81,6 +81,25 @@ class String
 
       res.transpose.map { |x| x.compact }
    end
+
+   TABLE = {
+      /e$/ => 'es',
+      /us$/ => 'i',
+      /([xcs])$/ => '\1es',
+      /$/ => 's'
+   }
+
+   def pluralize
+      TABLE.reduce(nil) do |res, (re, char)|
+         res || self.dup.sub!(re, char)
+      end.to_s
+   end
+end
+
+class Symbol
+   def pluralize
+      to_s.pluralize.to_sym
+   end
 end
 
 class Dir
