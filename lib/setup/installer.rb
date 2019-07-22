@@ -145,7 +145,24 @@ module Setup
           Dir.chdir(File.join(target.source.root, dir)) do
             io.puts "  % #{target.source.name} < #{dir}" unless quiet?
 
-            novel_install_files(files, target.mandir, options.merge(mode: 0644))
+            files.each do |file|
+              if file =~ /ronn$/
+                require 'ronn'
+
+                opts = {
+                  'styles' => %w[man]
+                }
+                doc = Ronn::Document.new(file, opts)
+                output = doc.convert('roff')
+                tmp = Tempfile.new
+                tmp.write(output)
+                tmp.rewind
+                novel_install_files([ tmp.path ], File.join(target.mandir, File.dirname(file)), options.merge(mode: 0644, as: file.gsub('.ronn', '')))
+                tmp.close
+              else
+                novel_install_files([ file ], target.mandir, options.merge(mode: 0644))
+              end
+            end
           end
         end
       end

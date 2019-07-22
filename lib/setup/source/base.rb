@@ -20,7 +20,7 @@ class Setup::Source::Base
    DL_RE       = ->(_) { /\.(#{RbConfig::CONFIG['DLEXT']}|build_complete)$/ }
    RI_RE       = /\.ri$/
    INC_RE      = /\.(h|hpp)$/
-   MAN_RE      = /\.[1-8]$/
+   MAN_RE      = /\.[1-8](.ronn)?$/
    EXT_RE      = /\bextconf.rb$/
    DATA_RE     = ->(s) do
          dirs = s.extdirs | s.libdirs | s.appdirs | s.exedirs |
