@@ -385,6 +385,11 @@ module Setup
         configuration.compat = val
       end
 
+      # use source's set
+      parser.on('--prefixes PREFIXES', 'Aliases thr current source with the new names') do |val|
+        configuration.current_prefix = val
+      end
+
       parser.separator ""
       parser.separator "Inform options:"
 

@@ -93,6 +93,9 @@ module Setup
     option :root            , :path, 'set custom root folder for current module'
     option :'version-replace' , :pick, 'replace version for the current source explicitly'
     option :compat          , :pick, 'generate the configations but use compatible script instead to act'
+    option :aliases         , :pick, ''
+    option :joins           , :pick, ''
+    option :prefixes        , :pick, ''
 
 
     %w(dl ri inc ext lib app exe conf test man sup data docsrc).map do |kind|
@@ -204,8 +207,21 @@ module Setup
        joins[current_source_name] || joins[nil] || []
     end
 
+    def prefixes
+       @prefixes ||= {}
+    end
+
+    def current_prefix= value
+       @prefixes = prefixes.merge(current_source_name => value.split(/[:;,]/))
+    end
+
+    def current_prefix
+       prefixes[current_source_name] || prefixes[nil] || []
+    end
+
     def package= value
-       match = /^(?<prefix>gem-|ruby-|rails-engine)?(?<name>.*?)(?<suffix>-devel|-doc)?$/.match(value)
+       prefix_re = current_prefix.map {|p| "#{p}-" }.join("|")
+       match = /^(?<prefix>#{prefix_re})?(?<name>.*?)(?<suffix>-devel|-doc)?$/.match(value)
        self.current_source_name = match[:name]
        self.current_set = match[:suffix] && match[:suffix].sub('-', '') || match[:prefix] && 'lib' || 'bin'
     end
