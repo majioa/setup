@@ -24,7 +24,9 @@ class Setup::Source::Gem < Setup::Source::Base
       def spec_for options_in = {}
          spec_in = options_in[:spec]
          spec = spec_in.is_a?(String) && YAML.load(spec_in) || spec_in
-         spec.version = Gem::Version.new(version) if options_in[:version]
+         if options_in[:version_replaces] && version = options_in[:version_replaces][spec.name]
+            spec.version = Gem::Version.new(version)
+         end
          spec.require_paths = options_in[:srclibdirs] if options_in[:srclibdirs]
 
          spec
