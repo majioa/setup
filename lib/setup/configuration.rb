@@ -220,10 +220,19 @@ module Setup
     end
 
     def package= value
-       prefix_re = current_prefix.map {|p| "#{p}-" }.join("|")
-       match = /^(?<prefix>#{prefix_re})?(?<name>.*?)(?<suffix>-devel|-doc)?$/.match(value)
-       self.current_source_name = match[:name]
-       self.current_set = match[:suffix] && match[:suffix].sub('-', '') || match[:prefix] && 'lib' || 'bin'
+       match = prefixes.to_a.reverse.reduce(nil) do |res, (name, prs)|
+          prefix_re = prs.map {|p| "#{p}-" }.join("|")
+          name_re = name || '.*?'
+       
+          res || /^(?<prefix>#{prefix_re})?(?<name>#{name_re})(?<suffix>-devel|-doc)?$/.match(value)
+       end
+             
+       if match
+          self.current_source_name = match[:name]
+          self.current_set = match[:suffix] && match[:suffix].sub('-', '') || match[:prefix] && 'lib' || 'bin'
+       else
+          $stderr.puts "No package match found for '#{value}'"
+       end
     end
 
     def current_set= value
