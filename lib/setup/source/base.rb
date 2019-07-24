@@ -37,7 +37,6 @@ end
       aliases: ->(o, name) { o.is_a?(Hash) && [ o[nil], o[name] ].flatten.compact.uniq || o },
       version_replaces: true,
       gem_version_replace: true,
-      spec: true,
       root: true
    }
 
@@ -47,6 +46,14 @@ end
    attr_reader :options
 
    class << self
+      def opts
+         @@opts ||= ancestors.reverse.map do |a|
+            a.constants.include?(:PASSIN_OPTIONS) &&
+            a.const_get(:PASSIN_OPTIONS).to_a ||
+            nil
+         end.compact.flatten(1).to_h
+      end
+
       def name_for options_in
          fullname = (options_in[:root] || "").split('/').last
          /^(?<name>.*)-([\d\.]+)$/ =~ fullname
@@ -64,7 +71,7 @@ end
             value && [ oname, value ] || nil
          end.compact.to_h
 
-         PASSIN_OPTIONS.map do |oname, rule|
+         opts.map do |oname, rule|
             value_in = options_in[oname]
 
             value = case rule

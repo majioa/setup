@@ -3,11 +3,9 @@ require 'setup/source/base'
 
 class Setup::Source::Gemfile < Setup::Source::Base
    class << self
-      def search dir, options = {}
+      def search dir, options_in = {}
          Dir.glob("#{dir}/**/Gemfile", File::FNM_DOTMATCH).map do |f|
-            self.new(root: File.dirname(f),
-                     aliases: options[:aliases][nil],
-                     replace_list: options[:gem_version_replace])
+            self.new(source_options({ root: File.dirname(f) }.merge(options_in)))
          end
       end
    end

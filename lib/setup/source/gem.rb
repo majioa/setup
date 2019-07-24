@@ -18,6 +18,10 @@ class Setup::Source::Gem < Setup::Source::Base
    LIB_DIRS = ->(s) { s.require_pure_paths }
    DOCSRC_DIRS = ->(s) { s.require_pure_paths }
 
+   PASSIN_OPTIONS = {
+      spec: true,
+   }
+
    attr_reader :spec
 
    class << self
@@ -57,7 +61,7 @@ class Setup::Source::Gem < Setup::Source::Base
       def new_if_valid spec, options_in = {}
          if spec && spec.platform == 'ruby'
             self.new(source_options({ spec: spec }.merge(options_in)))
-   end
+         end
       end
    end
 
