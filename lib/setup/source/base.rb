@@ -106,7 +106,7 @@ end
    end
 
    def replace_list
-      options[:replace_list]
+      options[:gem_version_replace]
    end
 
    def aliases
