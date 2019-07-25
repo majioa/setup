@@ -47,7 +47,7 @@ end
 
    class << self
       def opts
-         @@opts ||= ancestors.reverse.map do |a|
+         @opts ||= ancestors.reverse.map do |a|
             a.constants.include?(:PASSIN_OPTIONS) &&
             a.const_get(:PASSIN_OPTIONS).to_a ||
             nil
