@@ -147,18 +147,22 @@ module Setup
 
             files.each do |file|
               if file =~ /ronn$/
-                require 'ronn'
-
-                opts = {
-                  'styles' => %w[man]
-                }
-                doc = Ronn::Document.new(file, opts)
-                output = doc.convert('roff')
-                tmp = Tempfile.new
-                tmp.write(output)
-                tmp.rewind
-                novel_install_files([ tmp.path ], File.join(target.mandir, File.dirname(file)), options.merge(mode: 0644, as: file.gsub('.ronn', '')))
-                tmp.close
+                begin
+                  require 'ronn' #TODO add require embedded if is ronn itself
+                rescue LoadError
+                  $stderr.puts "[setup.rb] Ronn is unavailable: compilation from ronn will be disabled"
+                else
+                  opts = {
+                    'styles' => %w[man]
+                  }
+                  doc = Ronn::Document.new(file, opts)
+                  output = doc.convert('roff')
+                  tmp = Tempfile.new
+                  tmp.write(output)
+                  tmp.rewind
+                  novel_install_files([ tmp.path ], File.join(target.mandir, File.dirname(file)), options.merge(mode: 0644, as: file.gsub('.ronn', '')))
+                  tmp.close
+                end
               else
                 novel_install_files([ file ], target.mandir, options.merge(mode: 0644))
               end
