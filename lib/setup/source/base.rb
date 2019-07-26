@@ -33,23 +33,44 @@ end
 
    GROUPS = constants.select { |c| c =~ /_DIRS/ }.map { |c| c.to_s.sub('_DIRS', '').downcase }
 
-   PASSIN_OPTIONS = {
+   OPTIONS_IN = {
       aliases: ->(o, name) { o.is_a?(Hash) && [ o[nil], o[name] ].flatten.compact.uniq || o },
       version_replaces: true,
       gem_version_replace: true,
-      root: true
+      root: true,
+      srcridirses: :name_or_default,
+      srcincdirses: :name_or_default,
+      srcextdirses: :name_or_default,
+      srclibdirses: :name_or_default,
+      srcappdirses: :name_or_default,
+      srcexedirses: :name_or_default,
+      srcconfdirses: :name_or_default,
+      srctestdirses: :name_or_default,
+      srcmandirses: :name_or_default,
+      srcsupdirses: :name_or_default,
+      srcdatadirses: :name_or_default,
+      srcdocsrcdirses: :name_or_default,
+      srcridirs: true,
+      srcincdirs: true,
+      srcextdirs: true,
+      srclibdirs: true,
+      srcappdirs: true,
+      srcexedirs: true,
+      srcconfdirs: true,
+      srctestdirs: true,
+      srcmandirs: true,
+      srcsupdirs: true,
+      srcdatadirs: true,
+      srcdocsrcdirs: true,
    }
-
-   PROC_OPTIONS = %i(srcridirs srcincdirs srcextdirs srclibdirs srcappdirs srcexedirs
-                     srcconfdirs srctestdirs srcmandirs srcsupdirs srcdatadirs srcdocsrcdirs)
 
    attr_reader :options
 
    class << self
       def opts
          @opts ||= ancestors.reverse.map do |a|
-            a.constants.include?(:PASSIN_OPTIONS) &&
-            a.const_get(:PASSIN_OPTIONS).to_a ||
+            a.constants.include?(:OPTIONS_IN) &&
+            a.const_get(:OPTIONS_IN).to_a ||
             nil
          end.compact.flatten(1).to_h
       end
@@ -63,28 +84,28 @@ end
       def source_options options_in = {}
          name = name_for(options_in)
 
-         parsed = PROC_OPTIONS.map do |oname|
-            onames = oname.pluralize
-            opt = options_in[onames]
-            value = opt && (opt[name] || opt[nil]) || nil
+         opts.map do |oname_in, rule|
+            value_in = options_in[oname_in]
+
+            oname, value = case rule
+               when true
+                  [oname_in, value_in]
+               when Proc
+                  [oname_in, rule[value_in, name] ]
+               when Symbol
+                  method(rule)[value_in, oname_in, name]
+               else
+                  nil
+               end
 
             value && [ oname, value ] || nil
          end.compact.to_h
+      end
 
-         opts.map do |oname, rule|
-            value_in = options_in[oname]
+      def name_or_default value_in, oname, name
+         value = value_in && (value_in[name] || value_in[nil]) || nil
 
-            value = case rule
-            when true
-               value_in
-            when Proc
-               rule[value_in, name]
-            else
-               nil
-            end
-
-            value && [ oname, value ] || nil
-         end.compact.to_h.merge(parsed)
+         value && [ oname.make_singular, value ] || nil
       end
    end
 
@@ -238,6 +259,7 @@ end
          self.class.const_get("#{kind.upcase}_DIRS")
       ].compact.first
 
+      # require 'pry';binding.pry if kind == :exe
       [ dirlist_am ].flatten.map do |dir_am|
          file = dir_am.is_a?(Proc) ? dir_am[self] : dir_am
       end.flatten.compact.select { |file| if_dir(file) }
@@ -263,7 +285,7 @@ end
             end
          end
 
-#         require 'pry';binding.pry #if kind == 'lib'
+         # require 'pry';binding.pry if kind == :exe
 
          [ dir, files ]
       end.to_h

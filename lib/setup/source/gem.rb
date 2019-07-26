@@ -18,7 +18,7 @@ class Setup::Source::Gem < Setup::Source::Base
    LIB_DIRS = ->(s) { s.require_pure_paths }
    DOCSRC_DIRS = ->(s) { s.require_pure_paths }
 
-   PASSIN_OPTIONS = {
+   OPTIONS_IN = {
       spec: true,
    }
 
@@ -96,13 +96,13 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def exttree
-      @exttree ||= { '.' => spec.extensions.select { |file| /extconf\.rb$/ =~ file } }
+      @exttree ||= super { { '.' => spec.extensions.select { |file| /extconf\.rb$/ =~ file } } }
    end
 
    def exetree
-      @exetree ||= Dir.chdir(root) do
-         exedirs.map { |dir| [ dir, Dir.chdir(File.join(root, dir)) { Dir.glob("{#{spec.executables.join(',')}}") } ] }.to_h
-      end
+      @exetree ||= super { Dir.chdir(root) do
+            exedirs.map { |dir| [ dir, Dir.chdir(File.join(root, dir)) { Dir.glob("{#{spec.executables.join(',')}}") } ] }.to_h
+         end }
    end
 
    def docsrctree

@@ -82,23 +82,38 @@ class String
       res.transpose.map { |x| x.compact }
    end
 
-   TABLE = {
-      /e$/ => 'es',
-      /us$/ => 'i',
+   PLURAL_R = {
       /([xcs])$/ => '\1es',
+      /us$/ => 'i',
       /$/ => 's'
    }
 
-   def pluralize
-      TABLE.reduce(nil) do |res, (re, char)|
+   SINGLE_R = {
+      /([xcs])es$/ => '\1',
+      /i$/ => 'us',
+      /s$/ => ''
+   }
+
+   def make_plural
+      PLURAL_R.reduce(nil) do |res, (re, char)|
+         res || self.dup.sub!(re, char)
+      end.to_s
+   end
+
+   def make_singular
+      SINGLE_R.reduce(nil) do |res, (re, char)|
          res || self.dup.sub!(re, char)
       end.to_s
    end
 end
 
 class Symbol
-   def pluralize
-      to_s.pluralize.to_sym
+   def make_plural
+      to_s.make_plural.to_sym
+   end
+
+   def make_singular
+      to_s.make_singular.to_sym
    end
 end
 
