@@ -46,6 +46,7 @@ module Setup
     option :rbdir           , :path, 'directory for ruby scripts'
     option :sodir           , :path, 'directory for ruby extentions'
     option :ridir           , :path, 'directory for ruby ri documents'
+    option :logdir          , :path, 'directory for log files'
     option :sysconfdir      , :path, 'directory for system configuration files'
     option :localstatedir   , :path, 'directory for local state data'
 
@@ -98,7 +99,7 @@ module Setup
     option :prefixes        , :pick, ''
 
 
-    %w(dl ri inc ext lib app exe conf test man sup data docsrc).map do |kind|
+    %w(dl ri inc ext lib app exe conf test man sup data docsrc log).map do |kind|
       funcs = <<-DEF
         option "src#{kind}dirs", :path, "Redefined directories for #{kind} space for the current source or at whole"
 

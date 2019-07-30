@@ -19,11 +19,15 @@ class Setup::Target::Site
       nil
    end
 
+   def logdir
+      "/var/log/#{source.name}"
+   end
+
    def exedir
       RbConfig::CONFIG['bindir']
    end
 
-   def extdir
+   def dldir
       File.join(RbConfig::CONFIG['sitearchdir'])
    end
 
@@ -51,6 +55,22 @@ class Setup::Target::Site
       RbConfig::CONFIG['includedir']
    end
 
+   def appdir
+      datadir
+   end
+
+   def testdir
+      datadir
+   end
+
+   def supdir
+      datadir
+   end
+
+   def statedir
+      File.join(RbConfig::CONFIG['localstatedir'], source.name)
+   end
+
    # files
 
    def exefiles
@@ -63,6 +83,10 @@ class Setup::Target::Site
 
    def is_lib_separated?
       true
+   end
+
+   def is_log_separated?
+      libdir && libdir != logdir
    end
 
    protected

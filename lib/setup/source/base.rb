@@ -13,8 +13,10 @@ class Setup::Source::Base
    CONF_DIRS   = %w(etc config conf)
    TEST_DIRS   = %w(tests test spec features acceptance autotest)
    MAN_DIRS    = %w(doc docs Documentation man docs-source)
-   SUP_DIRS    = %w(util yardoc benchmarks examples .git tmp vendor sample)
+   SUP_DIRS    = %w(util yardoc benchmarks examples .git vendor sample)
+   LOG_DIRS    = %w(log)
    DATA_DIRS   = %w(.)
+   STATE_DIRS  = %w(tmp)
    DOCSRC_DIRS = ->(s) { s.libdirs | s.appdirs | s.exedirs | s.confdirs }
 
    DL_RE       = ->(_) { /\.(#{RbConfig::CONFIG['DLEXT']}|build_complete)$/ }
@@ -25,10 +27,10 @@ class Setup::Source::Base
    DATA_RE     = ->(s) do
          dirs = s.extdirs | s.libdirs | s.appdirs | s.exedirs |
             s.confdirs | s.testdirs | s.mandirs | s.supdirs |
-            s.ridirs | s.dldirs | s.incdirs
+            s.ridirs | s.dldirs | s.incdirs | s.logdirs | s.statedirs
 
          dirs.empty? && /.*/ || /^(?!.*#{dirs.join('\b|').gsub('.', '\\\\.')}\b)/
-end
+      end
    DOCSRC_RE = /\.rb$/
 
    GROUPS = constants.select { |c| c =~ /_DIRS/ }.map { |c| c.to_s.sub('_DIRS', '').downcase }
@@ -50,6 +52,8 @@ end
       srcsupdirses: :name_or_default,
       srcdatadirses: :name_or_default,
       srcdocsrcdirses: :name_or_default,
+      srclogdirses: :name_or_default,
+      srcstatedirses: :name_or_default,
       srcridirs: true,
       srcincdirs: true,
       srcextdirs: true,
@@ -62,6 +66,8 @@ end
       srcsupdirs: true,
       srcdatadirs: true,
       srcdocsrcdirs: true,
+      srclogdirs: true,
+      srcstatedirs: true,
    }
 
    attr_reader :options

@@ -20,16 +20,21 @@ module Setup
     # Install package.
     def install
       Dir.chdir(rootdir) do
-        install_exe
-        install_dl
-        install_lib
-        install_data
-        install_man
-        install_ri
-        install_inc
-        install_conf
-        install_gemspec
-        install_gemfile
+       install_exe
+       _install :dl
+       _install :lib
+       install_man
+       install_ri
+       _install :inc
+       _install :app
+       _install :log
+       _install :state
+       _install :test
+       _install :sup
+       _install :conf
+       install_data
+       install_gemspec
+       install_gemfile
       end
     end
 
@@ -56,48 +61,12 @@ module Setup
       end
     end
 
-    # Install shared extension libraries.
-    def install_dl
-      io.puts "* {dl} ->" unless quiet?
-
-      targets.each do |target|
-        next if !target.source.dltree.any?
-
-        # require 'pry'; binding.pry
-        target.source.dltree.each do |dir, files|
-          Dir.chdir(File.join(target.source.root, dir)) do
-            io.puts "  % #{target.source.name} < #{dir}" unless quiet?
-            files.each do |file|
-              novel_install_files([ file ], target.extdir, options.merge(mode: 0555))
-            end
-          end
-        end
-      end
-    end
-
-    # Install library files.
-    def install_lib
-      io.puts "* {lib} ->" unless quiet?
-
-      targets.each do |target|
-        next if !target.source.libtree.any?
-
-        target.source.libtree.each do |dir, files|
-          Dir.chdir(File.join(target.source.root, dir)) do
-            io.puts "  % #{target.source.name} < #{dir}" unless quiet?
-            novel_install_files(files, target.libdir, options)
-          end
-        end
-      end
-    end
-
     # Install shared data.
     def install_data
       io.puts "* {data} ->" unless quiet?
 
       targets.each do |target|
         next if !target.source.datatree.any?
-        # require 'pry'; binding.pry
 
         target.source.datatree.each do |dir, files|
           Dir.chdir(File.join(target.source.root, dir)) do
@@ -106,29 +75,31 @@ module Setup
             novel_install_files(files, File.join(target.datadir, dir), options)
           end
         end
-
-        if target.libdir && target.is_lib_separated?
-          Dir.chdir(target.source.root) do
-            novel_install_files(target.libdir, target.datadir, options.merge(mode: 0755,
-                                                                             symlink: true,
-                                                                             as: 'lib'))
-          end
-        end
       end
     end
 
-    # Install configuration.
-    def install_conf
-      io.puts "* {conf} ->" unless quiet?
+    # Install for kind
+    def _install kind
+      io.puts "* {#{kind}} ->" unless quiet?
 
-      targets.each do |target|
-        next if !target.source.conftree.any?
+      targets.select { |t| t.source.send("#{kind}tree").any? }.each do |target|
+        is_external = !target.send("#{kind}dir").include?(target.datadir)
 
-        target.source.conftree.each do |dir, files|
+        target.source.send("#{kind}tree").each do |dir, files|
+          target_dir = is_external && target.send("#{kind}dir") || File.join(target.send("#{kind}dir"), dir)
+
           Dir.chdir(File.join(target.source.root, dir)) do
             io.puts "  % #{target.source.name} < #{dir}" unless quiet?
 
-            novel_install_files(files, File.join(target.confdir, dir), options.merge(mode: 0755))
+            novel_install_files(files, target_dir, options.merge(mode: 0755))
+          end
+
+          if is_external
+            novel_install_files(target.send("#{kind}dir"),
+                                target.datadir,
+                                options.merge(mode: 0755,
+                                              symlink: true,
+                                              as: dir))
           end
         end
       end
@@ -183,23 +154,6 @@ module Setup
             io.puts "  % #{target.source.name} < #{dir}" unless quiet?
 
             novel_install_files(files, target.ridir, options.merge(mode: 0644))
-          end
-        end
-      end
-    end
-
-    def install_inc
-      io.puts "* {include} ->" unless quiet?
-
-      targets.each do |target|
-        next if !target.source.inctree.any?
-
-        target.source.inctree.each do |dir, files|
-          Dir.chdir(File.join(target.source.root, dir)) do
-            io.puts "  % #{target.source.name} < #{dir}" unless quiet?
-
-            target_dir = File.join(target.incdir, target.source.name)
-            novel_install_files(files, target_dir, options.merge(mode: 0644))
           end
         end
       end

@@ -14,13 +14,17 @@ class Setup::Target::Gem
    # dirs
 
    def libdir
-      File.join(home, 'gems', source.fullname, source.require_pure_paths)
+      File.join(home, 'gems', source.fullname)
    end
 
    def lexedir
       lexedir = RbConfig::CONFIG['bindir']
 
       lexedir != exedir && lexedir || nil
+   end
+
+   def logdir
+      "/var/log/#{source.name}"
    end
 
    def datadir
@@ -31,7 +35,7 @@ class Setup::Target::Gem
       File.exist?(_exedir) && _exedir || File.join(home, 'gems', source.fullname, 'bin')
    end
 
-   def extdir
+   def dldir
       arch = [ ::Gem.platforms.last.cpu, ::Gem.platforms.last.os ].join('-')
 
       File.join(home, 'extensions', arch, ::Gem.extension_api_version, source.fullname)
@@ -57,6 +61,22 @@ class Setup::Target::Gem
       RbConfig::CONFIG['includedir']
    end
 
+   def appdir
+      datadir
+   end
+
+   def testdir
+      datadir
+   end
+
+   def supdir
+      datadir
+   end
+
+   def statedir
+      File.join(RbConfig::CONFIG['localstatedir'], source.name)
+   end
+
    # files
 
    def exefiles
@@ -72,6 +92,10 @@ class Setup::Target::Gem
    end
 
    def is_lib_separated?
+      false
+   end
+
+   def is_log_separated?
       false
    end
 

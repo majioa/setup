@@ -11,11 +11,15 @@ class Setup::Target::Ruby
       lexedir != exedir && lexedir || nil
    end
 
+   def logdir
+      "/var/log/#{source.name}"
+   end
+
    def exedir
       spec_path(home && File.join(home, 'bin'), RbConfig::CONFIG['bindir'])
    end
 
-   def extdir
+   def dldir
       spec_path(home && File.join(home, 'lib'), RbConfig::CONFIG['archdir'])
    end
 
@@ -43,8 +47,28 @@ class Setup::Target::Ruby
       RbConfig::CONFIG['includedir']
    end
 
+   def appdir
+      datadir
+   end
+
+   def testdir
+      datadir
+   end
+
+   def supdir
+      datadir
+   end
+
+   def statedir
+      File.join(RbConfig::CONFIG['localstatedir'], source.name)
+   end
+
    def is_lib_separated?
       true
+   end
+
+   def is_log_separated?
+      libdir && libdir != logdir
    end
 
    protected
