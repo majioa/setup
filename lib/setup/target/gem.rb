@@ -74,7 +74,7 @@ class Setup::Target::Gem
    end
 
    def statedir
-      File.join(RbConfig::CONFIG['localstatedir'], source.name)
+      datadir
    end
 
    # files
