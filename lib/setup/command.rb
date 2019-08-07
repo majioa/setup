@@ -145,12 +145,9 @@ module Setup
           $stdout = stdout
         end
 
+        Rake.application.load_imports
         configuration.pre&.map do |task_name|
-          if task = Rake::Task[task_name]
-            task.invoke
-          else
-            $stderr.puts "Error: Unknown rake task '#{task_name}'"
-          end
+          Rake::MultiTask[task_name].invoke
         end
       end
     end
