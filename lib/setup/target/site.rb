@@ -36,7 +36,7 @@ class Setup::Target::Site
    end
 
    def datadir
-      File.join(RbConfig::CONFIG['datadir'], source.name)
+      File.join(RbConfig::CONFIG['libdir'], source.name)
    end
 
    def confdir
