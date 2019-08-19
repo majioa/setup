@@ -9,6 +9,7 @@ require 'setup/tester'
 require 'setup/documentor'
 require 'setup/uninstaller'
 require 'setup/deps'
+require 'setup/spec'
 
 module Setup
 
@@ -225,6 +226,12 @@ module Setup
       end
     end
 
+    def spec
+      $stderr.puts("Spec:") unless quiet?
+
+      puts speccer.spec
+    end
+
     # #  C O N T R O L L E R S / M O D E L S  # #
 
     def project_options
@@ -269,6 +276,10 @@ module Setup
     #
     def depper
       @depper ||= Deps.new(project: project, options: options)
+    end
+    #
+    def speccer
+       @speccer ||= Spec::Alt.new(project: project, options: options)
     end
 
     # #  S U P P O R T  # #

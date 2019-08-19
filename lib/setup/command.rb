@@ -49,7 +49,8 @@ module Setup
     task 'distclean', "does `make distclean' for each extention"
     task 'uninstall', "uninstall previously installed files"
     task 'provides' , "show provides for all or specified sources"
-    task 'requires' , "show requires for all or specffied sources"
+    task 'requires' , "show requires for all or specified sources"
+    task 'spec'     , "show spec for the project based on the sources"
 
     # Run command.
 

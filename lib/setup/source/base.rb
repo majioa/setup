@@ -252,6 +252,25 @@ class Setup::Source::Base
       ".ri.#{name}"
    end
 
+   def description
+      # TODO parse README
+      nil
+   end
+
+   def license
+      # TODO parse README
+      nil
+   end
+
+   def url
+      nil
+   end
+
+   def summary
+      # TODO parse README
+      nil
+   end
+
    protected
 
    def exedir

@@ -1,0 +1,139 @@
+# vim: set ft=spec: -*- rpm-spec -*-
+%define        pkgname <%= pkgname %>
+%define        gemname <%= gemname %>
+
+Name:          gem-%pkgname
+Version:       <%= version %>
+Release:       alt1
+Summary:       <%= summary %>
+License:       <%= license %>
+Group:         Development/Ruby
+<% if url %>Url:           <%= url %><% end %>
+<% if vcs %>%vcs           <%= vcs %><% end %>
+Packager:      Ruby Maintainers Team <ruby@packages.altlinux.org>
+<% if !has_binary? %>BuildArch:     noarch<% end %>
+
+Source:        %name-%version.tar
+BuildRequires(pre): rpm-build-ruby
+%add_findreq_skiplist %ruby_gemslibdir/**/*
+
+%description
+<%= description %>
+
+<% subpackages.each do |subpackage| %>
+%package       -n gem-<%= subpackage.pkgname %>
+<% if version != subpackage.version %>Version:       <%= subpackage.version %><% end %>
+Summary:       <%= subpackage.summary %>
+Group:         Development/Ruby
+<% if !subpackage.has_binary? %>BuildArch:     noarch<% end %>
+
+%description   -n gem-<%= subpackage.pkgname %>
+<%= subpackage.description %>
+
+<% if subpackage.exename %>
+%package       -n <%= subpackage.exename %>
+<% if version != subpackage.version %>Version:       <%= subpackage.version %><% end %>
+Summary:       Executable file for %gemname gem
+Summary(ru_RU.UTF-8): Исполнямка для самоцвета %gemname
+Group:         Development/Ruby
+BuildArch:     noarch
+
+%description   -n <%= subpackage.exename %>
+Executable file for %gemname gem.
+
+%description   -n <%= subpackage.exename %> -l ru_RU.UTF8
+Исполнямка для %gemname самоцвета.
+<% end %>
+<% if subpackage.has_docs? %>
+
+%package       -n gem-<%= subpackage.pkgname %>-doc
+<% if version != subpackage.version %>Version:       <%= subpackage.version %><% end %>
+Summary:       Documentation files for %gemname gem
+Summary(ru_RU.UTF-8): Файлы сведений для самоцвета %gemname
+Group:         Development/Documentation
+<% if !subpackage.has_binary? %>BuildArch:     noarch<% end %>
+
+%description   -n gem-<%= subpackage.pkgname %>-doc
+Documentation files for %gemname gem.
+
+%description   -n gem-<%= subpackage.pkgname %>-doc -l ru_RU.UTF8
+Файлы сведений для самоцвета %gemname.
+
+<% end %><% end %>
+<% if exename %>
+%package       -n <%= exename %>
+Summary:       Executable file for %gemname gem
+Summary(ru_RU.UTF-8): Исполнямка для самоцвета %gemname
+<% if subpackages.all? %>Version:       <%= version %><% end %>
+Group:         Development/Ruby
+BuildArch:     noarch
+
+%description   -n <%= exename %>
+Executable file for %gemname gem.
+
+%description   -n <%= exename %> -l ru_RU.UTF8
+Исполнямка для %gemname самоцвета.
+
+<% end %>
+<% if has_docs? %>
+%package       doc
+Summary:       Documentation files for %gemname gem
+Summary(ru_RU.UTF-8): Файлы сведений для самоцвета %gemname
+<% if subpackages.all? %>Version:       <%= version %><% end %>
+Group:         Development/Documentation
+BuildArch:     noarch
+
+%description   doc
+Documentation files for %gemname gem.
+
+%description   doc -l ru_RU.UTF8
+Файлы сведений для самоцвета %gemname.
+
+<% end %>
+%prep
+%setup
+
+%build
+%ruby_build
+
+%install
+%ruby_install
+
+%check
+%ruby_test
+
+%files
+%doc README*
+<% if is_gem? %>
+%ruby_gemspec
+%ruby_gemlibdir
+<% if has_binary? %>%ruby_gemextdir<% end %>
+<% end %>
+
+<% if exename %>%files         -n <%= exename %>
+%doc README*
+%_bindir/<%= exemask %><% end %>
+
+<% if has_docs? %>%files         doc
+<% if is_gem? %>
+%ruby_gemdocdir<% end %><% end %>
+<% subpackages.each do |subpackage| %>
+
+%files         -n gem-<%= subpackage.pkgname %>
+%doc README*
+%ruby_gemspecdir/<%= subpackage.gemname %>-<%= subpackage.version %>.gemspec
+%ruby_gemslibdir/<%= subpackage.gemname %>-<%= subpackage.version %>
+<% if subpackage.has_binary? %>%ruby_gemsextdir/<%= subpackage.gemname %>-<%= subpackage.version %><% end %>
+<% if subpackage.exename %>
+%files         -n <%= subpackage.exename %>
+%doc README*
+%_bindir/<%= subpackage.exelist.join(",") %>
+<% end %>
+<% if subpackage.has_docs? %>
+%files         -n gem-<%= subpackage.pkgname %>-doc
+%ruby_gemsdocdir/<%= subpackage.gemname %>-<%= subpackage.version %>
+<% end %><% end %>
+
+%changelog
+* <%= Date.today.strftime("%a %b %d %Y") %> Pavel Skrylev <majioa@altlinux.org> <%= version %>-alt1
++ packaged gem with usage Ruby Policy 2.0

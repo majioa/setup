@@ -150,6 +150,22 @@ class Setup::Source::Gem < Setup::Source::Base
          paths.any? && paths || ['lib'])
    end
 
+   def description
+      spec&.description
+   end
+
+   def license
+      spec&.license
+   end
+
+   def url
+      spec&.homepage
+   end
+
+   def summary
+      !spec&.summary.empty? && spec&.summary 
+   end
+
    protected
 
    def extroots
