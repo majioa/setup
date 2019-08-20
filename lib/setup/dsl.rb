@@ -64,10 +64,12 @@ class Setup::DSL
       deps.map do |dep|
          reqs = dep.requirement.requirements.map {|r| "'#{r[0]} #{r[1]}'" }.join(", ")
 
-         autoreq = dep.autorequire && "require: [ #{dep.autorequire.any? &&
-                        dep.autorequire.map { |r| r.inspect }.join(', ') ||
-                        "false"} ]"
-         g = dep.groups - [ :default ]
+         autoreq = dep.respond_to?(:autorequire) &&
+                   dep.autorequire &&
+                   "require: #{dep.autorequire.any? &&
+                             "[" + dep.autorequire.map { |r| r.inspect }.join(', ') + "]" ||
+                             "false"}" || nil
+         g = (dep.groups || []) - [ :default ]
          groups = g.any? && "group: %i(#{dep.groups.join("\n")})" || nil
          [ "gem '#{dep.name}'", reqs, autoreq, groups ].compact.join(', ')
       end.join("\n")
