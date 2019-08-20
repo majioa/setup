@@ -228,7 +228,9 @@ class Setup::Source::Base
          ) || definition.groups
 
       definition.dependencies.select do |dep|
-         (dep.groups & groups).any? && dep.should_include? && !dep.autorequire&.all?
+         (dep.groups & groups).any? &&
+          dep.should_include? # &&
+         # (dep.autorequire || [ true ]).all? { |r| r }
       end
    end
 
