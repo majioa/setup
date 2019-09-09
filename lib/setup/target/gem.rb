@@ -32,7 +32,7 @@ class Setup::Target::Gem
    end
 
    def exedir
-      File.exist?(_exedir) && _exedir || File.join(home, 'gems', source.fullname, 'bin')
+      File.join(home, 'gems', source.fullname, source.exedirs.first || 'bin')
    end
 
    def dldir
@@ -100,10 +100,6 @@ class Setup::Target::Gem
    end
 
    protected
-
-   def _exedir
-      File.join(home, 'gems', source.fullname, 'exe')
-   end
 
    def initialize source: raise, home: ENV['GEM_HOME'] || ::Gem.paths.home, options: {}
       @source = source
