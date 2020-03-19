@@ -389,7 +389,7 @@ module Setup
 
     # Base libdir
     def base_libdir
-      @base_libdir ||= subprefix('libdir')
+      @base_libdir ||= subprefix('libexecdir')
     end
 
     #
