@@ -116,31 +116,3 @@ class Symbol
       to_s.make_singular.to_sym
    end
 end
-
-class Dir
-   class << self
-      alias :__glob :glob
-
-      def glob pattern_in, flags = 0, options = {}
-         if (flags & File::FNM_EXTGLOB) > 0
-            re = /!\((.*)\)/
-            tokens, matches = pattern_in.actsplit(re)
-            matches_re = matches.map { |x| "^(?!.*#{x.match(re)[1].gsub('|*/', '').gsub('\\\\','\\')})" }
-            tokens_re = tokens.map { |x| x.gsub(/\*+/, '.*').gsub(/\//, '\/?') }
-            match_re = tokens_re.actjoin(matches_re)
-
-            list = __glob(tokens.join('**'), flags, options).select do |file|
-               file =~ /#{match_re}/
-            end
-
-            if base = options[:base]
-               list.select { |r| r[0...base.size] == base }
-            else
-               list
-            end
-         else
-            __glob(pattern_in, flags, options)
-         end
-      end
-   end
-end
