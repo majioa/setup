@@ -209,7 +209,7 @@ module Setup
     end
 
     def prefixes
-       @prefixes ||= {}
+       @prefixes ||= default_prefixes
     end
 
     def current_prefix= value
@@ -221,7 +221,7 @@ module Setup
     end
 
     def suffixes
-       { nil => ['doc', 'devel'] }
+       @suffixes ||= default_suffixes
     end
 
     def affixes
@@ -889,6 +889,14 @@ module Setup
     #end
 
   private
+
+    def default_prefixes
+      { nil => [ 'gem' ] }
+    end
+
+    def default_suffixes
+      { nil => ['doc', 'devel'] }
+    end
 
     def pathname(path)
       path.gsub(%r<\\$([^/]+)>){ self[$1] }
