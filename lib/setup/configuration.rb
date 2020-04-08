@@ -220,14 +220,28 @@ module Setup
        prefixes[current_source_name] || prefixes[nil] || []
     end
 
+    def suffixes
+       { nil => ['doc', 'devel'] }
+    end
+
+    def affixes
+      pre = prefixes.to_a.map() {| (k, v) | [ k, { prefix: v }] }
+      suf = suffixes.to_a.map() {| (k, v) | [ k, { suffix: v }] }
+      [ pre, suf ].flatten(1).reduce({}) do | res, (k, v) |
+         res[k] = (res[k] || {}).merge(v)
+         res
+      end
+    end
+
     def package= value
-       match = prefixes.to_a.reverse.reduce(nil) do |res, (name, prs)|
-          prefix_re = prs.map {|p| "#{p}-" }.join("|")
+       match = affixes.to_a.reverse.reduce(nil) do |res, (name, af)|
+          prefix_re = af[:prefix] && af[:prefix].map {|p| "#{p}-" }.join("|") || /\x0/
+          suffix_re = af[:suffix] && af[:suffix].map {|p| "-#{p}" }.join("|") || /\x0/
           name_re = name || '.*?'
        
-          res || /^(?<prefix>#{prefix_re})?(?<name>#{name_re})(?<suffix>-devel|-doc)?$/.match(value)
+          res || /^(?<prefix>#{prefix_re})?(?<name>#{name_re})(?<suffix>#{suffix_re})?$/.match(value)
        end
-             
+
        if match
           self.current_source_name = match[:name]
           self.current_set = match[:suffix] && match[:suffix].sub('-', '') || match[:prefix] && 'lib' || 'bin'
