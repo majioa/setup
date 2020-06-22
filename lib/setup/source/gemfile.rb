@@ -18,7 +18,10 @@ class Setup::Source::Gemfile < Setup::Source::Base
    end
 
    def dsl
-      @dsl ||= Setup::DSL.new(source: self, replace_list: replace_list)
+      @dsl ||= Setup::DSL.new(source: self,
+                              replace_list: replace_list,
+                              skip_list: options[:gem_skip_list],
+                              append_list: options[:gem_append_list])
    end
 
    def valid?

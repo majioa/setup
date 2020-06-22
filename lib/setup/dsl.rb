@@ -10,7 +10,7 @@ class Setup::DSL
    DEFAULT_GROUP_NAME = :development
 
    # attributes
-   attr_reader :source, :replace_list
+   attr_reader :source, :replace_list, :skip_list, :append_list
 
    def gemfile
       File.join(source.root, 'Gemfile')
@@ -35,11 +35,11 @@ class Setup::DSL
    end
 
    def deps
-      deps_but(source.deps(:runtime), replace_list)
+      deps_but(source.deps(:runtime), replace_list, skip_list, append_list)
    end
 
    def all_deps
-      deps_but(source.deps, replace_list)
+      deps_but(source.deps, replace_list, skip_list, append_list)
    end
 
    def ruby
@@ -56,7 +56,7 @@ class Setup::DSL
 
    def to_ruby
       spec = source.spec.dup
-      spec.dependencies.replace(deps_but(source.deps, replace_list))
+      spec.dependencies.replace(deps_but(source.deps, replace_list, skip_list, append_list))
       spec.to_ruby
    end
 
@@ -69,27 +69,32 @@ class Setup::DSL
                    "require: #{dep.autorequire.any? &&
                              "[" + dep.autorequire.map { |r| r.inspect }.join(', ') + "]" ||
                              "false"}" || nil
-         g = (dep.groups || []) - [ :default ]
-         groups = g.any? && "group: %i(#{dep.groups.join("\n")})" || nil
-         [ "gem '#{dep.name}'", reqs, autoreq, groups ].compact.join(', ')
+         groups = dep.respond_to?(:groups) && dep.groups || []
+         g = groups - [ :default ]
+         group_list = g.any? && "group: %i(#{groups.join("\n")})" || nil
+         [ "gem '#{dep.name}'", reqs, autoreq, group_list ].compact.join(', ')
       end.join("\n")
    end
 
    protected
 
-   def deps_but deps, replace_list
+   def deps_but deps, replace_list, skip_list, append_list
       deps.map do |dep|
+         next if skip_list.include?(dep.name)
+
          new_req = replace_list.reduce(nil) do |s, (name, req)|
             s || name == dep.name && req
          end
 
          new_req && Gem::Dependency.new(dep.name, Gem::Requirement.new([new_req]), dep.type) || dep
-      end
+      end.compact | append_list
    end
 
    #
-   def initialize source: raise, replace_list: nil
+   def initialize source: raise, replace_list: nil, skip_list: nil, append_list: nil
       @source = source
       @replace_list = replace_list || {}
+      @skip_list = skip_list || []
+      @append_list = append_list || []
    end
 end

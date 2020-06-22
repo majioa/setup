@@ -65,6 +65,18 @@ class Setup::Source::Gem < Setup::Source::Base
       end
    end
 
+   def gemfile
+      @gemfile ||= Setup::Source::Gemfile.new(
+        root: options[:root],
+        gem_version_replace: options[:gem_version_replace],
+        gem_skip_list: dsl.deps.map(&:name),
+        gem_append_list: [ self.dep ])
+   end
+
+   def dep
+      Gem::Dependency.new(name, Gem::Requirement.new(["~> #{version}"]), :runtime)
+   end
+
    def fullname
       [ name, version ].compact.join('-')
    end
@@ -82,6 +94,13 @@ class Setup::Source::Gem < Setup::Source::Base
       gemspec_file.puts(dsl.to_ruby)
       gemspec_file.rewind
       gemspec_file.path
+   end
+
+   def gemfile_path
+      gemfile_file = Tempfile.new('Gemfile.')
+      gemfile_file.puts(gemfile.dsl.to_gemfile)
+      gemfile_file.rewind
+      gemfile_file.path
    end
 
    def dsl

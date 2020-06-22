@@ -95,6 +95,8 @@ module Setup
           end
 
           if is_external
+            #require 'pry'
+            #binding.pry
             novel_install_files(target.send("#{kind}dir"),
                                 target.datadir,
                                 options.merge(mode: 0755,
@@ -209,7 +211,7 @@ module Setup
       io.puts "* {gemfile} ->" unless quiet?
 
       targets.each do |target|
-        if target.source.is_a?(Setup::Source::Gemfile)
+        if target.source.is_a?(Setup::Source::Gemfile) or target.source.is_a?(Setup::Source::Gem)
           io.puts "  %#{target.source.name}" unless quiet?
 
           novel_install_files([target.source.gemfile_path],
@@ -294,12 +296,12 @@ module Setup
       source_files = [ source_files_in ].flatten
       chroot = options[:chroot]
 
-#        require 'pry'; binding.pry
       source_files.each do |file|
         name = File.basename(options[:as] || file)
         dir = File.dirname(options[:as] || options[:dir] || file)
 
         if options[:symlink]
+           #require 'pry'; binding.pry
            dest_file_in = File.expand_path(File.join(dest_dir, name))
         else
            dest_file_in = File.expand_path(File.join(dest_dir, dir, name))
