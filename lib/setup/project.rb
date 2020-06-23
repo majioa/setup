@@ -195,6 +195,10 @@ module Setup
        config.current_source_name = nil
     end
 
+      def select_source name
+         ObjectSpace.each_object(Setup::Source::Base).select { |x| x.name == name }
+      end
+
       # Returns an install target
       def targets
          @targets ||= (

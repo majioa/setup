@@ -6,25 +6,25 @@ class Setup::Deps
    REQS = {
       'lib' => {
          proc { |target| target.source.compilable? }               => proc { |this| this.deps_ruby_version },
-         proc { |target| target.source.valid? }                    => proc { |this, target| this.deps_gem_dsl(target.source.dsl) },
+         proc { |target| target.source.valid? }                    => proc { |this, target| this.deps_dyno(target.source, 'lib', :dsl) },
       },
       'bin' => {
          proc { |target| target.public_executables.any? }          => proc { |this, target| this.deps_ruby_exec(target) },
          proc { |target| target.source.exefiles.any? &&
-                         target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_gem(target) },
+                         target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_dyno(target.source, 'bin') },
       },
       'doc' => {
-         proc { |target| target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_gem(target) },
+         proc { |target| target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_dyno(target.source, 'doc') },
       },
       'devel' => {
          proc { |target| target.source.inctree.any? &&
-                         target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_gem(target) },
+                         target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_dyno(target.source, 'devel') },
       }
    }
 
    PROVS = {
       'lib' => {
-         proc { |target| target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_gem_ext(target) },
+         proc { |target| target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_gem_ext(target.source) },
       },
       'bin' => {
          proc { |target| target.public_executables.any? }          => proc { |this, target| this.deps_execs(target) },
@@ -88,13 +88,25 @@ class Setup::Deps
       "ruby(#{RbConfig::CONFIG['ruby_version']})"
    end
 
-   def deps_gem target
-      [ "gem(#{target.source.name})", target.source.version ].compact.join(' = ')
+   def deps_gem source
+      [ "gem(#{source.name})", source.version ].compact.join(' = ')
    end
 
-   def deps_gem_ext target
+   def deps_gem_ext source
       %w(gem ruby-gem rubygem).map do |kind|
-         "#{kind}(#{target.source.name}) = #{target.source.version}"
+         "#{kind}(#{source.name}) = #{source.version}"
+      end
+   end
+
+   def deps_dyno source, set, kind = nil
+      root = project.config.dep_sources[set]
+      name = (root[source.name] || root[nil]).first
+      if name == 'auto'
+         kind == :dsl && deps_gem_dsl(source.dsl) || deps_gem(source)
+      else
+         project.select_source(name).map do |source|
+            deps_gem_dsl(source.dsl)
+         end
       end
    end
 
@@ -128,7 +140,7 @@ class Setup::Deps
 
       method = method("target_#{type}")
 
-#      require 'pry'; binding.pry
+      # require 'pry'; binding.pry
       deps = targets.map do |target|
          $stderr.puts "  - [#{target.source.name}]"
 
@@ -176,5 +188,4 @@ class Setup::Deps
       @project = project
       @options = options
    end
-
 end

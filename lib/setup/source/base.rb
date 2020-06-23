@@ -136,7 +136,7 @@ class Setup::Source::Base
    end
 
    def dsl
-      options[:dsl]
+      @dsl ||= options[:dsl] || Setup::DSL.new(source: self)
    end
 
    def replace_list
@@ -223,9 +223,9 @@ class Setup::Source::Base
    end
 
    def deps groups_in = nil
-      groups = groups_in && (
-         [ groups_in ].flatten.map { |g| g == :runtime && (definition.groups - %i(development test)) || group }.flatten
-         ) || definition.groups
+      groups = groups_in && ([ groups_in ].flatten.map do |g|
+            g == :runtime && (definition.groups - %i(development test)) || group
+         end.flatten) || definition.groups
 
       definition.dependencies.select do |dep|
          (dep.groups & groups).any? &&

@@ -387,6 +387,11 @@ module Setup
         configuration.current_prefix = val
       end
 
+      # use dependency source for the set
+      parser.on('--dep-source DEP_SOURCES', 'redefine dependency source for the set, default: auto') do |val|
+        configuration.current_dep_source = val
+      end
+
       parser.separator ""
       parser.separator "Inform options:"
 

@@ -97,7 +97,7 @@ module Setup
     option :aliases         , :pick, ''
     option :joins           , :pick, ''
     option :prefixes        , :pick, ''
-
+    option :dep_sources     , :pick, ''
 
     %w(dl ri inc ext lib app exe conf test man sup data docsrc log).map do |kind|
       funcs = <<-DEF
@@ -218,6 +218,18 @@ module Setup
 
     def current_prefix
        prefixes[current_source_name] || prefixes[nil] || []
+    end
+
+    def dep_sources
+       @dep_sources ||= default_dep_sources
+    end
+
+    def current_dep_source= value
+       @dep_sources = dep_sources.merge(current_set => { current_source_name => value.split(/[:;,]/) })
+    end
+
+    def current_dep_source
+       dep_sources[current_source_name] || dep_sources[nil] || []
     end
 
     def suffixes
@@ -889,6 +901,15 @@ module Setup
     #end
 
   private
+
+    def default_dep_sources
+      { 
+        'lib' => { nil => [ 'auto' ] },
+        'bin' => { nil => [ 'auto' ] },
+        'doc' => { nil => [ 'auto' ] },
+        'devel' => { nil => [ 'auto' ] },
+      }
+    end
 
     def default_prefixes
       { nil => [ 'gem' ] }

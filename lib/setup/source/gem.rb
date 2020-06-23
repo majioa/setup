@@ -184,5 +184,7 @@ class Setup::Source::Gem < Setup::Source::Base
       super
 
       @spec = self.class.spec_for(options_in)
+
+      gemfile
    end
 end
