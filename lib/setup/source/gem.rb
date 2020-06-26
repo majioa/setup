@@ -97,10 +97,12 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def gemfile_path
-      gemfile_file = Tempfile.new('Gemfile.')
-      gemfile_file.puts(gemfile.dsl.to_gemfile)
-      gemfile_file.rewind
-      gemfile_file.path
+      if gemfile.dsl.valid?
+         gemfile_file = Tempfile.new('Gemfile.')
+         gemfile_file.puts(gemfile.dsl.to_gemfile)
+         gemfile_file.rewind
+         gemfile_file.path
+      end
    end
 
    def dsl

@@ -220,7 +220,9 @@ module Setup
       io.puts "* {gemfile} ->" unless quiet?
 
       targets.each do |target|
-        if target.source.is_a?(Setup::Source::Gemfile) or target.source.is_a?(Setup::Source::Gem)
+        if (target.source.is_a?(Setup::Source::Gemfile) or
+            target.source.is_a?(Setup::Source::Gem) and
+            target.source.gemfile_path)
           io.puts "  %#{target.source.name}" unless quiet?
 
           novel_install_files([target.source.gemfile_path],
