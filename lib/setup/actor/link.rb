@@ -14,7 +14,7 @@ module Setup::Actor::Link
          FileUtils.mkdir_p(File.dirname(target_file))
          FileUtils.rm_rf(target_file)
          FileUtils.ln_s(source_file, target_file, force: true)
-         $stderr.puts "  #{source_file} -> #{target_file}"
+         $stdout.puts "  #{source_file} -> #{target_file}"
       end
    end
 end

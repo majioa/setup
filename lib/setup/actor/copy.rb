@@ -13,7 +13,7 @@ module Setup::Actor::Copy
          source_file = File.join(source_dir, file)
          FileUtils.mkdir_p(File.dirname(target_file))
          FileUtils.cp(source_file, target_file)
-         $stderr.puts "  #{source_file} => #{target_file}"
+         $stdout.puts "  #{source_file} => #{target_file}"
       end
    end
 end

@@ -11,7 +11,7 @@ module Setup::Actor::Touch
          target_file = File.join(context['target_prefix'] || '', target_dir, file)
          FileUtils.mkdir_p(File.dirname(target_file))
          FileUtils.touch(target_file)
-         $stderr.puts "  >> #{target_file}"
+         $stdout.puts "  >> #{target_file}"
       end
    end
 end
