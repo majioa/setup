@@ -1,5 +1,5 @@
 ---
- - match: .so$
+ - match: \.so$
    proc:
     - context:
          source_dir: <%= File.join(target.source.root, dir) %>
