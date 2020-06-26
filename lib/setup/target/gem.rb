@@ -99,6 +99,14 @@ class Setup::Target::Gem
       false
    end
 
+   def require_libdir
+      (source.spec.require_paths | [ '.' ]).select do |x|
+         x !~ /^\//
+      end.map do |x|
+         File.expand_path(File.join(libdir, x))
+      end.first
+   end
+
    protected
 
    def initialize source: raise, home: ENV['GEM_HOME'] || ::Gem.paths.home, options: {}

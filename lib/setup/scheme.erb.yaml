@@ -9,7 +9,7 @@
       actor: copy
     - context:
          source_dir: <%= target.dldir %>
-         target_dir: <%= target.libdir %>
+         target_dir: <%= File.join(target.require_libdir) %>
          target_prefix: <%= File.expand_path(config.install_prefix) %>
          file: <%= file %>
       actor: link
