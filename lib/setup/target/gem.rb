@@ -14,14 +14,7 @@ class Setup::Target::Gem
    # dirs
 
    def libdir
-      @libdir ||= (
-         root = File.join(home, 'gems', source.fullname)
-         paths = source.spec.require_paths
-         (paths | [ '.' ]).map do |x|
-            File.expand_path(File.join(root, x))
-         end.select do |x|
-            File.directory?(x)
-         end.first)
+      File.join(home, 'gems', source.fullname)
    end
 
    def lexedir
