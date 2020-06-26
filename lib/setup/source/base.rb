@@ -254,6 +254,12 @@ class Setup::Source::Base
       ".ri.#{name}"
    end
 
+   def trees &block
+      GROUPS.map do |set|
+         yield(set, tree(set))
+      end
+   end
+
    protected
 
    def exedir

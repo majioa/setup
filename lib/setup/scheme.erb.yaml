@@ -1,0 +1,20 @@
+---
+ - match: .so$
+   proc:
+    - context:
+         source_dir: <%= File.join(target.source.root, dir) %>
+         target_dir: <%= target.dldir %>
+         target_prefix: <%= File.expand_path(config.install_prefix) %>
+         file: <%= file %>
+      actor: copy
+    - context:
+         source_dir: <%= target.dldir %>
+         target_dir: <%= target.libdir %>
+         target_prefix: <%= File.expand_path(config.install_prefix) %>
+         file: <%= file %>
+      actor: link
+    - context:
+         target_dir: <%= target.dldir %>
+         target_prefix: <%= File.expand_path(config.install_prefix) %>
+         file: <%= File.join(File.dirname(file), 'gem.build_complete') %>
+      actor: touch

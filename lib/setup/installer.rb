@@ -1,4 +1,5 @@
 require 'setup/base'
+require 'setup/actor'
 
 module Setup
 
@@ -20,21 +21,29 @@ module Setup
     # Install package.
     def install
       Dir.chdir(rootdir) do
-       install_exe
-       _install :dl
-       _install :lib
-       install_man
-       install_ri
-       _install :inc
-       _install :app
-       _install :log
-       _install :state
-       _install :test
-       _install :sup
-       _install :conf
-       install_data
-       install_gemspec
-       install_gemfile
+        install_exe
+        #_install :dl
+        _install :lib
+        install_man
+        install_ri
+        _install :inc
+        _install :app
+        _install :log
+        _install :state
+        _install :test
+        _install :sup
+        _install :conf
+        install_data
+        install_gemspec
+        install_gemfile
+
+        io.puts "* scheme" unless quiet?
+        targets.each do |target|
+          io.puts "{#{target.source.name}}" unless quiet?
+          Setup::Actor.objectize(target).each do |context|
+            context['$'].apply(context)
+          end
+        end
       end
     end
 
