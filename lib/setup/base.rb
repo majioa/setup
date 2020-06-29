@@ -2,7 +2,6 @@ require 'setup/core_ext'
 require 'setup/constants'
 
 module Setup
-
   # Common base class for all Setup build classes.
   # 
   class Base
@@ -145,11 +144,12 @@ module Setup
         end
       end
     end
-
   end
 
   #
   class Error < StandardError
   end
-
 end
+
+require 'setup/concerns/specification'
+::Gem::Specification.include(Setup::Concerns::Specification)
