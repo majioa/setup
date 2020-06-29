@@ -1,5 +1,4 @@
-# Hoe based gemspec detection module
-# Sample gems are: hoe, racc
+# Rookbook based gemspec detection module
 #
 module Setup::Gemspec::Rookbook
    RE = /\/Rookbook.props$/

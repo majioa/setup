@@ -53,6 +53,7 @@ module Kernel
    MODULES = {
       'olddoc' => 'setup/extcore/olddoc',
       'wrongdoc' => 'setup/extcore/wrongdoc',
+      'bones' => 'setup/extcore/bones',
    }
 
    def require mod

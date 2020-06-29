@@ -1,3 +1,10 @@
 - add disable source (for ruby-rubygems-update)
 - add return to common space on load (for ruby-rails)
 - add doc compilation only over included lib files
+
+
+
+- spec
+  wrongdoc/olddoc - kgio
+  hoe - hoe/racc
+  bones - loquacious/bones
