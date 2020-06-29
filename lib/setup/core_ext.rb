@@ -54,6 +54,7 @@ module Kernel
       'olddoc' => 'setup/extcore/olddoc',
       'wrongdoc' => 'setup/extcore/wrongdoc',
       'bones' => 'setup/extcore/bones',
+      'echoe' => 'setup/extcore/echoe',
    }
 
    def require mod
