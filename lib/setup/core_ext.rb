@@ -32,7 +32,8 @@ unless Errno.const_defined?(:ENOTEMPTY)   # Windows?
 end
 
 module Kernel
-  alias :__old_system_call :`
+   alias :__old_system_call :`
+   alias :__setup_orig_require :require
 
   def ` cmd
     tokens = cmd.split(/\s+/)
@@ -48,6 +49,21 @@ module Kernel
       res
     end
   end
+
+   MODULES = {
+      'olddoc' => 'setup/extcore/olddoc',
+      'wrongdoc' => 'setup/extcore/wrongdoc',
+   }
+
+   def require mod
+      __setup_orig_require(mod)
+   rescue LoadError => e
+      if MODULES[mod]
+         __setup_orig_require(MODULES[mod])
+      else
+         raise e
+      end
+   end
 end
 
 class Array

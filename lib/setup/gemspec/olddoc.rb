@@ -10,13 +10,7 @@ module Setup::Gemspec::Olddoc
          dir = File.dirname(git_version_gen)
          spec = nil
 
-         begin
-           require 'olddoc'
-           Olddoc::Gemspec.include(Extend)
-
-           FileUtils.chdir(dir) { spec = Gem::Specification.load(File.basename(gemspec_file_of(dir))) }
-         rescue Exception
-         end
+         FileUtils.chdir(dir) { spec = Gem::Specification.load(File.basename(gemspec_file_of(dir))) }
 
          spec
       end
@@ -35,39 +29,28 @@ module Setup::Gemspec::Olddoc
             ENV[name] = value
          end
 
-         specfile = Dir.glob(File.join(dir, '**', '*.gemspec')).first
-
          # make documentaion
          if File.directory?('Documentation')
             `make -C Documentation`
          end
 
-         # fix specfile
-         oldspec = IO.read(specfile)
-         newspec = oldspec.split("\n").map {|x| x.gsub('wrong', 'old').gsub('Wrong','Old') }
-         if oldspec != newspec
-            File.open(specfile, 'w+') {|file| file.puts newspec }
-            if File.exist?('.wrongdoc.yml')
-               FileUtils.mv('.wrongdoc.yml', '.olddoc.yml')
-            end
-         end
+         generate_manifest(dir)
+      end
 
-         if specfile && match_in?(specfile, /\.(gem-)?manifest/)
-            files = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).map {|x| x.gsub(/#{dir}\/?/, '')}
+      def generate_manifest dir
+         return if File.exist?('.manifest')
+         return if File.exist?('.gem-manifest')
 
-            File.open(File.join(dir, '.gem-manifest'), "w") { |f| f.puts files }
-            FileUtils.cp(File.join(dir, '.gem-manifest'), File.join(dir, '.manifest'))
-         end
+         files = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).reject do |f|
+            /\/\.git/ =~ f || File.directory?(f)
+         end.map {|x| x.gsub(/#{dir}\/?/, '')}
+
+         File.open(File.join(dir, '.gem-manifest'), "w") { |f| f.puts files }
+         FileUtils.cp(File.join(dir, '.gem-manifest'), File.join(dir, '.manifest'))
       end
 
       def match_in? file, text = /.*/
          IO.read(file).split("\n").grep(text).any?
-      end
-   end
-
-   module Extend
-      def rdoc_options
-         ""
       end
    end
 end
