@@ -20,6 +20,25 @@ module Bones
       end
    end
 
+   class Ann
+      def paragraphs _
+      end
+
+      def text _
+      end
+   end
+
+   class Gem
+      def extras
+         @extras ||= {}
+      end
+   end
+
+   class Notes
+      def exclude _
+      end
+   end
+
    class Spec
       def opts
          Bones.config.gem._spec.rdoc_options
@@ -43,6 +62,14 @@ module Bones
          Bones.config.gem._spec.homepage = value
       end
 
+      def license value
+         Bones.config.gem._spec.license = value
+      end
+
+      def version value
+         Bones.config.gem._spec.version = value
+      end
+
       def readme_file value
          readme = IO.read(value)
          /(?<=== DESCRIPTION:\n)(?<desc>.*?)(?=== )/m =~ readme
@@ -55,16 +82,32 @@ module Bones
       def use_gmail
       end
 
-      def spec
-         @spec ||= Spec.new
-      end
-
       def depend_on name, version = nil, options = {}
          if options[:development]
             Bones.config.gem._spec.add_development_dependency name, version
          else
             Bones.config.gem._spec.add_dependency name, version
          end
+      end
+
+      def spec
+         @spec ||= Spec.new
+      end
+
+      def notes
+         @notes ||= Notes.new
+      end
+
+      def gem arg = nil, arg1 = nil
+         if arg
+            super
+         else
+            @gem ||= Gem.new
+         end
+      end
+
+      def ann
+         @ann ||= Ann.new
       end
    end
 

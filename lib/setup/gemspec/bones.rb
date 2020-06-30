@@ -20,15 +20,14 @@ module Setup::Gemspec::Bones
                      # NOTE this forces not to share namespace but avoid exception when calling
                      # main space methods, see Rakefile of racc gem
                      load('#{rakefile}')
+                     if defined? ::Bones
+                        ::Bones.config.gem._spec.version && ::Bones.config.gem._spec
+                     end
                   end
                END
                module_eval(mod_code)
             rescue Exception => e
                $stderr.puts "[setup.rb]{self.class} -> #{e.class}: #{e.message}"
-            else
-               if defined? ::Bones
-                 ::Bones.config.gem._spec.version && ::Bones.config.gem._spec
-               end
             ensure
                $stdout = stdout
             end
