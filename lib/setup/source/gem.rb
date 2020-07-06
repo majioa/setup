@@ -41,17 +41,13 @@ class Setup::Source::Gem < Setup::Source::Base
       end
 
       def search dir, options_in = {}
-         gemspecs = Setup::Gemspec.kinds.map { |const| Setup::Gemspec.const_get(const) }
-
-         gemspec_files = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).map do |f|
-            gemspecs.map do |gemspec|
+         specs = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).map do |f|
+            Setup::Gemspec.gemspecs.map do |gemspec|
                gemspec::RE =~ f && [ gemspec, f ] || nil
             end
          end.flatten(1).compact.sort_by do |(gemspec, _)|
-            gemspecs.index(gemspec)
-         end
-
-         specs = gemspec_files.map do |gemspec, f|
+            Setup::Gemspec.gemspecs.index(gemspec)
+         end.map do |gemspec, f|
             new_if_valid(gemspec.parse(f), { root: File.dirname(f) }.merge(options_in))
          end.flatten(1).compact
 
@@ -67,10 +63,10 @@ class Setup::Source::Gem < Setup::Source::Base
 
    def gemfile
       @gemfile ||= Setup::Source::Gemfile.new(
-        root: options[:root],
-        gem_version_replace: options[:gem_version_replace],
-        gem_skip_list: dsl.deps.map(&:name),
-        gem_append_list: [ self.dep ])
+         root: options[:root],
+         gem_version_replace: options[:gem_version_replace],
+         gem_skip_list: dsl.deps.map(&:name),
+         gem_append_list: [ self.dep ])
    end
 
    def dep
@@ -117,7 +113,7 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def exttree
-      @exttree ||= super { { '.' => spec.extensions.select { |file| /extconf\.rb$/ =~ file } } }
+      @exttree ||= super
    end
 
    def exetree

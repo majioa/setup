@@ -273,7 +273,6 @@ class Setup::Source::Base
          self.class.const_get("#{kind.upcase}_DIRS")
       ].compact.first
 
-      # require 'pry';binding.pry if kind == :exe
       [ dirlist_am ].flatten.map do |dir_am|
          file = dir_am.is_a?(Proc) ? dir_am[self] : dir_am
       end.flatten.compact.select { |file| if_dir(file) }

@@ -1,17 +1,26 @@
 module Setup::Gemspec
+   AUTOMAP = {
+      Specific: "setup/gemspec/specific",
+      Bones: "setup/gemspec/bones",
+      Echoe: "setup/gemspec/echoe",
+      Rookbook: "setup/gemspec/rookbook",
+      Hoe: "setup/gemspec/hoe",
+      Olddoc: "setup/gemspec/olddoc",
+      Cmake: "setup/gemspec/cmake",
+      Gem: "setup/gemspec/gem",
+      PackageTask: "setup/gemspec/package_task",
+   }
+
    class << self
       def kinds
-         %i(Specific Bones Echoe Rakefile Rookbook Hoe Olddoc Cmake Gem)
+         AUTOMAP.keys
+      end
+
+      def gemspecs
+         @gemspecs ||= kinds.map do |const|
+            require(AUTOMAP[const])
+            const_get(const)
+         end
       end
    end
 end
-
-require 'setup/gemspec/specific'
-require 'setup/gemspec/bones'
-require 'setup/gemspec/rookbook'
-require 'setup/gemspec/echoe'
-require 'setup/gemspec/hoe'
-require 'setup/gemspec/rakefile'
-require 'setup/gemspec/olddoc'
-require 'setup/gemspec/cmake'
-require 'setup/gemspec/gem'
