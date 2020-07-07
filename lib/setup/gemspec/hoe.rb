@@ -2,7 +2,7 @@ require 'rake'
 
 require 'setup/log'
 # Hoe based gemspec detection module
-# Sample gems are: hoe, racc
+# Sample gems are: hoe, racc, nokogiri
 #
 module Setup::Gemspec::Hoe
    RE = /\/Rakefile$/
@@ -21,15 +21,17 @@ module Setup::Gemspec::Hoe
          if File.file?(rakefile) && has_hoe?
             begin
                stdout = $stdout
-               $stdout = $stderr
+               stderr = $stderr
+               $stdout = $stderr = Tempfile.new('package-task')
 
+               module_name = "M" + Random.srand.to_s
                mod_code = <<-END
-                  extend(Rake::DSL)
-                  # NOTE this forces not to share namespace but avoid exception when calling
-                  # main space methods, see Rakefile of racc gem
-
-                  Dir.chdir(File.dirname('#{rakefile}')) do
-                     load(File.basename('#{rakefile}'), true)
+                  module #{module_name}
+                     extend(Rake::DSL)
+                     # NOTE this forces not to share namespace but avoid exception when calling
+                     # main space methods, see Rakefile of racc gem
+                     # also named module is required instead of anonymous one to allow root level defined methods access
+                     load('#{rakefile}')
                   end
 
                   ObjectSpace.each_object(Hoe).map { |h| h.spec }.compact
@@ -40,7 +42,8 @@ module Setup::Gemspec::Hoe
             else
                specs.first
             ensure
-               $stderr = $stdout
+               $stdout.unlink
+               $stderr = stderr
                $stdout = stdout
             end
          end
