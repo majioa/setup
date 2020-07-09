@@ -42,7 +42,7 @@ class Setup::Target::Gem
    end
 
    def confdir
-      File.join(home, 'gems', source.fullname, 'config')
+      File.join(home, 'gems', source.fullname)
    end
 
    def ridir
