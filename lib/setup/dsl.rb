@@ -61,9 +61,12 @@ class Setup::DSL
    end
 
    def to_gemfile
-      deps.map do |dep|
-         reqs = dep.requirement.requirements.map {|r| "'#{r[0]} #{r[1]}'" }.join(", ")
+      deps.group_by { |d| d.name }.map do |name, deps|
+         reqs = deps.map do |dep|
+            reqs = dep.requirement.requirements.map {|r| "'#{r[0]} #{r[1]}'" }.join(", ")
+         end.join(", ")
 
+         dep = deps.first
          autoreq = dep.respond_to?(:autorequire) &&
                    dep.autorequire &&
                    "require: #{dep.autorequire.any? &&
@@ -72,7 +75,8 @@ class Setup::DSL
          groups = dep.respond_to?(:groups) && dep.groups || []
          g = groups - [ :default ]
          group_list = g.any? && "group: %i(#{groups.join("\n")})" || nil
-         [ "gem '#{dep.name}'", reqs, autoreq, group_list ].compact.join(', ')
+
+         [ "gem '#{name}'", reqs, autoreq, group_list ].compact.join(', ')
       end.join("\n")
    end
 
