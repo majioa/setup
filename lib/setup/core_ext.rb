@@ -36,17 +36,27 @@ module Kernel
    alias :__setup_orig_require :require
 
   def ` cmd
+    def lsfiles tokens
+      mask = tokens[2..-1].select { |t| t !~ /^-/ }.first&.sub('*', '**/*') || '**/*'
+      list = Dir.glob(mask, File::FNM_DOTMATCH).select { |x| File.file?(x) }
+      char = tokens.include?('-z') && "\0" || "\n"
+      list.join(char)
+    end
+
     tokens = cmd.split(/\s+/)
 
     res = __old_system_call(cmd)
 
     if res.empty? && tokens.first == 'git' && tokens[1] == 'ls-files'
-      mask = tokens[2..-1].select { |t| t !~ /^-/ }.first&.sub('*', '**/*') || '**/*'
-      list = Dir.glob(mask, File::FNM_DOTMATCH).select { |x| File.file?(x) }
-      char = tokens.include?('-z') && "\0" || "\n"
-      list.join(char)
+      lsfiles(tokens)
     else
       res
+    end
+  rescue => e
+    if tokens.first == 'git' && tokens[1] == 'ls-files'
+      lsfiles(tokens)
+    else
+      raise(e)
     end
   end
 
