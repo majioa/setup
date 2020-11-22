@@ -138,16 +138,20 @@ module Setup
         begin
           stdout = $stdout
           $stdout = $stderr
-          load('Rakefile')
-        rescue Exception => e
-          $stderr.puts("WARN [#{e.class}]: #{e.message}")
-        ensure
-          $stdout = stdout
-        end
 
-        Rake.application.load_imports
-        configuration.pre&.map do |task_name|
-          Rake::MultiTask[task_name].invoke
+          begin
+            load('Rakefile')
+          rescue Exception => e
+            $stderr.puts("WARN [#{e.class}]: #{e.message}")
+          end
+
+          Rake.application.load_imports
+          configuration.pre&.map do |task_name|
+            Rake::MultiTask[task_name].invoke
+          end
+        ensure
+          $stderr = $stdout
+          $stdout = stdout
         end
       end
     end
