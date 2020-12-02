@@ -146,7 +146,8 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def to_h
-      super.merge(spec: spec.to_yaml)
+      # TODO !ruby/array:Files strangely appeared during building the securecompare gem, what leads to exceptions on load
+      super.merge(spec: spec.to_yaml.gsub(/!ruby\/array:Files/, ""))
    end
 
    def required_ruby_version
