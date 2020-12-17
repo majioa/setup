@@ -32,7 +32,7 @@ class Setup::Deps
    }
 
    def targets
-      if name = project.config.current_source_name
+      if name = project.config.current_package_name
          project.targets.select { |target| target.source.has_name?(name) }
       else
          project.targets
@@ -54,8 +54,8 @@ class Setup::Deps
 
    def target_reqs target, sets_in = nil
       sets = sets_in && [ sets_in ].flatten || REQS.keys
-      # require 'pry'; binding.pry
 
+      #require 'pry'; binding.pry
       REQS.select { |set, _| sets.include?(set) }.map do |set, data|
          reqs = data.map do |cond_in, req_in|
             cond = cond_in.is_a?(Proc) ? cond_in[target] : cond_in
@@ -140,7 +140,6 @@ class Setup::Deps
 
       method = method("target_#{type}")
 
-      # require 'pry'; binding.pry
       deps = targets.map do |target|
          $stderr.puts "  - [#{target.source.name}]"
 

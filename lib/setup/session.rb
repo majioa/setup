@@ -204,24 +204,28 @@ module Setup
     def provides
       io.puts("Provides:") unless quiet?
 
-      depper.provs.each do |target, provs|
+      provs = depper.provs.map do |target, provs|
          io.puts("<#{target}>:") unless quiet?
 
-         provs.map { |_, prov_list| prov_list }.flatten.uniq.each do |prov|
-            puts(prov)
-         end
+         provs.map { |_, prov_list| prov_list }
+      end.flatten.reverse.uniq.reverse
+
+      provs.each do |prov|
+         io.puts(prov)
       end
     end
 
     def requires
       io.puts("Requires:") unless quiet?
 
-      depper.reqs.each do |target, reqs|
+      reqs = depper.reqs.map do |target, reqs|
          io.puts("<#{target}>:") unless quiet?
 
-         reqs.map { |_, req_list| req_list }.flatten.uniq.each do |req|
-            io.puts(req)
-         end
+         reqs.map { |_, req_list| req_list }
+      end.flatten.reverse.uniq.reverse
+
+      reqs.each do |req|
+         io.puts(req)
       end
     end
 

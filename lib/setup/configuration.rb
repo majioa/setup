@@ -256,6 +256,7 @@ module Setup
 
        if match
           self.current_source_name = match[:name]
+          self.current_package_name = match[:name]
           self.current_set = match[:suffix] && match[:suffix].sub('-', '') || match[:prefix] && 'lib' || 'bin'
        else
           $stderr.puts "No package match found for '#{value}'"
@@ -278,6 +279,14 @@ module Setup
 
     def current_source_name
        @current_source_name
+    end
+
+    def current_package_name= value
+       @current_package_name = !value.nil? && !value.empty? && value || nil
+    end
+
+    def current_package_name
+       @current_package_name
     end
 
     def root= value
