@@ -50,7 +50,6 @@ task :bundle do
     lib/setup/compiler.rb
     lib/setup/configuration.rb
     lib/setup/installer.rb
-    lib/setup/tester.rb
     lib/setup/uninstaller.rb
     lib/setup/command.rb
   }

@@ -18,12 +18,6 @@ module Setup
     # Ruby System Configuration
     RBCONFIG  = ::RbConfig::CONFIG
 
-    ## Confgiuration file
-    #CONFIG_FILE = 'SetupConfig'  # '.cache/setup/config'
-
-    # Custom configuration file.
-    META_CONFIG_FILE = META_EXTENSION_DIR + '/metaconfig.rb'
-
     #
     def self.options
       @@options ||= []
@@ -327,7 +321,6 @@ module Setup
 
     # New ConfigTable
     def initialize(values={})
-      initialize_metaconfig
       initialize_defaults
       initialize_environment
       initialize_configfile unless values[:reset]
@@ -335,14 +328,6 @@ module Setup
 
       values.each{ |k,v| __send__("#{k}=", v) }
       yield(self) if block_given?
-    end
-
-    #
-    def initialize_metaconfig
-      if File.exist?(META_CONFIG_FILE)
-        script = File.read(META_CONFIG_FILE)
-        (class << self; self; end).class_eval(script)
-      end
     end
 
     # By default installation is to site locations, tests will
@@ -1038,94 +1023,4 @@ end #module Setup
     # # don't actually write files to system
     # attr_accessor :no_harm?
 
-=begin
-    # Metaconfig file is '.config/setup/metaconfig{,.rb}'.
-    def inintialize_metaconfig
-      path = Dir.glob(METACONFIG_FILE).first
-      if path && File.file?(path)
-        MetaConfigEnvironment.new(self).instance_eval(File.read(path), path)
-      end
-    end
-
-    #= Meta Configuration
-    # This works a bit differently from 3.4.1.
-    # Defaults are currently not supported but remain in the method interfaces.
-    class MetaConfigEnvironment
-      def initialize(config) #, installer)
-        @config    = config
-        #@installer = installer
-      end
-
-      #
-      def config_names
-        @config.descriptions.collect{ |n, t, d| n.to_s }
-      end
-
-      #
-      def config?(name)
-        @config.descriptions.find do |sym, type, desc|
-          sym.to_s == name.to_s
-        end
-      end
-
-      #
-      def bool_config?(name)
-        @config.descriptions.find do |sym, type, desc|
-          sym.to_s == name.to_s && type == :bool
-        end
-        #@config.lookup(name).config_type == 'bool'
-      end
-
-      #
-      def path_config?(name)
-        @config.descriptions.find do |sym, type, desc|
-          sym.to_s == name.to_s && type == :path
-        end
-        #@config.lookup(name).config_type == 'path'
-      end
-
-      #
-      def value_config?(name)
-        @config.descriptions.find do |sym, type, desc|
-          sym.to_s == name.to_s && type != :prog
-        end
-        #@config.lookup(name).config_type != 'exec'
-      end
-
-      #
-      def add_config(name, default, desc)
-        @config.descriptions << [name.to_sym, nil, desc]
-        #@config.add item
-      end
-
-      #
-      def add_bool_config(name, default, desc)
-        @config.descriptions << [name.to_sym, :bool, desc]
-        #@config.add BoolItem.new(name, 'yes/no', default ? 'yes' : 'no', desc)
-      end
-
-      #
-      def add_path_config(name, default, desc)
-        @config.descriptions << [name.to_sym, :path, desc]
-        #@config.add PathItem.new(name, 'path', default, desc)
-      end
-
-      #
-      def set_config_default(name, default)
-        @config[name] = default
-      end
-
-      #
-      def remove_config(name)
-        item = @config.descriptions.find do |sym, type, desc|
-          sym.to_s == name.to_s
-        end
-        index = @config.descriptions.index(item)
-        @config.descriptions.delete(index)
-        #@config.remove(name)
-      end
-    end
-=end
-
-# Designed to work with Ruby 1.6.3 or greater.
 

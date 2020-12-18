@@ -1,5 +1,5 @@
-SetupConfig
-SetupReceipt
+.setup
+.receipt
 .cache
 doc/rdoc
 doc/ri

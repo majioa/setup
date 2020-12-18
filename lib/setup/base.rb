@@ -32,24 +32,8 @@ module Setup
       @project = project
       @config  = configuration
 
-      initialize_hooks
-
       options.each do |k,v|
         __send__("#{k}=", v) if respond_to?("#{k}=")
-      end
-    end
-
-    # Hooking into the setup process, use extension scripts
-    # according to the name of the class. For instance to 
-    # augment the behavior of the Installer, use:
-    #
-    #   .setup/installer.rb
-    #
-    def initialize_hooks
-      file = META_EXTENSION_DIR + "/#{self.class.name.downcase}.rb"
-      if File.exist?(file)
-        script = File.read(file)
-        (class << self; self; end).class_eval(script)
       end
     end
 

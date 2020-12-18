@@ -234,7 +234,7 @@ module Setup
 
     #
     def distclean
-      %w(SetupConfig .gemspecs).each { |f| FileUtils.rm_rf(f) }
+      [ Setup::CONFIG_FILE, ".gemspecs" ].each { |f| FileUtils.rm_rf(f) }
     end
 
   private

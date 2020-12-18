@@ -83,7 +83,7 @@ Setup.rb also supports two optional phases, +config+ and +test+.
   $ setup config
 
 Configuration must be run before any other phase in order to be of
-used. Running `config` creates a `SetupConfig` file which you can then
+used. Running `config` creates a `.setup` file which you can then
 edit to make any adjustments neccessary to the installation. When finished
 editing this file, use setup.rb as before and your custom configuration
 will be used instead of the standard defaults.

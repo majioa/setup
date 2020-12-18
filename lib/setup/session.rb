@@ -5,7 +5,6 @@ require 'setup/project'
 require 'setup/configuration'
 require 'setup/compiler'
 require 'setup/installer'
-require 'setup/tester'
 require 'setup/documentor'
 require 'setup/uninstaller'
 require 'setup/deps'
@@ -181,9 +180,7 @@ module Setup
 
     #
     def test
-      return true unless tester.testable?
       log_header('Test')
-      tester.test
     end
 
     #
@@ -281,10 +278,6 @@ module Setup
     #
     def installer
       @installer ||= Installer.new(project, configuration, options)
-    end
-    #
-    def tester
-      @tester ||= Tester.new(project, configuration, options)
     end
     #
     def documentor
