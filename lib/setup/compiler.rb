@@ -20,7 +20,7 @@ module Setup
     end
 
     #
-    def compile
+    def make
       chrpath_path = `which chrpath`.strip
 
       project.sources.each do |source|
@@ -30,12 +30,12 @@ module Setup
 
             Dir.chdir(dir) do
               puts "[#{dir}]$ make #{config.makeprog}"
-              make
+              make_task
 
-              # post compile
+              # post make
               if Dir.glob("**/*.so").any?
                 FileUtils.mkdir_p File.join(source.root, ".so.#{source.name}", RbConfig::CONFIG['sitearchdir'], target_prefix)
-                make('install', DESTDIR: File.join(source.root, ".so.#{source.name}"))
+                make_task('install', DESTDIR: File.join(source.root, ".so.#{source.name}"))
                 Dir.glob(File.join(source.root, ".so.#{source.name}/**/*.so")).each do |file|
                   FileUtils.touch(File.join(File.dirname(file), 'gem.build_complete'))
 
@@ -55,7 +55,7 @@ module Setup
         source.exttree.each do |dir_in, extfiles|
           extfiles.each do |extfile|
             Dir.chdir(File.join(source.root, dir_in, File.dirname(extfile))) do
-              make('clean')
+              make_task('clean')
             end
           end
         end
@@ -69,7 +69,7 @@ module Setup
           extfiles.each do |extfile|
             Dir.chdir(File.join(source.root, dir_in, File.dirname(extfile))) do
               Dir.glob('**/gem.build_complete').each { |file| FileUtils.rm_f(file) }
-              make('distclean')
+              make_task('distclean')
             end
 
             FileUtils.rm_rf(File.join(source.root, ".so.#{source.name}"))
@@ -81,7 +81,7 @@ module Setup
     protected
     #
     #
-    def make task = nil, env = {}
+    def make_task task = nil, env = {}
        if File.exist?('Makefile')
           args = [env, config.makeprog, task].compact
           bash(*args)

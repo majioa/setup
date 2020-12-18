@@ -39,9 +39,9 @@ module Setup
 
     task 'show'     , "show current configuration"
     task 'all'      , "config, compile and install"
-    task 'build'    , "run config, compile, and document consequently"
+    task 'build'    , "run make, and document consequently"
     task 'config'   , "save/customize configuration settings"
-    task 'compile'  , "compile ruby extentions"
+    task 'make'     , "run custom build task and then compile ruby extentions"
     task 'document' , "generate ri/rdoc documentation"
     task 'test'     , "run test suite"
     task 'install'  , "install project files"
@@ -76,13 +76,8 @@ module Setup
 
       optparse_header(parser, options)
       case task
-      when 'config'
-        optparse_config(parser, options)
-      when 'compile'
-        optparse_compile(parser, options)
       when 'build'
         optparse_config(parser, options)
-        optparse_compile(parser, options)
         optparse_document(parser, options)
       when 'document'
         optparse_document(parser, options)
@@ -115,8 +110,6 @@ module Setup
         $stderr.puts "(#{RUBY_VERSION} #{RUBY_PLATFORM})"
       end
 
-      pre(task)
-
       if configuration.compat
         Setup::Base.bash(configuration.compat, task, "--prefix=#{configuration.install_prefix}")
       end
@@ -131,29 +124,6 @@ module Setup
       end
 
       puts unless session.quiet?
-    end
-
-    def pre task
-      if defined? Rake
-        begin
-          stdout = $stdout
-          $stdout = $stderr
-
-          begin
-            load('Rakefile')
-          rescue Exception => e
-            $stderr.puts("WARN [#{e.class}]: #{e.message}")
-          end
-
-          Rake.application.load_imports
-          configuration.pre&.map do |task_name|
-            Rake::MultiTask[task_name].invoke
-          end
-        ensure
-          $stderr = $stdout
-          $stdout = stdout
-        end
-      end
     end
 
     # Setup session.
@@ -188,7 +158,6 @@ module Setup
 
     def optparse_all(parser, options)
       optparse_config(parser, options)
-      optparse_compile(parser, options)
       optparse_document(parser, options)
       optparse_install(parser, options)
       optparse_test(parser, options)
@@ -232,10 +201,6 @@ module Setup
           end
         end
       end
-    end
-
-    #
-    def optparse_compile(parser, options)
     end
 
     # Setup options for +install+ task.

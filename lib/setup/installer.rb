@@ -283,7 +283,7 @@ module Setup
       ents = files.select { |file| File.extname(file) =~ dllext }
 
       if ents.empty? && !files.empty?
-        raise Error, "ruby extention not compiled: 'setup.rb compile' first"
+        raise Error, "ruby extention not compiled: 'setup.rb make' first"
       end
 
       ents

@@ -89,13 +89,13 @@ module Setup
     # Run all tasks in sequence.
     #
     # * config
-    # * compile
+    # * make
     # * test      (optional)
     # * install
     #
     def all
       config
-      compile
+      make
 
       if configuration.test?
         ok = test
@@ -110,12 +110,12 @@ module Setup
     # Run all build tasks in sequence.
     #
     # * config
-    # * compile
+    # * make
     # * document
     #
     def build
       config
-      compile
+      make
       document
     end
 
@@ -134,19 +134,43 @@ module Setup
       puts configuration if trace? && !quiet?
     end
 
-    #
-    def compile
+    # Make the project by running custom build task, and then compile binary if any.
+    def make
+      pre
+
       if compilable?
         log_header('Compile')
         compiler.configure
         #abort "must run 'setup config' first" unless configuration.exist?
-        compiler.compile
+        compiler.make
       end
     end
 
     # What #make used to be called.
-    alias_method :make, :compile
     alias_method :setup, :make
+
+    def pre
+      if defined? Rake
+        begin
+          stdout = $stdout
+          $stdout = $stderr
+
+          begin
+            load('Rakefile')
+          rescue Exception => e
+            $stderr.puts("WARN [#{e.class}]: #{e.message}")
+          end
+
+          Rake.application.load_imports
+          configuration.pre&.map do |task_name|
+            Rake::MultiTask[task_name].invoke
+          end
+        ensure
+          $stderr = $stdout
+          $stdout = stdout
+        end
+      end
+    end
 
     #
     def install
