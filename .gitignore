@@ -1,6 +1,7 @@
 .setup
 .receipt
 .cache
+.bundle
 doc/rdoc
 doc/ri
 log
@@ -9,3 +10,4 @@ pkg
 work/sandbox/faux-root
 web
 setup.gemspec
+*.lock

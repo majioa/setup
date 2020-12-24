@@ -1,12 +1,13 @@
 #!/usr/bin/env ruby
 
-require 'fileutils'
+require "bundler/gem_tasks"
+require "fileutils"
+require "yaml"
 
-require 'yaml'
-VERSION = YAML.load_file('.index')['version']
+require "setup"
 
 COMMENT = <<-HERE
-# Setup.rb v#{VERSION}
+# Setup.rb v#{Setup::VERSION}
 #
 # This is a stand-alone bundle of the setup.rb application.
 # You can place it in your projects script/ directory, or
@@ -23,11 +24,6 @@ COMMENT = <<-HERE
 # without issue and without needing to install it for each.
 HERE
 
-
-desc "run cucumber features"
-task :test do
-  sh "cucumber --format progress test/features"
-end
 
 desc "generate bundled scripts"
 task :bundle do

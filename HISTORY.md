@@ -1,10 +1,10 @@
-= RELEASE HISTORY
+# Release History
 
-== 5.2.0 / 2012-12-20
+## 5.2.0 / 2012-12-20
 
 This release makes a couple of important changes. First the `.ruby` file
 is no longer the supported metadata file. While the format is basically
-the same, the file is now called `.index`. See the {Indexer}[http://github.com/rubyworks/indexer]
+the same, the file is now called `.index`. See the (Indexer)[http://github.com/rubyworks/indexer]
 project for more details. One can still use `.setup/name`, `.setup/version`
 and `.setup/loadpath` files instead. In addition, `.setup/testrc.rb` has been
 renamed to `.setup/test.rb`, and for shell-based command use `.setup/test.sh`.
@@ -16,10 +16,10 @@ Changes:
 * Automatic RI documentation generation is deprecated for good.
 
 
-== 5.1.0 / 2012-03-20
+## 5.1.0 / 2012-03-20
 
 With this release `bin/setup.rb` is now the all-in-one bundled script.
-This allows +rvm+ to use setup.rb across multiple rubies without having
+This allows **rvm** to use setup.rb across multiple rubies without having
 to install it anew for each case. This release also renames the `make`
 phase (previously called the `setup` phase) to `compile`, which is much 
 more descriptive of it's purpose for the general user.
@@ -32,7 +32,7 @@ Changes:
 * The `--prefix` option works with `all` command.
 
 
-== 5.0.1 / 2010-02-07
+## 5.0.1 / 2010-02-07
 
 Version 5.0.1 fixes a bug reading configuration options,
 and makes some minor adjusemnt to exit error messages.
@@ -43,7 +43,7 @@ Changes:
 * Use 'abort $!.message' instead of 'exit 1' when exiting on error.
 
 
-== 5.0.0 / 2010-01-12
+## 5.0.0 / 2010-01-12
 
 Version 5 represents a major milestone in Setup.rb's development.
 While the 4.x series focused on improving on aspects of the
@@ -66,7 +66,7 @@ Changes:
 * Improved configuration options (eg. can use --type instead of --installdirs)
 
 
-== 4.2.1 / 2009-08-26
+## 4.2.1 / 2009-08-26
 
 This release add support for multiple loadpaths. Add a list of them
 to meta/loadpath, and they will be installed. For example, the is used
@@ -77,7 +77,7 @@ Changes:
 * meta/loadpath is now supported if you have multiple paths to install.
 
 
-== 4.2.0 / 2009-08-26
+## 4.2.0 / 2009-08-26
 
 This release finally gets rdoc generation and doc installation working.
 Note that rdoc generation is shelled-out at the moment b/c of issues with
@@ -98,7 +98,7 @@ Changes:
 * Notice the setup.rb file in the project repo. Guess what that is! ;)
 
 
-== 4.1.0 / 2008-11-16
+## 4.1.0 / 2008-11-16
 
 Ruby Setup is a fork or Minero Aokoi's setup.rb script. Whereas setup.rb
 had to be copied into every project that used it, Ruby Setup is a stand
@@ -132,7 +132,7 @@ Changes:
 * Removed test/suite.rb option from testing
 
 
-== 4.0.0 / 2008-08-15
+## 4.0.0 / 2008-08-15
 
 This is the first whack at making setup.rb a stand-alone application.
 Basically I have reverse engineered Aoki's 3.4.1 version of setup.rb,
