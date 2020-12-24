@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require "cucumber/rake/task"
 require "bundler/gem_tasks"
 require "fileutils"
 require "yaml"
@@ -24,6 +25,9 @@ COMMENT = <<-HERE
 # without issue and without needing to install it for each.
 HERE
 
+Cucumber::Rake::Task.new do |t|
+   t.cucumber_opts = %w{--format progress}
+end
 
 desc "generate bundled scripts"
 task :bundle do
@@ -97,3 +101,4 @@ task :bootstrap do
   Setup::Command.run(*ARGV)
 end
 
+task :default => :cucumber

@@ -2,8 +2,7 @@
 language: ruby
 cache: bundler
 install: "bundle install --jobs=3 --retry=3"
-script: "bundle exec rake"
-script: "bundle exec cucumber"
+script: "bundle exec cucumber -ptravis features"
 rvm:
   - 2.4.0
   - 2.5.9

@@ -1,4 +1,5 @@
-default : --format progress test/features
-debug   : --format pretty test/features
-log     : --format progress --format html --out=log/cucumber/index.html test/features
-
+default : --format progress features
+debug   : --format pretty features
+log     : --format progress --format html --out=log/cucumber/index.html features
+travis  : --format pretty features
+public  : --format progress --publish features
