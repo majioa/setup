@@ -37,7 +37,7 @@ module Kernel
 
   def ` cmd
     def lsfiles tokens
-      mask = tokens[2..-1].select { |t| t !~ /^-/ }.first&.sub('*', '**/*') || '**/*'
+      mask = tokens.select { |t| t !~ /^-/ }.first&.sub('*', '**/*') || '**/*'
       list = Dir.glob(mask, File::FNM_DOTMATCH).select { |x| File.file?(x) }
       char = tokens.include?('-z') && "\0" || "\n"
       list.join(char)
@@ -54,7 +54,13 @@ module Kernel
     end
   rescue => e
     if tokens.first == 'git' && tokens[1] == 'ls-files'
-      lsfiles(tokens)
+       # TODO add gem TaskJuggler to test --
+      i = tokens.index_of('--')
+      if i
+        lsfiles(tokens[i + 1..-1])
+      else
+        lsfiles(tokens[2..-1])
+      end
     else
       raise(e)
     end
