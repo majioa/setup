@@ -37,7 +37,17 @@ module Kernel
 
   def ` cmd
     def lsfiles tokens
-      mask = tokens[2..-1].select { |t| t !~ /^-/ }.first&.sub('*', '**/*') || '**/*'
+      folder = tokens[2..-1].select { |t| t !~ /^-/ }.first
+      mask =
+      if folder
+        if folder =~ /\*/
+          folder.sub('*', '**/*')
+        else
+          folder + '/**/*'
+        end
+      else
+        '**/*'
+      end
       list = Dir.glob(mask, File::FNM_DOTMATCH).select { |x| File.file?(x) }
       char = tokens.include?('-z') && "\0" || "\n"
       list.join(char)
