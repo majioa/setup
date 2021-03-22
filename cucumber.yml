@@ -1,4 +1,4 @@
-default : --format progress features
+default : --publish-quiet --format progress features
 debug   : --format pretty features
 log     : --format progress --format html --out=log/cucumber/index.html features
 travis  : --format pretty features

@@ -50,6 +50,7 @@ module Setup
     task 'uninstall', "uninstall previously installed files"
     task 'provides' , "show provides for all or specified sources"
     task 'requires' , "show requires for all or specffied sources"
+    task 'spec'     , "generate spec"
 
     # Run command.
 
@@ -114,8 +115,14 @@ module Setup
         Setup::Base.bash(configuration.compat, task, "--prefix=#{configuration.install_prefix}")
       end
 
+      actor = Setup::Actor.for(task)
+
       begin
-        session.__send__(task)
+        if actor
+          actor.apply(setup)
+        else
+          session.__send__(task)
+        end
       rescue Error => err
         raise err if $DEBUG
         $stderr.puts $!.message
@@ -136,6 +143,10 @@ module Setup
 
     def configuration
       @configuration ||= session.configuration
+    end
+
+    def setup
+      @setup ||= Setup.setup
     end
 
     #
