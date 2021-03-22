@@ -13,6 +13,12 @@ class Setup::Space
    #
    attr_reader :rootdir
 
+   # +sources+ property returns the array of the sources (as hashes) found in
+   # the space.
+   #
+   # sources #=> [...]
+   attr_reader :sources
+
    class << self
       def load_from space_in
          space_h = case space_in
@@ -46,14 +52,6 @@ class Setup::Space
       @name = sources.find { |source| source[:root] == rootdir }
    end
 
-   # +sources+ property returns the array of the sources (as hashes) found in
-   # the space.
-   #
-   # sources #=> [...]
-   def sources
-      space["project"][:sources]
-   end
-
    protected
 
    def initialize options: {}, space: nil
@@ -64,10 +62,12 @@ class Setup::Space
 
    def parse space
       @rootdir ||= space.delete("rootdir")
+      @sources ||= space.delete("sources")
+
+      @space = space
    end
 
-   #def method_missing method, *args
-   #   binding.pry
-   #   self[method.to_s] || super
-   #end
+   def method_missing method, *args
+      @space[method.to_s] || super
+   end
 end

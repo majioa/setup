@@ -1,0 +1,181 @@
+<%= comment -%>
+<% if has_host? %>
+%define        pkgname <%= altname %>
+<% if altname != name %>
+%define        gemname <%= name %>
+<% end -%>
+<% end -%>
+
+Name:          <%= pkgname %>
+Epoch:         <%= epoch %>
+Version:       <%= version %>
+Release:       <%= release %>
+Summary:       <%= summary %>
+License:       <%= license %>
+Group:         <%= group %>
+Url:           <%= uri %>
+Vcs:           <%= vcs %>
+Packager:      <%= packager %>
+<% if !has_compilable? -%>
+BuildArch:     noarch<% end -%>
+
+<% sources.each.with_index do |src,index| -%>
+Source<%= index %>:        <%= src.name %>
+<% end -%>
+BuildRequires(pre): rpm-build-ruby
+<% deps.each do |dep| -%>
+BuildRequires: gem(<%= dep.name %>) <%= dep.version %>
+<% end -%>
+
+%add_findreq_skiplist %ruby_gemslibdir/**/*
+%add_findprov_skiplist %ruby_gemslibdir/**/*
+<% aliases.each do |a| -%>
+Obsoletes:     <%= a %> < %EVR
+Provides:      <%= a %> = %EVR
+<% end -%>
+
+%description
+<%= description %>
+
+
+<% if has_host? -%>
+<% if has_executable? -%>
+%package       -n %pkgname
+Summary:       Executable file for %gemname gem
+Summary(ru_RU.UTF-8): Исполнямка для самоцвета %gemname
+Group:         Development/Ruby
+BuildArch:     noarch
+
+%description   -n %pkgname
+Executable file for %gemname gem.
+
+%description   -n %pkgname -l ru_RU.UTF8
+Исполнямка для %gemname самоцвета.
+
+
+<% end -%>
+<% if has_doc? -%>
+%package       doc
+Summary:       Documentation files for %gemname gem
+Summary(ru_RU.UTF-8): Файлы сведений для самоцвета %gemname
+Group:         Development/Documentation
+BuildArch:     noarch
+
+%description   doc
+Documentation files for %gemname gem.
+
+%description   doc -l ru_RU.UTF8
+Файлы сведений для самоцвета %gemname.<% end -%>
+
+
+<% if has_devel? -%>
+%package       devel
+Summary:       Development files for %gemname gem
+Group:         Development/Ruby
+BuildArch:     noarch
+
+<% devel_deps.each do |dep| -%>
+Requires:      gem(<%= dep.name %>) <%= dep.version %>
+<% end -%>
+
+%description   devel
+Development files for %gemname gem.
+
+%description   devel -l ru_RU.UTF8
+Файлы заголовков для самоцвета %gemname.
+
+
+<% end -%>
+<% end -%>
+<% secondaries.each do |secondary| -%>
+<% if secondary.has_executable? -%>
+%package       -n %pkgname
+Summary:       Executable file for %gemname gem
+Summary(ru_RU.UTF-8): Исполнямка для самоцвета %gemname
+Group:         Development/Ruby
+BuildArch:     noarch
+
+%description   -n %pkgname
+Executable file for %gemname gem.
+
+%description   -n %pkgname -l ru_RU.UTF8
+Исполнямка для %gemname самоцвета.<% end %>
+
+
+<% if secondary.has_doc? -%>
+%package       doc
+Summary:       Documentation files for %gemname gem
+Summary(ru_RU.UTF-8): Файлы сведений для самоцвета %gemname
+Group:         Development/Documentation
+BuildArch:     noarch
+
+%description   doc
+Documentation files for %gemname gem.
+
+%description   doc -l ru_RU.UTF8
+Файлы сведений для самоцвета %gemname.
+
+
+<% end -%>
+<% if secondary.has_devel? -%>
+%package       devel
+Summary:       Development files for %gemname gem
+Group:         Development/Ruby
+BuildArch:     noarch
+
+<% secondary.devel_deps.each do |dep| -%>
+Requires:      gem(<%= dep.name %>) <%= dep.version %>
+<% end -%>
+
+%description   devel
+Development files for %gemname gem.
+
+%description   devel -l ru_RU.UTF8
+Файлы заголовков для самоцвета %gemname.
+
+
+<% end -%>
+<% end -%>
+%prep
+%setup
+
+%build
+%ruby_build
+
+%install
+%ruby_install
+
+%check
+%ruby_test
+
+%files
+%doc <%= readme %>*
+%ruby_gemspec
+%ruby_gemlibdir
+<% if has_compilable? -%>
+%ruby_gemextdir
+
+<% end -%>
+<% if has_executable? -%>
+%files         -n %pkgname
+<% executables.each do |e| -%>
+%_bindir/<%= e %>
+<% end -%>
+
+<% end -%>
+<% if has_doc? -%>
+%files         doc
+%ruby_gemdocdir
+
+<% end -%>
+<% if has_devel_sources? -%>
+%files         devel
+%ruby_includedir/*
+
+<% end -%>
+
+%changelog
+<% history.each do |r| -%>
+* <%= r.date %> <%= r.author %> <%= r.version %>-<%= r.release %>
+<%= r.note %>
+<% end -%>

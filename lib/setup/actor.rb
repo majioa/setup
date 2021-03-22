@@ -42,9 +42,14 @@ module Setup::Actor
             end
          end.flatten
       end
+
+      def for task
+         actors[task]
+      end
    end
 end
 
 require 'setup/actor/link'
 require 'setup/actor/touch'
 require 'setup/actor/copy'
+require 'setup/actor/spec'
