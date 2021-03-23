@@ -117,7 +117,7 @@ project:
 
 rootdir: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4"
 sources:
-- :root: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/railties"
+- rootdir: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/railties"
   :replace_list: {}
   :aliases: []
   :version_replaces: &2 {}
@@ -721,7 +721,7 @@ sources:
     summary: Tools for creating, working with, and running Rails applications.
     test_files: []
   :type: gem
-- :root: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4"
+- rootdir: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4"
   :replace_list: {}
   :aliases:
   - rails
@@ -942,7 +942,7 @@ sources:
     summary: Full-stack web application framework.
     test_files: []
   :type: gem
-- :root: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/activesupport"
+- rootdir: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/activesupport"
   :replace_list: {}
   :aliases: []
   :version_replaces: *2
@@ -1345,7 +1345,7 @@ sources:
       Rails framework.
     test_files: []
   :type: gem
-- :root: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/activestorage"
+- rootdir: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/activestorage"
   :replace_list: {}
   :aliases: []
   :version_replaces: *2
@@ -1521,7 +1521,7 @@ sources:
     summary: Local and cloud file storage framework.
     test_files: []
   :type: gem
-- :root: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/activerecord"
+- rootdir: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/activerecord"
   :replace_list: {}
   :aliases: []
   :version_replaces: *2
@@ -1897,7 +1897,7 @@ sources:
     summary: Object-relational mapper framework (part of Rails).
     test_files: []
   :type: gem
-- :root: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/activemodel"
+- rootdir: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/activemodel"
   :replace_list: {}
   :aliases: []
   :version_replaces: *2
@@ -2037,7 +2037,7 @@ sources:
     summary: A toolkit for building modeling frameworks (part of Rails).
     test_files: []
   :type: gem
-- :root: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/activejob"
+- rootdir: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/activejob"
   :replace_list: {}
   :aliases: []
   :version_replaces: *2
@@ -2160,7 +2160,7 @@ sources:
     summary: Job framework with pluggable queues.
     test_files: []
   :type: gem
-- :root: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/actionview"
+- rootdir: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/actionview"
   :replace_list: {}
   :aliases: []
   :version_replaces: *2
@@ -2432,7 +2432,7 @@ sources:
     summary: Rendering framework putting the V in MVC (part of Rails).
     test_files: []
   :type: gem
-- :root: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/actionpack"
+- rootdir: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/actionpack"
   :replace_list: {}
   :aliases: []
   :version_replaces: *2
@@ -2791,7 +2791,7 @@ sources:
     summary: Web-flow and rendering framework putting the VC in MVC (part of Rails).
     test_files: []
   :type: gem
-- :root: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/actionmailer"
+- rootdir: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/actionmailer"
   :replace_list: {}
   :aliases: []
   :version_replaces: *2
@@ -2949,7 +2949,7 @@ sources:
     summary: Email composition, delivery, and receiving framework (part of Rails).
     test_files: []
   :type: gem
-- :root: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/actioncable"
+- rootdir: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4/actioncable"
   :replace_list: {}
   :aliases: []
   :version_replaces: *2

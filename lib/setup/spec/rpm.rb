@@ -7,17 +7,17 @@ class Setup::Spec::Rpm
 
    @@spec = IO.read("lib/setup/spec/rpm.erb")
 
-   def draw
+   def draw spec = nil
       b = binding
 
      #binding.pry
-      ERB.new(@@spec, trim_mode: "<>-", eoutvar: "@spec").result(b)
+      ERB.new(spec || @@spec, trim_mode: "<>-", eoutvar: "@spec").result(b)
    end
 
    # action
    class << self
-      def draw setup
-         self.new(space: setup).draw
+      def draw space, spec = nil
+         self.new(space: space).draw(spec)
       end
    end
 

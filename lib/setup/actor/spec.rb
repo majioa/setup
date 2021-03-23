@@ -4,10 +4,10 @@ module Setup::Actor::Spec
    class << self
       # function apply
       # generates spec according to the provided setup
-      def apply setup
-         spec = Setup::Spec.find(setup.spec_type)
+      def apply space, template = nil
+         spec = Setup::Spec.find(space.spec_type)
 
-         spec.draw(setup)
+         spec.draw(space, template)
       end
    end
 end

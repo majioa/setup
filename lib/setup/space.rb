@@ -48,8 +48,9 @@ class Setup::Space
    def name
       return @name if @name
 
-      binding.pry
-      @name = sources.find { |source| source[:root] == rootdir }
+      main_source = sources.find { |source| source.rootdir == rootdir }
+
+      @name = main_source&.name
    end
 
    protected
@@ -62,7 +63,7 @@ class Setup::Space
 
    def parse space
       @rootdir ||= space.delete("rootdir")
-      @sources ||= space.delete("sources")
+      @sources ||= Setup::Source.load(space.delete("sources"))
 
       @space = space
    end
