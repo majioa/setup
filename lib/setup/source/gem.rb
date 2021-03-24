@@ -22,16 +22,16 @@ class Setup::Source::Gem < Setup::Source::Base
       spec: true,
    }
 
-   attr_reader :spec
+   attr_reader :spec, :gem_version_replace
 
    class << self
       def spec_for options_in = {}
-         spec_in = options_in[:spec]
+         spec_in = options_in["spec"]
          spec = spec_in.is_a?(String) && YAML.load(spec_in) || spec_in
-         if options_in[:version_replaces] && version = options_in[:version_replaces][spec.name]
+         if options_in["version_replaces"] && version = options_in["version_replaces"][spec.name]
             spec.version = Gem::Version.new(version)
          end
-         spec.require_paths = options_in[:srclibdirs] if options_in[:srclibdirs]
+         spec.require_paths = options_in["srclibdirs"] if options_in["srclibdirs"]
 
          spec
       end
@@ -63,8 +63,8 @@ class Setup::Source::Gem < Setup::Source::Base
 
    def gemfile
       @gemfile ||= Setup::Source::Gemfile.new(
-         root: options[:root],
-         gem_version_replace: options[:gem_version_replace],
+         rootdir: rootdir,
+         gem_version_replace: gem_version_replace,
          gem_skip_list: dsl.deps.map(&:name),
          gem_append_list: [ self.dep ])
    end

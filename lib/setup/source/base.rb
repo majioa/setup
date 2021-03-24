@@ -39,7 +39,7 @@ class Setup::Source::Base
       aliases: ->(o, name) { o.is_a?(Hash) && [ o[nil], o[name] ].flatten.compact.uniq || o },
       version_replaces: true,
       gem_version_replace: true,
-      root: true,
+      rootdir: :rootdir_or_default,
       srcridirses: :name_or_default,
       srcincdirses: :name_or_default,
       srcextdirses: :name_or_default,
@@ -70,7 +70,7 @@ class Setup::Source::Base
       srcstatedirs: true,
    }
 
-   attr_reader :options
+   attr_reader :rootdir
 
    class << self
       def opts
@@ -88,51 +88,78 @@ class Setup::Source::Base
       end
 
       def source_options options_in = {}
-         name = name_for(options_in)
+         source_name = name_for(options_in)
 
-         opts.map do |oname_in, rule|
-            value_in = options_in[oname_in]
+         opts.map do |name_in, rule|
+            value_in = options_in[name_in.to_s]
 
-            oname, value = case rule
+            name, value = case rule
                when true
-                  [oname_in, value_in]
+                  [name_in, value_in]
                when Proc
-                  [oname_in, rule[value_in, name] ]
+                  [name_in, rule[value_in, source_name] ]
                when Symbol
-                  method(rule)[value_in, oname_in, name]
+                  method(rule)[value_in, name_in, source_name]
                else
                   nil
                end
 
-            value && [ oname, value ] || nil
+            value && [ name, value ] || nil
          end.compact.to_h
       end
 
-      def name_or_default value_in, oname, name
-         value = value_in && (value_in[name] || value_in[nil]) || nil
+      def name_or_default value_in, name, source_name
+         value = value_in && (value_in[source_name] || value_in[nil]) || nil
 
-         value && [ oname.make_singular, value ] || nil
+         value && [ name.make_singular, value ] || nil
+      end
+
+      def rootdir_or_default value_in, name, _
+         [ name, value_in || Dir.pwd ]
       end
    end
 
+   # +fullname+ returns full name of the source, by default it is the name of the current folder,
+   # if it is the root folder the name is "root".
+   # A mixin can redefine the method to return the proper value
+   #
+   # source.name #=> "source_name"
+   #
    def fullname
-      @fullname ||= root.split('/').last
+      @fullname ||= rootdir.split('/').last || "root"
    end
 
+   # +name+ returns dynamically detected name of the source base on the fullname,
+   # in case the fullname is detected in a format of <name-version>, the <name> is returned,
+   # otherwise the full name is returned itself.
+   # A mixin can redefine the method to return the proper value
+   #
+   # source.name #=> "source_name"
+   #
    def name
-      @name ||= (
-         /^(?<name>.*)-([\d\.]+)$/ =~ fullname
-         name || fullname)
+      return @name if @name
+
+      if /^(?<name>.*)-([\d\.]+)$/ =~ fullname
+         name
+      else
+         fullname
+      end
    end
 
+   # +version+ returns version of the source by default it is the daystamp for today,
+   # A subslass can redefine the method to return the proper value
+   #
+   # source.version #=> "20000101"
+   # source.version #=> "2.1.0"
+   #
    def version
-      @version ||= (
-         /-(?<version>[\d\.]+)$/ =~ fullname
-         version)
-   end
+      return @version if @version
 
-   def root
-      options[:root]
+      if /-(?<version>[\d\.]+)$/ =~ fullname
+         version
+      else
+         Time.now.strftime("%Y%m%d")
+      end
    end
 
    def dsl
@@ -140,11 +167,11 @@ class Setup::Source::Base
    end
 
    def replace_list
-      options[:gem_version_replace]
+      @gem_version_replace
    end
 
    def aliases
-      options[:aliases]
+      @aliases
    end
 
    # dirs
@@ -310,7 +337,12 @@ class Setup::Source::Base
 
    #
    def initialize options_in = {}
-      @options = { root: Dir.pwd,
-                   replace_list: {} }.merge(options_in)
+      parse(options_in)
+   end
+
+   def parse options_in
+      self.class.source_options(options_in).each do |option, value|
+         instance_variable_set(:"@#{option}", value)
+      end
    end
 end

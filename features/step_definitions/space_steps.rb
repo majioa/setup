@@ -10,3 +10,7 @@ end
 Then('he sees that space\'s {string} is a {string}') do |prop, value|
    expect(@space.send(prop)).to eql(value)
 end
+
+When('developer locks the time to {string}') do |time|
+   Timecop.freeze(Time.parse(time))
+end

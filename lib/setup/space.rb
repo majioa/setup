@@ -46,11 +46,26 @@ class Setup::Space
    # space.name # => space-name
    #
    def name
-      return @name if @name
+      @name ||= main_source&.name
+   end
 
-      main_source = sources.find { |source| source.rootdir == rootdir }
+   # +name+ returns a default version for the space. Returns version of a source when
+   # its root is the same as the space's root, and there is a explicitly main package.
+   #
+   # space.version # => 2.1.1
+   #
+   def version
+      return @version if @version
 
-      @name = main_source&.name
+      @version ||= main_source&.version || time_stamp
+   end
+
+   def main_source
+      @main_source ||= sources.find { |source| source.rootdir == rootdir }
+   end
+
+   def time_stamp
+      Time.now.strftime("%Y%m%d")
    end
 
    protected

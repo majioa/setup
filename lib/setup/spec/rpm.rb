@@ -35,6 +35,7 @@ class Setup::Spec::Rpm
    end
 
    def version
+      space.version
    end
 
    def release
