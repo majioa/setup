@@ -1,5 +1,5 @@
 @rpm @spec
-Feature: RPM Spec 
+Feature: RPM Spec
 
    Scenario: Parse Epoch RPM Spec
       Given RPM spec file:
