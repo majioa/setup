@@ -20,56 +20,66 @@ class Setup::Spec::Rpm
       packager: /Packager:\s+([^\s].+)/i,
       build_arch: /BuildArch:\s+([^\s]+)/i,
       patches: {
-         regexp: /Patch(\i+)?:\s+([^\s]+)/i,
-         parse_func: :parse_source
+         regexp: /Patch(\d+)?:\s+([^\s]+)/i,
+         parse_func: :parse_file
       },
-      sources: {
-         regexp: /Source(\i+)?:\s+([^\s]+)/i,
-         parse_func: :parse_source
+      source_files: {
+         regexp: /Source(\d+)?:\s+([^\s]+)/i,
+         parse_func: :parse_file
       },
       build_pre_requires: {
-         regexp: /(?:BuildPreReq|BuildRequires\(pre\)):\s+([^\s]+)/i,
+         regexp: /(?:BuildPreReq|BuildRequires\(pre\)):\s+([\w\s<=>\.]+)/i,
          parse_func: :parse_dep
       },
       build_requires: {
-         regexp: /BuildRequires:\s+([^\s]+)/i,
+         regexp: /BuildRequires:\s+([\w\s<=>\.]+)/i,
          parse_func: :parse_dep
       },
       obsoletes: {
-         regexp: /Obsoletes:\s+([^\s]+)/i,
+         regexp: /Obsoletes:\s+([\w\s<=>\.]+)/i,
          parse_func: :parse_dep
       },
       provides: {
-         regexp: /Provides:\s+([^\s]+)/i,
+         regexp: /Provides:\s+([\w\s<=>\.]+)/i,
          parse_func: :parse_dep
       },
       requires: {
-         regexp: /Requires:\s+([^\s]+)/i,
+         regexp: /Requires:\s+([\w\s<=>\.]+)/i,
+         parse_func: :parse_dep
+      },
+      conflicts: {
+         regexp: /Conflicts:\s+([\w\s<=>\.]+)/i,
          parse_func: :parse_dep
       },
       descriptions: {
          multiline: true,
-         regexp: /%description:\s*([^\s].*)?/i,
+         regexp: /%description\s*([^\s].*)?/i,
+         parse_func: :parse_section
       },
       packages: {
          multiline: true,
-         regexp: /%package:\s+(.+)/i,
+         regexp: /%package\s+(.+)/i,
+         parse_func: :parse_section
       },
       prep: {
          multiline: true,
          regexp: /%prep/i,
+         parse_func: :parse_section
       },
       build: {
          multiline: true,
          regexp: /%build/i,
+         parse_func: :parse_section
       },
       install: {
          multiline: true,
          regexp: /%install/i,
+         parse_func: :parse_section
       },
       check: {
          multiline: true,
          regexp: /%check/i,
+         parse_func: :parse_section
       },
       file_lists: {
          multiline: true,
@@ -122,17 +132,18 @@ class Setup::Spec::Rpm
                # binding.pry
                if match
                   if matched[:name]
-                     if matched[:name] == key
-                        matched[:flow].concat(line)
-                     else
-                        # binding.pry
+                     if matched[:name] != key
                         store_value(opts, matched[:match], matched[:name], matched[:flow])
-                        matched = { name: key.to_s, flow: line, match: match }
+                        matched = { name: key.to_s, flow: "", match: match }
                      end
                   else
-                     matched = { name: key.to_s, flow: line, match: match }
+                     matched = { name: key.to_s, flow: "", match: match }
                   end
                end
+            end
+
+            if matched
+               matched[:flow].concat(line)
             end
 
             opts
@@ -143,11 +154,11 @@ class Setup::Spec::Rpm
       end
 
       def store_value opts, match, key, flow
-         data = SCHEME[key]
+         data = SCHEME[key.to_sym]
          rule = data.is_a?(Hash) && data[:rule] || data
          parse_func = data.is_a?(Hash) && data[:parse_func] || :parse_default
-         # binding.pry
          value = method(parse_func)[match, flow]
+         # binding.pry
 
          opts[key] =
          case opts[key]
@@ -164,8 +175,8 @@ class Setup::Spec::Rpm
          opts
       end
 
-      def parse_source match, _
-         { match[2] => match[1] }
+      def parse_file match, _
+         { match[1] || "0" => match[2] }
       end
 
       def parse_file_list match, flow
@@ -177,11 +188,16 @@ class Setup::Spec::Rpm
       end
 
       def parse_dep match, _
-         match[1].split(/\s+/)
+         match[1].scan(/\w+(?:\s+[<=>]+\s+[\d\.]+)?/)
       end
 
       def parse_default match, _
          match[1]
+      end
+
+      def parse_section match, flow
+         # binding.pry
+         { match[1] => flow.split("\n")[1..-1].join("\n") }
       end
    end
 
@@ -204,12 +220,19 @@ class Setup::Spec::Rpm
    end
 
    def release
+      space.release
    end
 
    def summary
+      space.summary
    end
 
    def license
+      space.license
+   end
+
+   def build_arch
+      space.build_arch
    end
 
    def readme
@@ -217,33 +240,63 @@ class Setup::Spec::Rpm
    end
 
    def group
-      ""
-      #@@settings["group"]
+      space.group
    end
 
    def uri
+      space.uri
    end
 
    def vcs
+      space.vcs
    end
 
    def packager
-      ""
-      #@@settings["packager"]
+      space.packager
    end
 
-   def sources
-      []
+   def source_files
+      space.source_files
+   end
+
+   def patches
+      space.patches
+   end
+
+   def requires
+      space.requires
+   end
+
+   def build_requires
+      space.build_requires
+   end
+
+   def build_pre_requires
+      space.build_pre_requires
+   end
+
+   def provides
+      space.provides
+   end
+
+   def obsoletes
+      space.obsoletes
+   end
+
+   def conflicts
+      space.conflicts
    end
 
    def aliases
       []
    end
 
-   def description
+   def descriptions
+      space.descriptions
    end
 
    def has_master?
+      # has altname
    end
 
    def has_compilable?
@@ -253,6 +306,7 @@ class Setup::Spec::Rpm
    end
 
    def has_epoch?
+      space.spec && space.epoch
    end
 
    def has_doc?
@@ -262,6 +316,10 @@ class Setup::Spec::Rpm
    end
 
    def has_devel_sources?
+   end
+
+   def has_build_arch?
+      !!build_arch
    end
 
    def deps

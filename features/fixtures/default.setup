@@ -113,8 +113,50 @@ project:
     :srclogdirses: {}
     :chroot: "/"
 spec:
-  name: rpm
-  epoch: 1
+   name: rpm
+   version: 5.2
+   release: rc1
+   epoch: 1
+   summary: RPM sum
+   license: MIT
+   group: Group
+   uri: https://uri.domain
+   vcs: https://vcs.domain
+   packager: Packager FIO <fio@example.com>
+   build_arch: arch64
+   source_files:
+      0: source_file.tar
+      1: source_file1.tar
+   patches:
+      0: patch.patch
+      1: patch1.patch
+   requires:
+      0: req >= 1
+      1: req_new < 0.1
+      2: req_newline >= 2
+   build_requires:
+      0: req >= 1
+      1: req_new < 0.1
+      2: req_newline >= 2
+   build_pre_requires:
+      0: req >= 1
+      1: req_new < 0.1
+      2: req_newline >= 2
+   obsoletes:
+      0: req >= 1
+      1: req_new < 0.1
+      2: req_newline >= 2
+   provides:
+      0: req >= 1
+      1: req_new < 0.1
+      2: req_newline >= 2
+   conflicts:
+      0: req >= 1
+      1: req_new < 0.1
+      2: req_newline >= 2
+   descriptions:
+      ! '': RPM desc
+      '-l ru_RU.UTF8': Заметка
 
 
 rootdir: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4"

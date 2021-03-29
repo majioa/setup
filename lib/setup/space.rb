@@ -46,7 +46,7 @@ class Setup::Space
    end
 
    # +name+ returns a default name of the space. Returns name of a source when
-   # its root is the same as the space's root.
+   # its root is the same as the space's root, or returns name defined in the spec if any.
    #
    # space.name # => space-name
    #
@@ -55,14 +55,15 @@ class Setup::Space
    end
 
    # +name+ returns a default version for the space. Returns version of a source when
-   # its root is the same as the space's root, and there is a explicitly main package.
+   # its root is the same as the space's root, or returns version defined in the spec if any,
+   # or returns default one, which is the datestamp.
    #
    # space.version # => 2.1.1
    #
    def version
       return @version if @version
 
-      @version ||= main_source&.version || time_stamp
+      @version ||= main_source&.version || spec && spec["version"] || time_stamp
    end
 
    def main_source
