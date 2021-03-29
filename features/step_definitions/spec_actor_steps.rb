@@ -13,7 +13,7 @@ Then('he acquires a present spec for the setup') do
    expect(@spec).to_not be_nil
 end
 
-When('developer draws the template:') do |doc_string|
+When(/(?:developer|he) draws the template:/) do |doc_string|
    @spec = Setup::Actor.for('spec').apply(@space, doc_string)
 end
 
@@ -21,3 +21,6 @@ Then('he gets the RPM spec') do |doc_string|
    expect(@spec).to eql(doc_string)
 end
 
+Then('he gets blank RPM spec') do
+   expect(@spec).to eql("")
+end

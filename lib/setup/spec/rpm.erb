@@ -1,5 +1,5 @@
 <%= comment -%>
-<% if has_host? %>
+<% if has_master? %>
 %define        pkgname <%= altname %>
 <% if altname != name %>
 %define        gemname <%= name %>
@@ -38,7 +38,7 @@ Provides:      <%= a %> = %EVR
 <%= description %>
 
 
-<% if has_host? -%>
+<% if has_master? -%>
 <% if has_executable? -%>
 %package       -n %pkgname
 Summary:       Executable file for %gemname gem

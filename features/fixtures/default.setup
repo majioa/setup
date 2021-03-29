@@ -112,7 +112,9 @@ project:
     :srcdocsrcdirses: {}
     :srclogdirses: {}
     :chroot: "/"
-
+spec:
+  name: rpm
+  epoch: 1
 
 
 rootdir: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4"

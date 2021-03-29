@@ -19,6 +19,11 @@ class Setup::Space
    # sources #=> [...]
    attr_reader :sources
 
+   # +spec+ property returns the hash of the loaded spec if any
+   #
+   # sources #=> [...]
+   attr_reader :spec
+
    class << self
       def load_from space_in
          space_h = case space_in
@@ -46,7 +51,7 @@ class Setup::Space
    # space.name # => space-name
    #
    def name
-      @name ||= main_source&.name
+      @name ||= main_source&.name || spec && spec["name"]
    end
 
    # +name+ returns a default version for the space. Returns version of a source when
@@ -70,7 +75,7 @@ class Setup::Space
 
    protected
 
-   def initialize options: {}, space: nil
+   def initialize options: {}, space: {}
       @rootdir ||= options.delete(:rootdir)
 
       parse(space)
@@ -78,12 +83,18 @@ class Setup::Space
 
    def parse space
       @rootdir ||= space.delete("rootdir")
+      @spec ||= space.delete("spec")
+      # binding.pry
+
       @sources ||= Setup::Source.load(space.delete("sources"))
 
       @space = space
    end
 
    def method_missing method, *args
-      @space[method.to_s] || super
+      # binding.pry
+      @space[method.to_s] || spec && spec[method.to_s] || super
    end
 end
+
+require 'setup/space/spec'
