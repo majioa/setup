@@ -28,7 +28,7 @@ class Setup::Space
       def load_from space_in
          space_h = case space_in
          when IO, StringIO
-            YAML.load(space_in.readlines.join("\n"))
+            YAML.load(space_in.readlines.join(""))
          when String
             raise InvalidSpaceFileError if !File.file?(space_in)
 

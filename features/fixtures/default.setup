@@ -117,7 +117,8 @@ spec:
    version: 5.2
    release: rc1
    epoch: 1
-   summary: RPM sum
+   summaries:
+      ! '': RPM sum
    license: MIT
    group: Group
    uri: https://uri.domain
@@ -156,7 +157,8 @@ spec:
       2: req_newline >= 2
    descriptions:
       ! '': RPM desc
-      '-l ru_RU.UTF8': Заметка
+      'ru_RU.UTF8': Заметка
+   secondaries: {}
 
 
 rootdir: "/usr/src/RPM/BUILD/gem-rails-5.2.4.4"

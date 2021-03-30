@@ -230,7 +230,8 @@ Feature: Spec actor
          rootdir: /path/to/dot/space/rootname
          spec:
             name: rpm
-            summary: RPM Summary
+            summaries:
+               ! '': RPM Summary
          """
       When developer loads the space
       And he draws the template:
@@ -412,7 +413,7 @@ Feature: Spec actor
          Name:                rpm
          Source:              source_file.tar
          Source1:              source_file1.tar
-         
+
          """
 
    Scenario: Space patches validation for loaded spec
@@ -518,7 +519,7 @@ Feature: Spec actor
                0: req >= 1
                1: req_new < 0.1
                2: req_newline >= 2
-            
+
          """
       When developer loads the space
       And he draws the template:
@@ -550,7 +551,7 @@ Feature: Spec actor
                0: req >= 1
                1: req_new < 0.1
                2: req_newline >= 2
-            
+
          """
       When developer loads the space
       And he draws the template:
@@ -582,7 +583,7 @@ Feature: Spec actor
                0: req >= 1
                1: req_new < 0.1
                2: req_newline >= 2
-            
+
          """
       When developer loads the space
       And he draws the template:
@@ -643,14 +644,14 @@ Feature: Spec actor
             name: rpm
             descriptions:
                ! '': Description Defaults
-               '-l ru_RU.UTF8': Заметка
+               'ru_RU.UTF8': Заметка
          """
       When developer loads the space
       And he draws the template:
          """
          Name:        <%= pkgname %>
          <% descriptions.each do |arg, description| -%>
-         %description<%= arg && "         #{arg}" || nil %>
+         %description<%= arg && "         -l #{arg}" || nil %>
          <%= description %>
          <% end -%>
          """
@@ -662,6 +663,200 @@ Feature: Spec actor
          Description Defaults
          %description         -l ru_RU.UTF8
          Заметка
+
+         """
+
+   Scenario: Space additional package validation for loaded spec
+      Given space file:
+         """
+         ---
+         spec_type: rpm
+         rootdir: /path/to/dot/space/rootname
+         spec:
+            name: rpm
+            secondaries:
+               rpm-doc:
+                  name: rpm-doc
+                  group: Group1
+                  build_arch: arch64
+                  summaries:
+                     ! '': Summary Defaults
+                     'ru_RU.UTF8': Итого
+                  descriptions:
+                     ! '': Description Defaults
+                     'ru_RU.UTF8': Заметка
+         """
+      When developer loads the space
+      And he draws the template:
+         """
+         Name:          <%= pkgname %>
+         <% secondaries.each do |sec| -%>
+         %package       -n <%= sec.name %>
+         <% sec.summaries.to_h.each do |cp, summary| -%>
+         Summary<%= "#{cp}" != "" && "(#{cp})" || nil %>:       <%= summary %>
+         <% end -%>
+         Group:         <%= sec.group %>
+         BuildArch:     <%= sec.build_arch %>
+
+         <% sec.descriptions.to_h.each do |cp, description| -%>
+         %description   -n <%= sec.name %><%= "#{cp}" != "" && " -l #{cp}" || nil %>
+         <%= description %>
+         <% end -%>
+         <% end -%>
+         """
+
+      Then he gets the RPM spec
+         """
+         Name:          rpm
+         %package       -n rpm-doc
+         Summary:       Summary Defaults
+         Summary(ru_RU.UTF8):       Итого
+         Group:         Group1
+         BuildArch:     arch64
+
+         %description   -n rpm-doc
+         Description Defaults
+         %description   -n rpm-doc -l ru_RU.UTF8
+         Заметка
+
+         """
+
+   Scenario: Space stages validation for loaded spec
+      Given space file:
+         """
+         ---
+         spec_type: rpm
+         rootdir: /path/to/dot/space/rootname
+         spec:
+            name: rpm
+            prep: |-
+               setup
+               patch
+            build: build
+            install: install
+            check: check
+         """
+      When developer loads the space
+      And he draws the template:
+         """
+         Name:        <%= pkgname %>
+         %prep
+         <%= prep %>
+
+         %build
+         <%= build %>
+
+         %install
+         <%= install %>
+
+         %check
+         <%= check %>
+         """
+
+      Then he gets the RPM spec
+         """
+         Name:        rpm
+         %prep
+         setup
+         patch
+
+         %build
+         build
+
+         %install
+         install
+
+         %check
+         check
+         """
+
+   Scenario: Space changes validation for loaded spec
+      Given space file:
+         """
+         ---
+         spec_type: rpm
+         rootdir: /path/to/dot/space/rootname
+         spec:
+            name: rpm
+            changes:
+             - date: "Mon Jan 01 2001"
+               author: "FIO Packer"
+               email: fio@example.com
+               version: 1.0
+               release: rc1
+               description: "- ! of important bug"
+             - date: "Mon Jan 02 2001"
+               author: "FIO Packer"
+               email: fio@example.com
+               version: 2.0
+               description: "- ^ new version"
+         """
+      When developer loads the space
+      And he draws the template:
+         """
+         Name:        <%= pkgname %>
+         %changelog
+         <% changes.reverse.each do |c| -%>
+         * <%= c.date %> <%= c.author %> <%= c.email && "<#{c.email}>" || "" %> <%= [ c.version, c.release ].compact.join("-") %>
+         <%= c.description %>
+
+         <% end -%>
+         """
+
+      Then he gets the RPM spec
+         """
+         Name:        rpm
+         %changelog
+         * Mon Jan 02 2001 FIO Packer <fio@example.com> 2.0
+         - ^ new version
+
+         * Mon Jan 01 2001 FIO Packer <fio@example.com> 1.0-rc1
+         - ! of important bug
+
+
+         """
+
+   Scenario: Space files validation for loaded spec
+      Given space file:
+         """
+         ---
+         spec_type: rpm
+         rootdir: /path/to/dot/space/rootname
+         spec:
+            name: rpm
+            file_list: |-
+               file1
+               file2
+            secondaries:
+               rpm-doc:
+                  name: rpm-doc
+                  file_list: |-
+                     file3
+                     file4
+         """
+      When developer loads the space
+      And he draws the template:
+         """
+         Name:          <%= pkgname %>
+         %files
+         <%= file_list %>
+
+         <% secondaries.each do |sec| -%>
+         %files         -n <%= sec.name %>
+         <%= sec.file_list %>
+         <% end -%>
+         """
+
+      Then he gets the RPM spec
+         """
+         Name:          rpm
+         %files
+         file1
+         file2
+
+         %files         -n rpm-doc
+         file3
+         file4
 
          """
 

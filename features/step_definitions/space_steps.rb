@@ -1,6 +1,6 @@
 # vim:setl sw=3 sts=3 ts=3 et:
-Given('space file:') do |doc_string|
-   @space_in = StringIO.open(doc_string)
+Given('space file:') do |text|
+   @space_in = StringIO.open(text)
 end
 
 When('developer loads the space') do
