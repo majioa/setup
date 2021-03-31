@@ -7,12 +7,11 @@
 [![Downloads][downloads-badge]][rubygems]
 [![Code Climate][code-climate-badge]][code-climate]
 [![Open Source Helpers][open-source-helpers-badge]][open-source-helpers]
-[![Code Climate][code-climate-badge]][code-climate]
 
 [version-badge]: https://img.shields.io/gem/v/setup.svg
 [rubygems]: https://rubygems.org/gems/setup
-[travis-badge]: https://img.shields.io/travis/majioa/setup/master.svg
-[travis]: https://travis-ci.org/majioa/setup
+[travis-badge]: https://img.shields.io/travis/com/majioa/setup/master.svg
+[travis]: https://travis-ci.com/majioa/setup
 [license-badge]: https://img.shields.io/badge/License-BSD2-0000FF.png
 [downloads-total]: https://img.shields.io/gem/dt/setup.svg
 [downloads-badge]: https://img.shields.io/gem/dtv/setup.svg
