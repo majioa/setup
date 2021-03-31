@@ -13,8 +13,8 @@ Then('he acquires a present spec for the setup') do
    expect(@spec).to_not be_nil
 end
 
-When(/(?:developer|he) draws the template:/) do |doc_string|
-   @spec = Setup::Actor.for('spec').apply(@space, doc_string)
+When(/(?:developer|he) draws the template:/) do |text|
+   @spec = Setup::Actor.for('spec').apply(@space, text)
 end
 
 Then('he gets the RPM spec') do |doc_string|

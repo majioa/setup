@@ -3,12 +3,13 @@ require "erb"
 require 'setup/spec'
 
 class Setup::Spec::Rpm
-   attr_reader :space, :home, :options, :spec, :comment
+   attr_reader :home, :options, :spec, :comment
+   attr_accessor :space
 
-   MATCHER = /^Name:\s+\w/i
+   MATCHER = /^Name:\s+([^\s]+)/i
 
    SCHEME = {
-      name: /Name:\s+([^\s]+)/i,
+      name: /^Name:\s+([^\s]+)/i,
       version: /Version:\s+([^\s]+)/i,
       epoch: /Epoch:\s+([^\s]+)/i,
       release: /Release:\s+([^\s]+)/i,
@@ -18,7 +19,7 @@ class Setup::Spec::Rpm
       },
       license: /License:\s+([^\s].+)/i,
       group: /Group:\s+([^\s]+)/i,
-      url: /Url:\s+([^\s]+)/i,
+      uri: /Url:\s+([^\s]+)/i,
       vcs: /Vcs:\s+([^\s]+)/i,
       packager: /Packager:\s+([^\s].+)/i,
       build_arch: /BuildArch:\s+([^\s]+)/i,
@@ -95,6 +96,11 @@ class Setup::Spec::Rpm
          non_contexted: true,
          regexp: /%changelog/i,
          parse_func: :parse_changes
+      },
+      context: {
+         non_contexted: true,
+         regexp: /^%(?:(?:define|global)|([^\s]+))\s+(?:([^\s]+)\s+([^\s].*)|(.*))/i,
+         parse_func: :parse_context
       }
    }
 
@@ -109,8 +115,9 @@ class Setup::Spec::Rpm
 
    # action
    class << self
-      def draw space, spec = nil
-         self.new(space: space).draw(spec)
+      def draw space, spec_in = nil
+         spec = space.spec || self.new(space: space)
+         spec.draw(spec_in)
       end
 
       def source source_in
@@ -158,6 +165,8 @@ class Setup::Spec::Rpm
 
          # binding.pry
          store_value(opts, matched[:match], matched[:name], matched[:flow], context)
+
+         self.new(options: opts)
       end
 
       def store_value opts, match, key, flow, context
@@ -176,7 +185,7 @@ class Setup::Spec::Rpm
          when Array
             copts[key].concat(value)
          when Hash
-            copts[key].merge(value)
+            copts[key].deep_merge(value)
          else
             [ copts[key], value ]
          end
@@ -236,6 +245,14 @@ class Setup::Spec::Rpm
          { match[1] => match[2] }
       end
 
+      def parse_context match, *_
+         if match[1]
+            { "__macros" => { match[1] => match[4] || "#{match[2]} #{match[3]}" }}
+         else
+            { match[2] => match[3] }
+         end
+      end
+
       def parse_context_line line, opts
          key = nil
          context = line.to_s.split(/\s+/).reduce({}) do |res, arg|
@@ -267,130 +284,62 @@ class Setup::Spec::Rpm
       end
    end
 
-   def altname
+   %w(
+      name
+      name
+      epoch
+      version
+      release
+      summaries
+      license
+      build_arch
+      group
+      uri
+      vcs
+      packager
+      source_files
+      patches
+      requires
+      build_requires
+      build_pre_requires
+      provides
+      obsoletes
+      conflicts
+      descriptions
+      changes
+      prep
+      build
+      install
+      check
+      file_list
+      secondaries
+      context
+   ).each do |name|
+      define_method(name) { self[name] || space.send(name) }
+      define_method("_#{name}") { self.options[name] }
+      define_method("has_#{name}?") { !!self.options[name] }
    end
 
-   def name
+   def macros name
+      [ self["context"].__macros[name] ].flatten(1).map { |x| "%#{name} #{x}" }.join("\n")
    end
 
-   def pkgname
-      space.name
-   end
-
-   def epoch
-      space.epoch
-   end
-
-   def version
-      space.version
-   end
-
-   def release
-      space.release
-   end
-
-   def summaries
-      space.summaries
+   def variables
+      vars = self["context"]
+      vars.__macros = nil
+      vars.delete_field("__macros")
+      vars
    end
 
    def summary
-      summaries[nil]
+      summaries[""]
    end
 
-   def license
-      space.license
+   def altname
    end
 
-   def build_arch
-      space.build_arch
-   end
-
-   def readme
-      "README" #change to detect
-   end
-
-   def group
-      space.group
-   end
-
-   def uri
-      space.uri
-   end
-
-   def vcs
-      space.vcs
-   end
-
-   def packager
-      space.packager
-   end
-
-   def source_files
-      space.source_files
-   end
-
-   def patches
-      space.patches
-   end
-
-   def requires
-      space.requires
-   end
-
-   def build_requires
-      space.build_requires
-   end
-
-   def build_pre_requires
-      space.build_pre_requires
-   end
-
-   def provides
-      space.provides
-   end
-
-   def obsoletes
-      space.obsoletes
-   end
-
-   def conflicts
-      space.conflicts
-   end
-
-   def aliases
-      []
-   end
-
-   def descriptions
-      space.descriptions
-   end
-
-   def changes
-      os(space.changes)
-   end
-
-   def prep
-      space.prep
-   end
-
-   def build
-      space.build
-   end
-
-   def install
-      space.install
-   end
-
-   def check
-      space.check
-   end
-
-   def file_list
-      space.file_list
-   end
-
-   def has_master?
-      # has altname
+   def has_altname?
+      !!altname
    end
 
    def has_compilable?
@@ -399,8 +348,8 @@ class Setup::Spec::Rpm
    def has_executable?
    end
 
-   def has_epoch?
-      space.spec && space.epoch
+   def readme
+      "README" #change to detect
    end
 
    def has_doc?
@@ -411,34 +360,174 @@ class Setup::Spec::Rpm
 
    def has_devel_sources?
    end
+####   def name
+#   end
+#
+#   def pkgname
+#      space.name
+#   end
+#
+#   def epoch
+#      space.epoch
+#   end
+#
+#   def version
+#      space.version
+#   end
+#
+#   def release
+#      space.release
+#   end
+#
+#   def summaries
+#      space.summaries
+#   end
+#
+#   def summary
+#      summaries[nil]
+#   end
+#
+#   def license
+#      space.license
+#   end
+#
+#   def build_arch
+#      space.build_arch
+#   end
+#
 
-   def has_build_arch?
-      !!build_arch
-   end
+#   def group
+#      space.group
+#   end
+#
+#   def uri
+#      space.uri
+#   end
+#
+#   def vcs
+#      space.vcs
+#   end
+#
+#   def packager
+#      space.packager
+#   end
+#
+#   def source_files
+#      space.source_files
+#   end
+#
+#   def patches
+#      space.patches
+#   end
+#
+#   def requires
+#      space.requires
+#   end
+#
+#   def build_requires
+#      space.build_requires
+#   end
+#
+#   def build_pre_requires
+#      space.build_pre_requires
+#   end
+#
+#   def provides
+#      space.provides
+#   end
+#
+#   def obsoletes
+#      space.obsoletes
+#   end
+#
+#   def conflicts
+#      space.conflicts
+#   end
+#
+#   def aliases
+#      []
+#   end
+#
+#   def descriptions
+#      space.descriptions
+#   end
+#
+#   def changes
+#      os(space.changes)
+#   end
+#
+#   def prep
+#      space.prep
+#   end
+#
+#   def build
+#      space.build
+#   end
+#
+#   def install
+#      space.install
+#   end
+#
+#   def check
+#      space.check
+#   end
+#
+#   def file_list
+#      space.file_list
+#   end
+#
 
-   def deps
-      # if has_master?
-      # end
-      []
-   end
 
-   def secondaries
-      os(space.secondaries.values)
-   end
+#   def has_epoch?
+#      space.spec && space.epoch
+#   end
+#
 
-   def history
-      []
-   end
-
+#   def has_build_arch?
+#      !!build_arch
+#   end
+#
+#   def deps
+#      # if has_master?
+#      # end
+#      []
+#   end
+#
+#   def secondaries
+#      os(space.secondaries.values)
+#   end
+#
+#   def history
+#      []
+#   end
+#
    # properties
+
+   def [] name
+      self.options[name] && os(self.options[name])
+   end
 
    protected
 
-   def os hash
-      JSON.parse hash.to_json, object_class: OpenStruct
+   def eval value_in
+      if value_in.is_a?(String)
+         value_in.gsub(/%[{\w}]+/) do |match|
+            /%(?:{(?<m>\w+)}|(?<m>\w+))/ =~ match
+            options["context"][m]
+         end
+      else
+         value_in
+      end
    end
 
-   def initialize space: raise, home: ENV['GEM_HOME'] || ::Gem.paths.home, options: {}
+   def os value_in
+      value = eval(value_in)
+       #  binding.pry
+
+      JSON.parse value.to_json, object_class: OpenStruct
+   end
+
+   def initialize space: nil, home: ENV['GEM_HOME'] || ::Gem.paths.home, options: {}
       @space = space
       @options = options
       @home = home

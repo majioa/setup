@@ -70,7 +70,7 @@ Feature: RPM Spec
          Url:                 https://path/to/soft/rpm
          """
       When developer loads the spec
-      Then property "url" of space is "https://path/to/soft/rpm"
+      Then property "uri" of space is "https://path/to/soft/rpm"
 
    Scenario: Parse RPM Spec for a VCS
       Given RPM spec file:
@@ -224,7 +224,7 @@ Feature: RPM Spec
          Spec
          """
       When developer loads the spec
-      Then property "descriptions" of space has text:
+      Then property "descriptions" of space with no argument is:
          """
          Multiline
          Description
@@ -372,4 +372,46 @@ Feature: RPM Spec
          | version      | 2.0                   |
          | release      |                       |
          | description  | - ^ new version       |
+
+   Scenario: Parse RPM Spec for variables support
+      Given RPM spec file:
+         """
+         %define var          rpm
+         %global var1         2
+         Name:                %{var}%var1
+         """
+      When developer loads the spec
+      Then space's property "context" with argument "var" has text:
+         """
+         rpm
+         """
+      Then space's property "context" with argument "var1" has text:
+         """
+         2
+         """
+      Then property "_name" of space's spec is "%{var}%var1"
+      Then property "name" of space's spec is "rpm2"
+      And property "name" of space is "rpm2"
+
+   Scenario: Parse RPM Spec for macros support
+      Given RPM spec file:
+         """
+         Name:                rpm
+         %macro               rpmn < 1
+         %macro               rpmn1 2
+         %macro1              rpmn < 11
+         """
+      When developer loads the spec
+      Then the subfield "macro" at position "0" of space's property "context" with argument "__macros" has data:
+         """
+         rpmn < 1
+         """
+      And the subfield "macro" at position "1" of space's property "context" with argument "__macros" has data:
+         """
+         rpmn1 2
+         """
+      Then the subfield "macro1" of space's property "context" with argument "__macros" has data:
+         """
+         rpmn < 11
+         """
 

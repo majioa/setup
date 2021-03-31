@@ -12,25 +12,28 @@ Then('property {string} of space is {string}') do |property, value|
 end
 
 Then('property {string} of space with no argument is {string}') do |property, string|
-   expect(@space.send(property)[nil]).to eql(string)
+   expect(@space.send(property)[""]).to eql(string)
+end
+
+Then('property {string} of space with no argument is:') do |property, text|
+   expect(@space.send(property)[""]).to eql(text)
 end
 
 Then('property {string} of space has {string}') do |property, value|
    real = @space.send(property)
-   list = real.is_a?(Hash) && real.values || real
+   list = real.is_a?(OpenStruct) && real.each_pair.to_a.transpose[1] || real
    expect(list).to include(value)
 end
 
 Then('property {string} of space has {string} at position {string}') do |property, value, pos|
-   # binding.pry
    list = @space.send(property)
-   real = list.is_a?(Hash) && list[pos] || list[pos.to_i]
+   real = list.is_a?(OpenStruct) && list[pos] || list[pos.to_i]
    expect(real).to eql(value)
 end
 
 Then('property {string} of space has text:') do |property, text|
    list = @space.send(property)
-   real = list.is_a?(Hash) && list.values || list
+   real = list.is_a?(OpenStruct) && list.each_pair.to_a.transpose[1] || list
    expect(real).to include(text)
 end
 
@@ -54,7 +57,7 @@ Then('the subfield {string} with no argument of space\'s property {string} with 
    list = @space.send(property)[arg]
 
    expect(list).to_not be_nil
-   expect(list[subprop][nil]).to eql(text)
+   expect(list[subprop][""]).to eql(text)
 end
 
 Then('the subfield {string} of space\'s property {string} with argument {string} has data:') do |subprop, property, arg, text|
@@ -72,7 +75,19 @@ Then('space\'s property {string} at position {string} has fields:') do |property
    list = @space.send(property)
    expect(list).to be_kind_of(Array)
 
-   expect(list[pos.to_i]).to be_kind_of(Hash)
+   ##binding.pry
+   expect(list[pos.to_i]).to be_kind_of(OpenStruct)
    table.rows_hash.each { |key, value| expect(list[pos.to_i][key.to_sym]).to eql(value != "" && value || nil) }
+end
+
+Then('property {string} of space\'s spec is {string}') do |property, value|
+   expect(@space.spec.send(property)).to eql(value)
+end
+
+Then('the subfield {string} at position {string} of space\'s property {string} with argument {string} has data:') do |subprop, pos, property, arg, text|
+   list = @space.send(property)[arg]
+
+   expect(list).to_not be_nil
+   expect(list[subprop][pos.to_i]).to eql(text)
 end
 

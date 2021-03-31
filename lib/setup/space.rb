@@ -74,17 +74,31 @@ class Setup::Space
       Time.now.strftime("%Y%m%d")
    end
 
+   # +changes+ returns a list of open-struct formatted changes in the space or
+   # spec defined if any, otherwise returns blank array.
+   #
+   # space.changes # => []
+   #
+   def changes
+      @changes ||= spec && spec["changes"] || []
+   end
+
    protected
 
-   def initialize options: {}, space: {}
+   def initialize options: {}, space: {}, spec: nil
       @rootdir ||= options.delete(:rootdir)
+      if @spec ||= spec
+         @spec.space = self
+      elsif space["spec"]
+         spec_model = Setup::Spec.find(space["spec_type"])
+         @spec = spec_model.new(options: space["spec"], space: self)
+      end
 
       parse(space)
    end
 
    def parse space
       @rootdir ||= space.delete("rootdir")
-      @spec ||= space.delete("spec")
       # binding.pry
 
       @sources ||= Setup::Source.load(space.delete("sources"))
@@ -94,7 +108,7 @@ class Setup::Space
 
    def method_missing method, *args
       # binding.pry
-      @space[method.to_s] || spec && spec[method.to_s] || super
+      @space[method.to_s] || spec && spec.respond_to?(method) && spec.send(method) || super
    end
 end
 

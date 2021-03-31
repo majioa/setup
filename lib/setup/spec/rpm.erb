@@ -1,12 +1,12 @@
 <%= comment -%>
-<% if has_master? %>
+<% if has_altname? %>
 %define        pkgname <%= altname %>
 <% if altname != name %>
 %define        gemname <%= name %>
 <% end -%>
 <% end -%>
 
-Name:          <%= pkgname %>
+Name:          <%= name %>
 Epoch:         <%= epoch %>
 Version:       <%= version %>
 Release:       <%= release %>
@@ -53,7 +53,7 @@ Conflicts:           <%= dep %>
 <%= description %>
 <% end -%>
 
-<% if has_master? -%>
+<% if has_altname? -%>
 <% if has_executable? -%>
 %package       -n %pkgname
 Summary:       Executable file for %gemname gem
@@ -191,7 +191,8 @@ Development files for %gemname gem.
 <% end -%>
 
 %changelog
-<% history.each do |r| -%>
-* <%= r.date %> <%= r.author %> <%= r.version %>-<%= r.release %>
-<%= r.note %>
+<% changes.reverse.each do |c| -%>
+* <%= c.date %> <%= c.author %> <%= c.email && "<#{c.email}>" || "" %> <%= [ c.version, c.release ].compact.join("-") %>
+<%= c.description %>
+
 <% end -%>

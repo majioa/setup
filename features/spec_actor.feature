@@ -19,7 +19,7 @@ Feature: Spec actor
       When developer loads the space
       And developer draws the template:
          """
-         Name:          <%= pkgname %>
+         Name:          <%= name %>
          """
 
       Then he gets the RPM spec
@@ -126,7 +126,7 @@ Feature: Spec actor
       When developer loads the space
       And developer draws the template:
          """
-         Name:          <%= pkgname %>
+         Name:          <%= name %>
          Version:       <%= version %>
          """
 
@@ -166,7 +166,7 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:        <%= pkgname %>
+         Name:        <%= _name %>
          Epoch:       <%= epoch %>
          """
 
@@ -189,7 +189,7 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= pkgname %>
+         Name:                <%= _name %>
          Version:             <%= version %>
          """
 
@@ -212,7 +212,7 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= pkgname %>
+         Name:                <%= _name %>
          Release:             <%= release %>
          """
 
@@ -236,7 +236,7 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= pkgname %>
+         Name:                <%= _name %>
          Summary:             <%= summary %>
          """
 
@@ -259,7 +259,7 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= pkgname %>
+         Name:                <%= _name %>
          License:             <%= license %>
          """
 
@@ -282,7 +282,7 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= pkgname %>
+         Name:                <%= _name %>
          Group:               <%= group %>
          """
 
@@ -305,7 +305,7 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= pkgname %>
+         Name:                <%= _name %>
          Url:                 <%= uri %>
          """
 
@@ -328,7 +328,7 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= pkgname %>
+         Name:                <%= _name %>
          Vcs:                 <%= vcs %>
          """
 
@@ -351,7 +351,7 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= pkgname %>
+         Name:                <%= _name %>
          Packager:            <%= packager %>
          """
 
@@ -374,7 +374,7 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= pkgname %>
+         Name:                <%= _name %>
          <% if has_build_arch? -%>
          BuildArch:           <%= build_arch %>
          <% end -%>
@@ -402,9 +402,9 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= pkgname %>
-         <% source_files.each do |index, source_file| -%>
-         Source<%= index != 0 && index || nil %>:              <%= source_file %>
+         Name:                <%= _name %>
+         <% source_files.each_pair do |index, source_file| -%>
+         Source<%= index != :"0" && index || nil %>:              <%= source_file %>
          <% end -%>
          """
 
@@ -431,9 +431,9 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= pkgname %>
-         <% patches.each do |index, patch| -%>
-         Patch<%= index != 0 && index || nil %>:               <%= patch %>
+         Name:                <%= _name %>
+         <% patches.each_pair do |index, patch| -%>
+         Patch<%= index != :"0" && index || nil %>:               <%= patch %>
          <% end -%>
          """
 
@@ -461,8 +461,8 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= pkgname %>
-         <% requires.each do |_, dep| -%>
+         Name:                <%= _name %>
+         <% requires.each_pair do |_, dep| -%>
          Requires:            <%= dep %>
          <% end -%>
          """
@@ -492,8 +492,8 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= pkgname %>
-         <% build_requires.each do |_, dep| -%>
+         Name:                <%= _name %>
+         <% build_requires.each_pair do |_, dep| -%>
          BuildRequires:       <%= dep %>
          <% end -%>
          """
@@ -524,8 +524,8 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= pkgname %>
-         <% build_pre_requires.each do |_, dep| -%>
+         Name:                <%= _name %>
+         <% build_pre_requires.each_pair do |_, dep| -%>
          BuildRequires(pre):  <%= dep %>
          <% end -%>
          """
@@ -556,8 +556,8 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= pkgname %>
-         <% obsoletes.each do |_, dep| -%>
+         Name:                <%= _name %>
+         <% obsoletes.each_pair do |_, dep| -%>
          Obsoletes:           <%= dep %>
          <% end -%>
          """
@@ -588,8 +588,8 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= pkgname %>
-         <% provides.each do |_, dep| -%>
+         Name:                <%= _name %>
+         <% provides.each_pair do |_, dep| -%>
          Provides:            <%= dep %>
          <% end -%>
          """
@@ -619,8 +619,8 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= pkgname %>
-         <% conflicts.each do |_, dep| -%>
+         Name:                <%= _name %>
+         <% conflicts.each_pair do |_, dep| -%>
          Conflicts:           <%= dep %>
          <% end -%>
          """
@@ -649,9 +649,9 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:        <%= pkgname %>
-         <% descriptions.each do |arg, description| -%>
-         %description<%= arg && "         -l #{arg}" || nil %>
+         Name:        <%= _name %>
+         <% descriptions.each_pair do |arg, description| -%>
+         %description<%= !arg.blank? && "         -l #{arg}" || nil %>
          <%= description %>
          <% end -%>
          """
@@ -689,16 +689,16 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:          <%= pkgname %>
-         <% secondaries.each do |sec| -%>
-         %package       -n <%= sec.name %>
+         Name:          <%= _name %>
+         <% secondaries.each_pair do |name, sec| -%>
+         %package       -n <%= name %>
          <% sec.summaries.to_h.each do |cp, summary| -%>
          Summary<%= "#{cp}" != "" && "(#{cp})" || nil %>:       <%= summary %>
          <% end -%>
          Group:         <%= sec.group %>
          BuildArch:     <%= sec.build_arch %>
 
-         <% sec.descriptions.to_h.each do |cp, description| -%>
+         <% sec.descriptions.each_pair do |cp, description| -%>
          %description   -n <%= sec.name %><%= "#{cp}" != "" && " -l #{cp}" || nil %>
          <%= description %>
          <% end -%>
@@ -739,7 +739,7 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:        <%= pkgname %>
+         Name:        <%= _name %>
          %prep
          <%= prep %>
 
@@ -794,7 +794,7 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:        <%= pkgname %>
+         Name:        <%= _name %>
          %changelog
          <% changes.reverse.each do |c| -%>
          * <%= c.date %> <%= c.author %> <%= c.email && "<#{c.email}>" || "" %> <%= [ c.version, c.release ].compact.join("-") %>
@@ -837,12 +837,12 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:          <%= pkgname %>
+         Name:          <%= _name %>
          %files
          <%= file_list %>
 
-         <% secondaries.each do |sec| -%>
-         %files         -n <%= sec.name %>
+         <% secondaries.each_pair do |name, sec| -%>
+         %files         -n <%= name %>
          <%= sec.file_list %>
          <% end -%>
          """
@@ -858,5 +858,67 @@ Feature: Spec actor
          file3
          file4
 
+         """
+
+   Scenario: Space variables validation for loaded spec
+      Given space file:
+         """
+         ---
+         spec_type: rpm
+         rootdir: /path/to/dot/space/rootname
+         spec:
+            name: "%{var}%var1"
+            context:
+               var: rpm
+               var1: 2
+         """
+      When developer loads the space
+      And he draws the template:
+         """
+         <% variables.each_pair do |name, value| -%>
+         %define <%= name %> <%= value %>
+         <% end -%>
+
+         Name:          <%= _name %>
+         """
+
+      Then he gets the RPM spec
+         """
+         %define var rpm
+         %define var1 2
+
+         Name:          %{var}%var1
+         """
+      And property "name" of space is "rpm2"
+
+   Scenario: Space macros validation for loaded spec
+      Given space file:
+         """
+         ---
+         spec_type: rpm
+         rootdir: /path/to/dot/space/rootname
+         spec:
+            name: "%{var}%var1"
+            context:
+               __macros:
+                  macro:
+                     - "rpmn < 1"
+                     - "rpmn1 < 2"
+                  macro1: "rpmn < 11"
+         """
+      When developer loads the space
+      And he draws the template:
+         """
+         Name:          <%= _name %>
+         <%= macros("macro") %>
+         <%= macros("macro1") %>
+         """
+
+      Then he gets the RPM spec
+         """
+         Name:          %{var}%var1
+         %macro rpmn < 1
+         %macro rpmn1 < 2
+         %macro1 rpmn < 11
          """
 
