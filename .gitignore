@@ -11,3 +11,4 @@ work/sandbox/faux-root
 web
 setup.gemspec
 *.lock
+.polygon

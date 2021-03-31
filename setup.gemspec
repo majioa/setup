@@ -37,6 +37,7 @@ Gem::Specification.new do |spec|
       `git ls-files -z`.split("\x0").select { |f| f.match(%r{^(features)/}) }
    end
 
+   spec.required_ruby_version = [ '>= 2.6.0' ]
    spec.add_development_dependency "bundler", "~> 2.0"
    spec.add_development_dependency "rake", "~> 12.0"
    spec.add_development_dependency "pry", "~> 0.13.1"
