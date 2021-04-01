@@ -132,7 +132,7 @@ Feature: Spec actor
 
       Then he gets the RPM spec
          """
-         Name:          fooboo
+         Name:          gem-fooboo
          Version:       5.2
          """
 
@@ -254,19 +254,21 @@ Feature: Spec actor
          rootdir: /path/to/dot/space/rootname
          spec:
             name: rpm
-            license: MIT
+            licenses:
+             - MIT
+             - GPLv2
          """
       When developer loads the space
       And he draws the template:
          """
          Name:                <%= _name %>
-         License:             <%= license %>
+         License:             <%= licenses.join(" or ") %>
          """
 
       Then he gets the RPM spec
          """
          Name:                rpm
-         License:             MIT
+         License:             MIT or GPLv2
          """
 
    Scenario: Space group validation for loaded spec
@@ -920,5 +922,216 @@ Feature: Spec actor
          %macro rpmn < 1
          %macro rpmn1 < 2
          %macro1 rpmn < 11
+         """
+
+   Scenario: Space gem source render validation
+      Given space file:
+         """
+         ---
+         spec_type: rpm
+         rootdir: /path/to/dot/space/rootname
+         sources:
+          - rootdir: /path/to/dot/space/rootname
+            type: gem
+            spec: |
+               --- !ruby/object:Gem::Specification
+               name: foo_boo
+               version: !ruby/object:Gem::Version
+                  version: 5.2
+               platform: ruby
+               authors:
+                - Gem Author
+               autorequire:
+               bindir: exe
+               cert_chain: []
+               date:
+               dependencies:
+                - !ruby/object:Gem::Dependency
+                  name: b_oofoo
+                  requirement: !ruby/object:Gem::Requirement
+                     requirements:
+                      - - '='
+                        - !ruby/object:Gem::Version
+                           version: 5.2.4.4
+                  type: :runtime
+                  prerelease: false
+                  version_requirements: !ruby/object:Gem::Requirement
+                     requirements:
+                      - - '='
+                        - !ruby/object:Gem::Version
+                           version: 5.2.4.4
+               description: 'Foo Boo gem'
+               email: boo@example.com
+               executables:
+                - foo
+               extensions: []
+               extra_rdoc_files: []
+               files:
+                - CHANGELOG.md
+                - readme.md
+                - MIT-LICENSE
+                - exe/foo
+                - lib/foo.rb
+               homepage: http://fooboo.org
+               licenses:
+                - MIT
+                - GPLv2
+               metadata:
+                  source_code_uri: https://github.com/foo/fooboo/tree/v5.2.4.4/fooboo
+                  changelog_uri: https://github.com/foo/fooboo/blob/v5.2.4.4/fooboo/CHANGELOG.md
+               post_install_message:
+               rdoc_options:
+                - "--exclude"
+                - "."
+               require_paths:
+                - lib
+               required_ruby_version: !ruby/object:Gem::Requirement
+                  requirements:
+                   - - ">="
+                     - !ruby/object:Gem::Version
+                       version: 2.2.2
+               required_rubygems_version: !ruby/object:Gem::Requirement
+                  requirements:
+                   - - ">="
+                     - !ruby/object:Gem::Version
+                        version: '0'
+               requirements: []
+               rubygems_version: 3.1.4
+               signing_key:
+               specification_version: 4
+               summary: Foo Boo gem summary
+               test_files: []
+         """
+      When developer loads the space
+      And developer locks the time to "01.01.2001"
+      And developer draws the template:
+         """
+         <% if has_comment? -%>
+         <%= comment -%>
+
+         <% end -%>
+         Name:          <%= name.gsub(/[_\.]/, '-') %>
+         <% if has_epoch? -%>
+         Epoch:         <%= epoch %>
+         <% end -%>
+         Version:       <%= version %>
+         Release:       <%= release %>
+         Summary:       <%= summary %>
+         License:       <%= licenses.join(" or ") %>
+         Group:         <%= group %>
+         Url:           <%= uri %>
+         Vcs:           <%= vcs %>
+         Packager:      <%= packager %>
+         <% if !has_compilable? -%>
+         BuildArch:     noarch
+         <% end -%>
+
+         <% source_files.each_pair do |index, source_file| -%>
+         Source<%= index != :"0" && index || nil %>:        <%= source_file %>
+         <% end -%>
+         <% patches.each_pair do |index, patch| -%>
+         Patch<%= index != :"0" && index || nil %>:         <%= patch %>
+         <% end -%>
+         <% build_pre_requires.each_pair do |_, dep| -%>
+         BuildRequires(pre): <%= dep %>
+         <% end -%>
+         <% build_requires.each_pair do |_, dep| -%>
+         BuildRequires: <%= dep %>
+         <% end -%>
+
+         %add_findreq_skiplist %ruby_gemslibdir/**/*
+         %add_findprov_skiplist %ruby_gemslibdir/**/*
+         <% requires.each_pair do |_, dep| -%>
+         Requires:      <%= dep %>
+         <% end -%>
+         <% obsoletes.each_pair do |_, dep| -%>
+         Obsoletes:     <%= dep %>
+         <% end -%>
+         <% provides.each_pair do |_, dep| -%>
+         Provides:      <%= dep %>
+         <% end -%>
+         <% conflicts.each_pair do |_, dep| -%>
+         Conflicts:     <%= dep %>
+         <% end -%>
+
+         <% descriptions.each_pair do |arg, description| -%>
+         %description<%= !arg.blank? && "         -l #{arg}" || nil %>
+         <%= description %>
+         <% end -%>
+
+         %prep
+         %setup
+
+         %build
+         %ruby_build
+
+         %install
+         %ruby_install
+
+         %check
+         %ruby_test
+
+         %files
+         %doc <%= readme %>*
+         %ruby_gemspec
+         %ruby_gemlibdir
+         <% if has_compilable? -%>
+         %ruby_gemextdir
+
+         <% end -%>
+
+         %changelog
+         <% changes.reverse.each do |c| -%>
+         * <%= c.date %> <%= c.author %> <%= c.email && "<#{c.email}>" || "" %> <%= [ c.version, c.release ].compact.join("-") %>
+         <%= c.description %>
+
+         <% end -%>
+         """
+
+      Then he gets the RPM spec
+         """
+         Name:          gem-foo-boo
+         Version:       5.2
+         Release:       alt1
+         Summary:       Foo Boo gem summary
+         License:       MIT or GPLv2
+         Group:         Development/Ruby
+         Url:           http://fooboo.org
+         Vcs:           https://github.com/foo/fooboo/tree/v5.2.4.4/fooboo
+         Packager:      Spec Author <author@example.org>
+         BuildArch:     noarch
+
+         Source:        %name-%version.tar
+         BuildRequires(pre): rpm-build-ruby
+         BuildRequires: gem(b_oofoo) = 5.2.4.4
+
+         %add_findreq_skiplist %ruby_gemslibdir/**/*
+         %add_findprov_skiplist %ruby_gemslibdir/**/*
+
+         %description
+         Foo Boo gem
+
+         %prep
+         %setup
+
+         %build
+         %ruby_build
+
+         %install
+         %ruby_install
+
+         %check
+         %ruby_test
+
+         %files
+         %doc README*
+         %ruby_gemspec
+         %ruby_gemlibdir
+
+         %changelog
+         * Mon Jan 01 2001 Spec Author <author@example.org> 5.2-alt1
+         - + packaged gem
+
+
          """
 

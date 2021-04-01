@@ -4,14 +4,14 @@
 <% if altname != name %>
 %define        gemname <%= name %>
 <% end -%>
-<% end -%>
 
+<% end -%>
 Name:          <%= name %>
 Epoch:         <%= epoch %>
 Version:       <%= version %>
 Release:       <%= release %>
 Summary:       <%= summary %>
-License:       <%= license %>
+License:       <%= licenses.join(" or ") %>
 Group:         <%= group %>
 Url:           <%= uri %>
 Vcs:           <%= vcs %>

@@ -45,13 +45,17 @@ class Setup::Space
       end
    end
 
-   # +name+ returns a default name of the space. Returns name of a source when
+   # +name+ returns a default name of the space with a prefix if any. It returns name of a source when
    # its root is the same as the space's root, or returns name defined in the spec if any.
    #
    # space.name # => space-name
    #
    def name
-      @name ||= main_source&.name || spec && spec["name"]
+      return @name if @name
+
+      prefix = main_source&.respond_to?(:name_prefix) && main_source.name_prefix || nil
+      pre_name = [ prefix, main_source&.name ].compact.join("-")
+      @name = !pre_name.blank? && pre_name || spec && spec["name"]
    end
 
    # +name+ returns a default version for the space. Returns version of a source when
@@ -80,7 +84,36 @@ class Setup::Space
    # space.changes # => []
    #
    def changes
-      @changes ||= spec && spec["changes"] || []
+      return @changes if @changes
+
+      changes = main_source&.respond_to?(:changes) && main_source.changes || nil
+      @changes = spec && spec["changes"] || changes || []
+   end
+
+   # +summaries+ returns a list of open-struct formatted summaries in the space or
+   # spec defined if any, otherwise returns blank array.
+   #
+   # space.summaries # => []
+   #
+   def summaries
+      @summaries ||= spec && spec["summaries"] || OpenStruct.new("" => main_source&.summary)
+   end
+
+   # +licenses+ returns license list defined in all the sources found in the space.
+   #
+   # space.licenses => # ["MIT"]
+   #
+   def licenses
+      return @licenses if @licenses
+
+      licenses = sources.map(&:licenses).flatten.uniq
+      @licenese = !licenses.blank? && licenses || spec && spec["licenses"] || nil
+   end
+
+   # +dependencies+ returns main source dependencies list as an array of Gem::Dependency
+   # objects, otherwise returning blank array.
+   def dependencies
+      @dependencies ||= main_source&.dependencies || []
    end
 
    protected

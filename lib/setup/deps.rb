@@ -71,7 +71,7 @@ class Setup::Deps
       list = []
 
       dsl.deps.each do |dep|
-         to_rpm(dep.requirement).map do |a, b|
+         self.class.to_rpm(dep.requirement).map do |a, b|
             list << "ruby-gem(#{dep.name}) #{a} #{b}"
          end
       end
@@ -80,7 +80,7 @@ class Setup::Deps
       ruby_version = dsl.ruby[:version]
       rubygems_version = dsl.rubygems[:version]
 
-      list << to_rpm(ruby_version).map { |a, b| "#{ruby} #{a} #{b}" }
+      list << self.class.to_rpm(ruby_version).map { |a, b| "#{ruby} #{a} #{b}" }
       list << "rubygems #{rubygems_version}"
    end
 
@@ -164,20 +164,22 @@ class Setup::Deps
       deps 'provs', project.config.current_set
    end
 
-   def to_rpm req
-      req.requirements.reduce({}) do |s, r|
-         ver = Gem::Version.new("#{r[1]}".gsub(/x/, '0'))
+   class << self
+      def to_rpm req
+         req.requirements.reduce({}) do |s, r|
+            ver = Gem::Version.new("#{r[1]}".gsub(/x/, '0'))
 
-         tmp = case r[0]
-               when "~>"
-                  {'>=' => ver.release, '<' => ver.bump}
-               when "!="
-                  {'>' => ver.release}
-               else
-                  {r[0] => ver}
-               end
+            tmp = case r[0]
+                  when "~>"
+                     {'>=' => ver.release, '<' => ver.bump}
+                  when "!="
+                     {'>' => ver.release}
+                  else
+                     {r[0] => ver}
+                  end
 
-         s.merge(tmp)
+            s.merge(tmp)
+         end
       end
    end
 

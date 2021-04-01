@@ -17,7 +17,11 @@ class Setup::Spec::Rpm
          regexp: /Summary(?:\(([^\s:]+)\))?:\s+([^\s].+)/i,
          parse_func: :parse_summary
       },
-      license: /License:\s+([^\s].+)/i,
+      licenses: {
+         non_contexted: true,
+         regexp: /License:\s+([^\s].+)/i,
+         parse_func: :parse_license
+      },
       group: /Group:\s+([^\s]+)/i,
       uri: /Url:\s+([^\s]+)/i,
       vcs: /Vcs:\s+([^\s]+)/i,
@@ -173,7 +177,7 @@ class Setup::Spec::Rpm
          data = SCHEME[key.to_sym]
          rule = data.is_a?(Hash) && data[:rule] || data
          parse_func = data.is_a?(Hash) && data[:parse_func] || :parse_default
-         non_contexted = data.is_a?(Hash) && data[:non_contexted] 
+         non_contexted = data.is_a?(Hash) && data[:non_contexted]
          value = method(parse_func)[match, flow, opts, context]
          copts = !non_contexted && context[:name] && opts["secondaries"][context[:name]] || opts
          # binding.pry
@@ -241,6 +245,10 @@ class Setup::Spec::Rpm
          { context[:cp] => flow.split("\n")[1..-1].join("\n") }
       end
 
+      def parse_license match, *_
+         match[1].split(/(?: or |\/)/).map(&:strip)
+      end
+
       def parse_summary match, *_
          { match[1] => match[2] }
       end
@@ -284,40 +292,45 @@ class Setup::Spec::Rpm
       end
    end
 
-   %w(
-      name
-      name
-      epoch
-      version
-      release
-      summaries
-      license
-      build_arch
-      group
-      uri
-      vcs
-      packager
-      source_files
-      patches
-      requires
-      build_requires
-      build_pre_requires
-      provides
-      obsoletes
-      conflicts
-      descriptions
-      changes
-      prep
-      build
-      install
-      check
-      file_list
-      secondaries
-      context
-   ).each do |name|
-      define_method(name) { self[name] || space.send(name) }
-      define_method("_#{name}") { self.options[name] }
-      define_method("has_#{name}?") { !!self.options[name] }
+   {
+      name: nil,
+      epoch: nil,
+      version: nil,
+      release: "alt1",
+      summaries: {},
+      licenses: [],
+      build_arch: nil,
+      group: nil,
+      uri: nil,
+      vcs: nil,
+      packager: ->(this) { [ this.changes[0].author, "<#{this.changes[0].email}>" ].join(" ") },
+      source_files: OpenStruct.new("0": "%name-%version.tar"),
+      patches: {},
+      requires: {},
+      build_requires: ->(this) { this.dependencies },
+      build_pre_requires: OpenStruct.new("0": "rpm-build-ruby"),
+      provides: {},
+      obsoletes: {},
+      conflicts: {},
+      descriptions: {},
+      changes: [],
+      prep: nil,
+      build: nil,
+      install: nil,
+      check: nil,
+      file_list: nil,
+      secondaries: {},
+      context: nil,
+   }.each do |name, default|
+      define_method(name) do
+         self[name.to_s] ||
+            space.respond_to?(name) && space.send(name) ||
+            space.main_source&.respond_to?(name) && space.main_source.send(name) ||
+            default.is_a?(Proc) && default[self] ||
+            default
+      end
+      define_method("_#{name}") { self.options[name.to_s] }
+      define_method("has_#{name}?") { !!self.options[name.to_s] }
    end
 
    def macros name
@@ -339,10 +352,14 @@ class Setup::Spec::Rpm
    end
 
    def has_altname?
-      !!altname
+      !altname.blank?
    end
 
    def has_compilable?
+   end
+
+   def has_comment?
+      !comment.blank?
    end
 
    def has_executable?
@@ -360,151 +377,25 @@ class Setup::Spec::Rpm
 
    def has_devel_sources?
    end
-####   def name
-#   end
-#
-#   def pkgname
-#      space.name
-#   end
-#
-#   def epoch
-#      space.epoch
-#   end
-#
-#   def version
-#      space.version
-#   end
-#
-#   def release
-#      space.release
-#   end
-#
-#   def summaries
-#      space.summaries
-#   end
-#
-#   def summary
-#      summaries[nil]
-#   end
-#
-#   def license
-#      space.license
-#   end
-#
-#   def build_arch
-#      space.build_arch
-#   end
-#
 
-#   def group
-#      space.group
-#   end
-#
-#   def uri
-#      space.uri
-#   end
-#
-#   def vcs
-#      space.vcs
-#   end
-#
-#   def packager
-#      space.packager
-#   end
-#
-#   def source_files
-#      space.source_files
-#   end
-#
-#   def patches
-#      space.patches
-#   end
-#
-#   def requires
-#      space.requires
-#   end
-#
-#   def build_requires
-#      space.build_requires
-#   end
-#
-#   def build_pre_requires
-#      space.build_pre_requires
-#   end
-#
-#   def provides
-#      space.provides
-#   end
-#
-#   def obsoletes
-#      space.obsoletes
-#   end
-#
-#   def conflicts
-#      space.conflicts
-#   end
-#
-#   def aliases
-#      []
-#   end
-#
-#   def descriptions
-#      space.descriptions
-#   end
-#
-#   def changes
-#      os(space.changes)
-#   end
-#
-#   def prep
-#      space.prep
-#   end
-#
-#   def build
-#      space.build
-#   end
-#
-#   def install
-#      space.install
-#   end
-#
-#   def check
-#      space.check
-#   end
-#
-#   def file_list
-#      space.file_list
-#   end
-#
-
-
-#   def has_epoch?
-#      space.spec && space.epoch
-#   end
-#
-
-#   def has_build_arch?
-#      !!build_arch
-#   end
-#
-#   def deps
-#      # if has_master?
-#      # end
-#      []
-#   end
-#
-#   def secondaries
-#      os(space.secondaries.values)
-#   end
-#
-#   def history
-#      []
-#   end
-#
    # properties
 
    def [] name
       self.options[name] && os(self.options[name])
+   end
+
+   def dependencies
+      dep_list =
+      space.dependencies.reduce([]) do |deps, dep|
+         deph = Setup::Deps.to_rpm(dep.requirement)
+         deps | deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }
+      end.map.with_index { |v, i| [ "#{i}", v ] }.to_h
+
+      os(dep_list)
+   end
+
+   def prefix
+      "gem"
    end
 
    protected

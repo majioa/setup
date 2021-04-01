@@ -49,10 +49,12 @@ Feature: RPM Spec
       Given RPM spec file:
          """
          Name:                rpm
-         License:             MIT
+         License:             MIT or GPLv2 / Ruby
          """
       When developer loads the spec
-      Then property "license" of space is "MIT"
+      Then property "licenses" of space has "MIT"
+      And property "licenses" of space has "GPLv2"
+      And property "licenses" of space has "Ruby"
 
    Scenario: Parse RPM Spec for a group
       Given RPM spec file:

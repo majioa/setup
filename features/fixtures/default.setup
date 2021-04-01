@@ -119,7 +119,8 @@ spec:
    epoch: 1
    summaries:
       ! '': RPM sum
-   license: MIT
+   licenses:
+    - MIT
    group: Group
    uri: https://uri.domain
    vcs: https://vcs.domain

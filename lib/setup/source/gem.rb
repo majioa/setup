@@ -168,6 +168,43 @@ class Setup::Source::Gem < Setup::Source::Base
          paths.any? && paths || ['lib'])
    end
 
+   # Default group
+   def group
+      "Development/Ruby"
+   end
+
+   # Default changes base on the gem info
+   def changes
+      [ OpenStruct.new(
+         date: Date.today.strftime("%a %b %d %Y"),
+         author: "Spec Author",
+         email: "author@example.org",
+         version: version,
+         release: "alt1",
+         description: "- + packaged gem") ]
+   end
+
+   def descriptions
+      OpenStruct.new("": spec.description)
+   end
+
+   # Default prefix "gem" for gem names
+   def name_prefix
+      "gem"
+   end
+
+   def uri
+      spec.homepage
+   end
+
+   def vcs
+      spec.metadata&.[]("source_code_uri")
+   end
+
+   def dependencies type = nil
+      spec.dependencies.select { |dep| !type || dep.type == type }
+   end
+
    protected
 
    def extroots
@@ -185,5 +222,9 @@ class Setup::Source::Gem < Setup::Source::Base
       @spec = self.class.spec_for(options_in)
 
       gemfile
+   end
+
+   def method_missing name, *args
+      spec&.respond_to?(name) && spec.send(name, *args) || super
    end
 end
