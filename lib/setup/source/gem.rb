@@ -5,7 +5,7 @@ require 'yaml'
 
 class Setup::Source::Gem < Setup::Source::Base
    BIN_IGNORES = %w(test)
-   OPTION_KEYS = %i(root spec version replace_list aliases)
+   OPTION_KEYS = %i(rootdir spec version replace_list aliases)
 
    EXE_DIRS = ->(s) { s.spec.bindir || s.exedir || nil }
    EXT_DIRS = ->(s) do
@@ -48,7 +48,7 @@ class Setup::Source::Gem < Setup::Source::Base
          end.flatten(1).compact.sort_by do |(gemspec, _)|
             Setup::Gemspec.gemspecs.index(gemspec)
          end.map do |gemspec, f|
-            new_if_valid(gemspec.parse(f), { root: File.dirname(f) }.merge(options_in))
+            new_if_valid(gemspec.parse(f), { rootdir: File.dirname(f) }.merge(options_in))
          end.flatten(1).compact
 
          specs.map { |x| x.name }.uniq.map { |name| specs.find { |spec| spec.name == name } }
@@ -117,8 +117,8 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def exetree
-      @exetree ||= super { Dir.chdir(root) do
-            exedirs.map { |dir| [ dir, Dir.chdir(File.join(root, dir)) { Dir.glob("{#{spec.executables.join(',')}}") } ] }.to_h
+      @exetree ||= super { Dir.chdir(rootdir) do
+            exedirs.map { |dir| [ dir, Dir.chdir(File.join(rootdir, dir)) { Dir.glob("{#{spec.executables.join(',')}}") } ] }.to_h
          end }
    end
 

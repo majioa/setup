@@ -6,10 +6,192 @@ class Setup::Spec::Rpm
    attr_reader :home, :options, :spec, :comment
    attr_accessor :space
 
+   FIELDS = {
+      name: nil,
+      epoch: nil,
+      version: nil,
+      release: "alt1",
+      build_arch: nil,
+      summaries: {},
+      group: nil,
+      requires: {},
+      provides: {},
+      obsoletes: {},
+      conflicts: {},
+      descriptions: {},
+      file_list: nil,
+   }
+
+   ONLY_FIELDS = {
+      licenses: [],
+      uri: nil,
+      vcs: nil,
+      packager: ->(this) { [ this.changes[0].author, "<#{this.changes[0].email}>" ].join(" ") },
+      source_files: OpenStruct.new("0": "%name-%version.tar"),
+      patches: {},
+      build_requires: ->(this) { this.dependencies },
+      build_pre_requires: OpenStruct.new("0": "rpm-build-ruby"),
+      changes: [],
+      prep: nil,
+      build: nil,
+      install: nil,
+      check: nil,
+      secondaries: {},
+      context: nil,
+   }
+
+   module CPkg
+      def summary
+         summaries[""]
+      end
+
+      def adopted_name
+         self["adopted_name"] || full_name.gsub(/[_\.]/, '-')
+      end
+
+      def _adopted_name
+         options["adopted_name"]
+      end
+
+      def has_compilable?
+         !compilables.empty?
+      end
+
+      def has_comment?
+         !comment.blank?
+      end
+
+      def has_executable?
+         !executables.empty?
+      end
+
+      def has_readme?
+         !readme.blank?
+      end
+
+      def has_doc?
+         !docs.empty?
+      end
+
+      def has_devel?
+         # binding.pry
+         source.respond_to?(:dependencies) && !source.dependencies.empty? || has_devel_sources?
+      end
+
+      def has_devel_sources?
+         !files.grep(/.*\.h/).empty?
+      end
+
+      def devel_deps
+         return @devel_deps if @devel_deps
+
+         dep_list = source.dependencies.reduce([]) do |deps, dep|
+            deph = Setup::Deps.to_rpm(dep.requirement)
+            deps | deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }
+         end.map.with_index { |v, i| [ "#{i}", v ] }.to_h
+
+         @devel_deps = os(dep_list)
+      end
+
+      def files
+         @files ||= source&.files rescue [] || []
+      end
+
+      def executables
+         @executables ||= source&.executables rescue [] || []
+      end
+
+      def docs
+         @docs ||= source&.docs rescue [] || []
+      end
+
+      def compilables
+         @compilables ||= source&.extensions rescue [] || []
+      end
+
+      def readme
+         files.grep(/readme.*/i).join(" ")
+      end
+
+      # +executable_name+ returns a name of the executable package, based on
+      # the all the sources executables.
+      #
+      # spec.executable_name # => foo
+      #
+      def executable_name
+         # TODO make smart selection of executable name
+         executables.first&.gsub(/[_\.]/, '-')
+      end
+
+      def [] name
+         #  binding.pry
+         options[name] && os(options[name])
+      end
+
+      def os value_in
+         value = eval(value_in)
+          #  binding.pry
+
+         JSON.parse value.to_json, object_class: OpenStruct
+      end
+
+      def prefix
+         "gem"
+      end
+
+      def eval value_in
+         if value_in.is_a?(String)
+            value_in.gsub(/%[{\w}]+/) do |match|
+               /%(?:{(?<m>\w+)}|(?<m>\w+))/ =~ match
+               options["context"][m]
+            end
+         else
+            value_in
+         end
+      end
+   end
+
+   class Secondary
+      attr_reader :source, :spec
+      attr_accessor :options
+
+      include CPkg
+
+      FIELDS.each do |name, default|
+         define_method(name) do
+            # binding.pry if name == :adopted_name
+            self[name.to_s] ||
+               source.respond_to?(name) && source.send(name) ||
+               default.is_a?(Proc) && default[self] ||
+               default
+         end
+         define_method("_#{name}") { self.options[name.to_s] }
+         define_method("has_#{name}?") { !!self.options[name.to_s] }
+      end
+
+      def summaries
+         @summaries ||= self["summaries"] || OpenStruct.new("" => source.summary)
+      end
+
+      def full_name
+         return @full_name if @full_name
+
+         prefix = source.respond_to?(:name_prefix) && source.name_prefix || nil
+         pre_name = [ prefix, source.name ].compact.join("-")
+         @full_name = !pre_name.blank? && pre_name || spec["adopted_name"]
+      end
+
+      def initialize spec: raise, source: nil, options: {}
+         @source = source
+         @spec = spec
+         @options = options
+      end
+   end
+
    MATCHER = /^Name:\s+([^\s]+)/i
 
    SCHEME = {
-      name: /^Name:\s+([^\s]+)/i,
+      adopted_name: /^Name:\s+([^\s]+)/i,
       version: /Version:\s+([^\s]+)/i,
       epoch: /Epoch:\s+([^\s]+)/i,
       release: /Release:\s+([^\s]+)/i,
@@ -237,7 +419,7 @@ class Setup::Spec::Rpm
 
       def parse_secondary match, flow, opts, context
          context.replace(parse_context_line(match[1], opts))
-         { context[:name] => { "name" => context[:name] }}
+         { context[:name] => { "adopted_name" => context[:name] }}
       end
 
       def parse_description match, flow, opts, context
@@ -276,7 +458,7 @@ class Setup::Spec::Rpm
                when :fullname
                   res[:name] = arg
                else
-                  res[:name] = "#{opts["name"]}-#{arg}"
+                  res[:name] = "#{opts["adopted_name"]}-#{arg}"
                end
             end
 
@@ -292,37 +474,11 @@ class Setup::Spec::Rpm
       end
    end
 
-   {
-      name: nil,
-      epoch: nil,
-      version: nil,
-      release: "alt1",
-      summaries: {},
-      licenses: [],
-      build_arch: nil,
-      group: nil,
-      uri: nil,
-      vcs: nil,
-      packager: ->(this) { [ this.changes[0].author, "<#{this.changes[0].email}>" ].join(" ") },
-      source_files: OpenStruct.new("0": "%name-%version.tar"),
-      patches: {},
-      requires: {},
-      build_requires: ->(this) { this.dependencies },
-      build_pre_requires: OpenStruct.new("0": "rpm-build-ruby"),
-      provides: {},
-      obsoletes: {},
-      conflicts: {},
-      descriptions: {},
-      changes: [],
-      prep: nil,
-      build: nil,
-      install: nil,
-      check: nil,
-      file_list: nil,
-      secondaries: {},
-      context: nil,
-   }.each do |name, default|
+   include CPkg
+
+   FIELDS.merge(ONLY_FIELDS).each do |name, default|
       define_method(name) do
+         #binding.pry if name == :adopted_name
          self[name.to_s] ||
             space.respond_to?(name) && space.send(name) ||
             space.main_source&.respond_to?(name) && space.main_source.send(name) ||
@@ -331,6 +487,36 @@ class Setup::Spec::Rpm
       end
       define_method("_#{name}") { self.options[name.to_s] }
       define_method("has_#{name}?") { !!self.options[name.to_s] }
+   end
+
+   def adopted_name
+      super
+   end
+
+   def full_name
+      return @full_name if @full_name
+
+      prefix = space.main_source&.respond_to?(:name_prefix) && space.main_source.name_prefix || nil
+      pre_name = [ prefix, space&.main_source.name ].compact.join("-")
+      @full_name = !pre_name.blank? && pre_name || self["adopted_name"]
+   end
+
+   def has_any_compilable?
+      !space.compilables.empty?
+   end
+
+   # properties
+
+   def dependencies
+      return @dependencies if @dependencies
+
+      dep_list =
+      space.dependencies.reduce([]) do |deps, dep|
+         deph = Setup::Deps.to_rpm(dep.requirement)
+         deps | deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }
+      end.map.with_index { |v, i| [ "#{i}", v ] }.to_h
+
+      @dependencies = os(dep_list)
    end
 
    def macros name
@@ -344,78 +530,32 @@ class Setup::Spec::Rpm
       vars
    end
 
-   def summary
-      summaries[""]
-   end
+   def secondaries
+      return @secondaries if @secondaries
 
-   def altname
-   end
+      adopted_names = self["secondaries"].to_h.keys.map(&:to_s)
 
-   def has_altname?
-      !altname.blank?
-   end
+      secondaries = space.sources.reject do |s|
+         s.name == space.main_source&.name
+      end.map do |s|
+         sec = Secondary.new(source: s, spec: self)
 
-   def has_compilable?
-   end
+         if adopted_names.delete(sec.adopted_name)
+            sec.options = options["secondaries"][sec.adopted_name]
+         end
 
-   def has_comment?
-      !comment.blank?
-   end
+         sec
+      end
 
-   def has_executable?
-   end
-
-   def readme
-      "README" #change to detect
-   end
-
-   def has_doc?
-   end
-
-   def has_devel?
-   end
-
-   def has_devel_sources?
-   end
-
-   # properties
-
-   def [] name
-      self.options[name] && os(self.options[name])
-   end
-
-   def dependencies
-      dep_list =
-      space.dependencies.reduce([]) do |deps, dep|
-         deph = Setup::Deps.to_rpm(dep.requirement)
-         deps | deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }
-      end.map.with_index { |v, i| [ "#{i}", v ] }.to_h
-
-      os(dep_list)
-   end
-
-   def prefix
-      "gem"
+      @secondaries = secondaries | adopted_names.map do |an|
+         Secondary.new(spec: self, options: options["secondaries"][an])
+      end
    end
 
    protected
 
-   def eval value_in
-      if value_in.is_a?(String)
-         value_in.gsub(/%[{\w}]+/) do |match|
-            /%(?:{(?<m>\w+)}|(?<m>\w+))/ =~ match
-            options["context"][m]
-         end
-      else
-         value_in
-      end
-   end
-
-   def os value_in
-      value = eval(value_in)
-       #  binding.pry
-
-      JSON.parse value.to_json, object_class: OpenStruct
+   def source
+      space.main_source
    end
 
    def initialize space: nil, home: ENV['GEM_HOME'] || ::Gem.paths.home, options: {}

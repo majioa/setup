@@ -53,9 +53,7 @@ class Setup::Space
    def name
       return @name if @name
 
-      prefix = main_source&.respond_to?(:name_prefix) && main_source.name_prefix || nil
-      pre_name = [ prefix, main_source&.name ].compact.join("-")
-      @name = !pre_name.blank? && pre_name || spec && spec["name"]
+      @name = main_source&.name || spec && spec["name"]
    end
 
    # +name+ returns a default version for the space. Returns version of a source when
@@ -113,7 +111,29 @@ class Setup::Space
    # +dependencies+ returns main source dependencies list as an array of Gem::Dependency
    # objects, otherwise returning blank array.
    def dependencies
-      @dependencies ||= main_source&.dependencies || []
+      @dependencies ||= sources.map(&:dependencies).flatten.reject do |dep|
+         sources.any? do |s|
+            dep.name == s.name &&
+            dep.requirement.satisfied_by?(Gem::Version.new(s.version))
+         end
+      end
+   end
+
+   def files
+      # binding.pry
+      @files ||= sources.map { |s| s.files rescue [] }.flatten.uniq
+   end
+
+   def executables
+      @executables ||= sources.map { |s| s.executables rescue [] }.flatten.uniq
+   end
+
+   def docs
+      @docs ||= sources.map { |s| s.docs rescue [] }.flatten.uniq
+   end
+
+   def compilables
+      @compilables ||= sources.map { |s| s.extensions rescue [] }.flatten.uniq
    end
 
    protected

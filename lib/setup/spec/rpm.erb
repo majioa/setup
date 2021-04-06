@@ -1,36 +1,38 @@
+<% if has_comment? -%>
 <%= comment -%>
-<% if has_altname? %>
-%define        pkgname <%= altname %>
-<% if altname != name %>
-%define        gemname <%= name %>
-<% end -%>
 
 <% end -%>
-Name:          <%= name %>
+Name:          <%= adopted_name %>
+<% if has_epoch? -%>
 Epoch:         <%= epoch %>
+<% end -%>
 Version:       <%= version %>
 Release:       <%= release %>
-Summary:       <%= summary %>
+<% summaries.each_pair do |cp, summary| -%>
+Summary<%= !cp.blank? && "(#{cp})" || nil %>:       <%= summary %>
+<% end -%>
 License:       <%= licenses.join(" or ") %>
 Group:         <%= group %>
 Url:           <%= uri %>
 Vcs:           <%= vcs %>
+<% if !has_packager? -%>
 Packager:      <%= packager %>
-<% if !has_compilable? -%>
-BuildArch:     noarch<% end -%>
-
-<% source_files.each do |index, source_file| -%>
-Source<%= index != 0 && index || nil %>:              <%= source_file %>
 <% end -%>
-<% patches.each do |index, patch| -%>
-Patch<%= index != 0 && index || nil %>:               <%= patch %>
+<% if !has_any_compilable? -%>
+BuildArch:     noarch
 <% end -%>
 
-<% build_pre_requires.each do |_, dep| -%>
-BuildRequires(pre):  <%= dep %>
+<% source_files.each_pair do |index, source_file| -%>
+Source<%= index != :"0" && index || nil %>:        <%= source_file %>
 <% end -%>
-<% build_requires.each do |_, dep| -%>
-BuildRequires:       <%= dep %>
+<% patches.each_pair do |index, patch| -%>
+Patch<%= index != :"0" && index || nil %>:         <%= patch %>
+<% end -%>
+<% build_pre_requires.each_pair do |_, dep| -%>
+BuildRequires(pre): <%= dep %>
+<% end -%>
+<% build_requires.each_pair do |_, dep| -%>
+BuildRequires: <%= dep %>
 <% end -%>
 
 %add_findreq_skiplist %ruby_gemslibdir/**/*
@@ -48,106 +50,108 @@ Provides:            <%= dep %>
 Conflicts:           <%= dep %>
 <% end -%>
 
-<% descriptions.each do |arg, description| -%>
-%description<%= arg && "         #{arg}" || nil %>
+<% descriptions.each_pair do |arg, description| -%>
+%description<%= !arg.blank? && "         -l #{arg}" || nil %>
 <%= description %>
 <% end -%>
 
-<% if has_altname? -%>
+
 <% if has_executable? -%>
-%package       -n %pkgname
-Summary:       Executable file for %gemname gem
-Summary(ru_RU.UTF-8): Исполнямка для самоцвета %gemname
+%package       -n <%= executable_name %>
+Summary:       Executable file for <%= name %> gem
+Summary(ru_RU.UTF-8): Исполнямка для самоцвета <%= name %>
 Group:         Development/Ruby
 BuildArch:     noarch
 
-%description   -n %pkgname
-Executable file for %gemname gem.
+%description   -n <%= executable_name %>
+Executable file for <%= name %> gem.
 
-%description   -n %pkgname -l ru_RU.UTF8
-Исполнямка для %gemname самоцвета.
+%description   -n <%= executable_name %> -l ru_RU.UTF8
+Исполнямка для самоцвета <%= name %>.
 
 
 <% end -%>
 <% if has_doc? -%>
 %package       doc
-Summary:       Documentation files for %gemname gem
-Summary(ru_RU.UTF-8): Файлы сведений для самоцвета %gemname
+Summary:       Documentation files for <%= name %> gem
+Summary(ru_RU.UTF-8): Файлы сведений для самоцвета <%= name %>
 Group:         Development/Documentation
 BuildArch:     noarch
 
 %description   doc
-Documentation files for %gemname gem.
+Documentation files for <%= name %> gem.
 
 %description   doc -l ru_RU.UTF8
-Файлы сведений для самоцвета %gemname.<% end -%>
+Файлы сведений для самоцвета <%= name %>.
+<% end -%>
 
 
 <% if has_devel? -%>
 %package       devel
-Summary:       Development files for %gemname gem
+Summary:       Development files for <%= name %> gem
 Group:         Development/Ruby
 BuildArch:     noarch
 
 <% devel_deps.each do |dep| -%>
-Requires:      gem(<%= dep.name %>) <%= dep.version %>
+Requires:      <%= dep %>
 <% end -%>
 
 %description   devel
-Development files for %gemname gem.
+Development files for <%= name %> gem.
 
 %description   devel -l ru_RU.UTF8
-Файлы заголовков для самоцвета %gemname.
+Файлы заголовков для самоцвета <%= name %>.
 
 
-<% end -%>
 <% end -%>
 <% secondaries.each do |secondary| -%>
 <% if secondary.has_executable? -%>
-%package       -n %pkgname
-Summary:       Executable file for %gemname gem
-Summary(ru_RU.UTF-8): Исполнямка для самоцвета %gemname
+%package       -n <%= secondary.executable_name %>
+Summary:       Executable file for <%= secondary.name %> gem
+Summary(ru_RU.UTF-8): Исполнямка для самоцвета <%= secondary.name %>
 Group:         Development/Ruby
 BuildArch:     noarch
 
-%description   -n %pkgname
-Executable file for %gemname gem.
+%description   -n <%= secondary.executable_name %>
+Executable file for <%= secondary.name %> gem.
 
-%description   -n %pkgname -l ru_RU.UTF8
-Исполнямка для %gemname самоцвета.
+%description   -n <%= secondary.executable_name %> -l ru_RU.UTF8
+Исполнямка для <%= secondary.name %> самоцвета.
 
 
 <% end -%>
 <% if secondary.has_doc? -%>
-%package       doc
-Summary:       Documentation files for %gemname gem
-Summary(ru_RU.UTF-8): Файлы сведений для самоцвета %gemname
+%package       -n <%= secondary.adopted_name %>-doc
+Summary:       Documentation files for <%= secondary.name %> gem
+Summary(ru_RU.UTF-8): Файлы сведений для самоцвета <%= secondary.name %>
 Group:         Development/Documentation
 BuildArch:     noarch
 
-%description   doc
-Documentation files for %gemname gem.
+%description   -n <%= secondary.adopted_name %>-doc
+Documentation files for <%= secondary.name %> gem.
 
-%description   doc -l ru_RU.UTF8
-Файлы сведений для самоцвета %gemname.
+%description   -n <%= secondary.adopted_name %>-doc -l ru_RU.UTF8
+Файлы сведений для самоцвета <%= secondary.name %>.
 
 
 <% end -%>
 <% if secondary.has_devel? -%>
-%package       devel
-Summary:       Development files for %gemname gem
+%package       -n <%= secondary.adopted_name %>-devel
+Summary:       Development files for <%= secondary.name %> gem
 Group:         Development/Ruby
 BuildArch:     noarch
 
-<% secondary.devel_deps.each do |dep| -%>
-Requires:      gem(<%= dep.name %>) <%= dep.version %>
+<% if !secondary.devel_deps.empty? -%>
+<% secondary.devel_deps.each_pair do |_, dep| -%>
+Requires:      <%= dep %>
 <% end -%>
 
-%description   devel
-Development files for %gemname gem.
+<% end -%>
+%description   -n <%= secondary.adopted_name %>-devel
+Development files for <%= secondary.name %> gem.
 
-%description   devel -l ru_RU.UTF8
-Файлы заголовков для самоцвета %gemname.
+%description   -n <%= secondary.adopted_name %>-devel -l ru_RU.UTF8
+Файлы заголовков для самоцвета <%= secondary.name %>.
 
 
 <% end -%>
@@ -165,28 +169,44 @@ Development files for %gemname gem.
 %ruby_test
 
 %files
-%doc <%= readme %>*
+<% if has_readme? -%>
+%doc <%= readme %>
+<% end -%>
 %ruby_gemspec
 %ruby_gemlibdir
 <% if has_compilable? -%>
 %ruby_gemextdir
+<% end -%>
+
+<% secondaries.each do |secondary| -%>
+<% if secondary.has_readme? -%>
+%files         -n <%= secondary.adopted_name %>
+<% end -%>
+%doc <%= secondary.readme %>
+%ruby_gemspecdir/<%= secondary.name %>-<%= secondary.version %>.gemspec
+%ruby_gemslibdir/<%= secondary.name %>-<%= secondary.version %>
+<% if secondary.has_compilable? -%>
+%ruby_gemsextdir/<%= secondary.name %>-<%= secondary.version %>
 
 <% end -%>
-<% if has_executable? -%>
-%files         -n %pkgname
-<% executables.each do |e| -%>
+<% if secondary.has_executable? -%>
+%files         -n <%= secondary.executable_name %>
+<% secondary.executables.each do |e| -%>
 %_bindir/<%= e %>
 <% end -%>
 
 <% end -%>
-<% if has_doc? -%>
-%files         doc
-%ruby_gemdocdir
+<% if secondary.has_doc? -%>
+%files         -n <%= secondary.adopted_name %>-doc
+%ruby_gemsdocdir/<%= secondary.name %>-<%= secondary.version %>
 
 <% end -%>
-<% if has_devel_sources? -%>
-%files         devel
+<% if secondary.has_devel? -%>
+%files         -n <%= secondary.adopted_name %>-devel
+<% if secondary.has_devel_sources? -%>
 %ruby_includedir/*
+<% end -%>
+<% end -%>
 
 <% end -%>
 

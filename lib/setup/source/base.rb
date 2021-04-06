@@ -1,7 +1,7 @@
 require 'setup/source'
 
 class Setup::Source::Base
-   OPTION_KEYS = %i(root replace_list aliases)
+   OPTION_KEYS = %i(rootdir replace_list aliases)
 
    DL_DIRS     = ->(s) { ".so.#{s.name}#{RbConfig::CONFIG['sitearchdir']}" }
    RI_DIRS     = ->(s) { [ s.default_ridir, 'ri' ] }
@@ -82,7 +82,7 @@ class Setup::Source::Base
       end
 
       def name_for options_in
-         fullname = (options_in[:root] || "").split('/').last
+         fullname = (options_in[:rootdir] || "").split('/').last
          /^(?<name>.*)-([\d\.]+)$/ =~ fullname
          name || fullname
       end
@@ -117,6 +117,10 @@ class Setup::Source::Base
       def rootdir_or_default value_in, name, _
          [ name, value_in || Dir.pwd ]
       end
+   end
+
+   def options
+      @options ||= {}
    end
 
    # +fullname+ returns full name of the source, by default it is the name of the current folder,
@@ -242,7 +246,7 @@ class Setup::Source::Base
 
    def lockfile
       @lockfile ||= (
-         root && File.join(root, 'Gemfile.lock') || Tempfile.new('Gemfile.lock').path)
+         rootdir && File.join(rootdir, 'Gemfile.lock') || Tempfile.new('Gemfile.lock').path)
    end
 
    def definition
@@ -266,15 +270,15 @@ class Setup::Source::Base
    end
 
    def if_file file
-      File.file?(File.join(root, file)) && file || nil
+      File.file?(File.join(rootdir, file)) && file || nil
    end
 
    def if_exist file
-      File.exist?(File.join(root, file)) && file || nil
+      File.exist?(File.join(rootdir, file)) && file || nil
    end
 
    def if_dir dir
-      File.directory?(File.join(root, dir)) && dir || nil
+      File.directory?(File.join(rootdir, dir)) && dir || nil
    end
 
    def default_ridir
@@ -285,6 +289,16 @@ class Setup::Source::Base
       GROUPS.map do |set|
          yield(set, tree(set))
       end
+   end
+
+   def docs
+      # TODO make docs to docdir
+      default_ridir
+   end
+
+   def compilables
+      # TODO make compilables from ext
+      extfiles
    end
 
    protected
@@ -310,7 +324,7 @@ class Setup::Source::Base
       re = re_in.is_a?(Proc) && re_in[self] || re_in || /.*/
 
       tree_in = send("#{kind}dirs").map do |dir|
-         [ dir, Dir.chdir(File.join(root, dir)) { Dir.glob('**/**/*') } ]
+         [ dir, Dir.chdir(File.join(rootdir, dir)) { Dir.glob('**/**/*') } ]
       end.to_h
 
       if block_given?
@@ -319,7 +333,7 @@ class Setup::Source::Base
       end
 
       tree_in.map do |dir, files_in|
-         files = Dir.chdir(File.join(root, dir)) do
+         files = Dir.chdir(File.join(rootdir, dir)) do
             files_in.select do |file|
                re =~ file && File.file?(file)
             end

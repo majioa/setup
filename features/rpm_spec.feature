@@ -7,7 +7,7 @@ Feature: RPM Spec
          Name:                rpm
          """
       When developer loads the spec
-      Then property "name" of space is "rpm"
+      Then property "adopted_name" of space is "rpm"
 
    Scenario: Parse RPM Spec for Version
       Given RPM spec file:
@@ -272,23 +272,23 @@ Feature: RPM Spec
          Описание Доков
          """
       When developer loads the spec
-      Then space's property "secondaries" with argument "rpm-doc" has fields:
-         | name         | rpm-doc   |
+      Then secondary spec with adopted name "rpm-doc" has fields:
+         | adopted_name | rpm-doc   |
          | group        | Group1    |
          | build_arch   | arch64    |
-      And the subfield "descriptions" with argument "ru_RU.UTF-8" of space's property "secondaries" with argument "rpm-doc" has data:
+      And the subfield "descriptions" with argument "ru_RU.UTF-8" of secondary spec with adopted name "rpm-doc" has data:
          """
          Описание Доков
          """
-      And the subfield "descriptions" with no argument of space's property "secondaries" with argument "rpm-doc" has data:
+      And the subfield "descriptions" with no argument of secondary spec with adopted name "rpm-doc" has data:
          """
          Doc Desc.
          """
-      And the subfield "summaries" with argument "ru_RU.UTF-8" of space's property "secondaries" with argument "rpm-doc" has data:
+      And the subfield "summaries" with argument "ru_RU.UTF-8" of secondary spec with adopted name "rpm-doc" has data:
          """
          Итого Доки
          """
-      And the subfield "summaries" with no argument of space's property "secondaries" with argument "rpm-doc" has data:
+      And the subfield "summaries" with no argument of secondary spec with adopted name "rpm-doc" has data:
          """
          Doc Summary
          """
@@ -344,7 +344,7 @@ Feature: RPM Spec
          """
          file1
          """
-      And the subfield "file_list" of space's property "secondaries" with argument "rpm-doc" has data:
+      And the subfield "file_list" of secondary spec with adopted name "rpm-doc" has data:
          """
          file2
          """
@@ -391,9 +391,9 @@ Feature: RPM Spec
          """
          2
          """
-      Then property "_name" of space's spec is "%{var}%var1"
-      Then property "name" of space's spec is "rpm2"
-      And property "name" of space is "rpm2"
+      Then property "_adopted_name" of space's spec is "%{var}%var1"
+      Then property "adopted_name" of space's spec is "rpm2"
+      And property "adopted_name" of space is "rpm2"
 
    Scenario: Parse RPM Spec for macros support
       Given RPM spec file:

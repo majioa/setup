@@ -46,6 +46,13 @@ Then('space\'s property {string} with argument {string} has fields:') do |proper
    table.rows_hash.each { |key, value| expect(h[key]).to eql(value) }
 end
 
+Then('secondary spec with adopted name {string} has fields:') do |arg, table|
+   sec = @space.secondaries.find {|sec| sec.adopted_name == arg }
+
+   expect(sec).to_not be_nil
+   table.rows_hash.each { |key, value| expect(sec[key]).to eql(value) }
+end
+
 Then('the subfield {string} with argument {string} of space\'s property {string} with argument {string} has data:') do |subprop, subarg, property, arg, text|
    list = @space.send(property)[arg]
 
@@ -58,6 +65,27 @@ Then('the subfield {string} with no argument of space\'s property {string} with 
 
    expect(list).to_not be_nil
    expect(list[subprop][""]).to eql(text)
+end
+
+Then('the subfield {string} with argument {string} of secondary spec with adopted name {string} has data:') do |subprop, subarg, arg, text|
+   sec = @space.secondaries.find {|sec| sec.adopted_name == arg }
+
+   expect(sec).to_not be_nil
+   expect(sec[subprop][subarg]).to eql(text)
+end
+
+Then('the subfield {string} with no argument of secondary spec with adopted name {string} has data:') do |subprop, arg, text|
+   sec = @space.secondaries.find {|sec| sec.adopted_name == arg }
+
+   expect(sec).to_not be_nil
+   expect(sec[subprop][""]).to eql(text)
+end
+
+Then('the subfield {string} of secondary spec with adopted name {string} has data:') do |subprop, arg, text|
+   sec = @space.secondaries.find {|sec| sec.adopted_name == arg }
+
+   expect(sec).to_not be_nil
+   expect(sec[subprop]).to eql(text)
 end
 
 Then('the subfield {string} of space\'s property {string} with argument {string} has data:') do |subprop, property, arg, text|

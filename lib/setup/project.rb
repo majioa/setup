@@ -199,7 +199,11 @@ module Setup
          ObjectSpace.each_object(Setup::Source::Base).select { |x| x.name == name }
       end
 
-      # Returns an install target
+   # +targets+ returns an install target list for the sources
+   #
+   # space.targets #=> [ <#Setup::Target::Gem...>, ... ]
+   #
+   # TODO move to target actor
       def targets
          @targets ||= (
             sources.map do |source|
