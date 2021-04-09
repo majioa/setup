@@ -13,7 +13,7 @@ class Setup::DSL
    attr_reader :source, :replace_list, :skip_list, :append_list
 
    def gemfile
-      File.join(source.root, 'Gemfile')
+      File.join(source.rootdir, 'Gemfile')
    end
 
    def dsl
@@ -21,7 +21,7 @@ class Setup::DSL
          begin
             require 'bundler'
 
-            dsl = Dir.chdir(source.root) { Bundler::Dsl.new }
+            dsl = Dir.chdir(source.rootdir) { Bundler::Dsl.new }
             dsl.eval_gemfile(gemfile)
             dsl
          rescue LoadError,

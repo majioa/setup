@@ -189,4 +189,26 @@ class Object
    def blank?
       self.nil? || self.to_s == ""
    end
+
+   def to_os
+      OpenStruct.new(self.to_h)
+   end
+end
+
+class OpenStruct
+   def merge_to other
+      OpenStruct.new(other.to_h.merge(self.to_h))
+   end
+
+   def merge other
+      OpenStruct.new(self.to_h.merge(other.to_h))
+   end
+
+   def map *args, &block
+      self.to_h.map(*args, &block)
+   end
+
+   def each *args, &block
+      self.each_pair(*args, &block)
+   end
 end

@@ -1,10 +1,25 @@
 require 'yaml'
 
 module Setup::Actor
+   class InvalidActorKindError < StandardError; end
+   class InvalidContextKindForActorError < StandardError; end
+
+   AUTOMAP = {
+      Spec: "setup/actor/spec",
+      Link: "setup/actor/link",
+      Touch: "setup/actor/touch",
+      Copy: "setup/actor/copy",
+   }
+
    class << self
+      def kinds
+         list.keys
+      end
+
       def actors
-         @actors ||= Setup::Actor.constants.map do |x|
-            [ "#{x}".downcase, Setup::Actor.const_get(x) ]
+         @actors ||= AUTOMAP.keys.map do |const|
+            require(AUTOMAP[const])
+            [ const.to_s.downcase, const_get(const) ]
          end.to_h
       end
 
@@ -43,13 +58,16 @@ module Setup::Actor
          end.flatten
       end
 
-      def for task
-         actors[task]
+      def for! task, context
+         actor = actors[task.to_s] || raise(InvalidActorKindError)
+         actor.context_kind == context.class || raise(InvalidContextKindForActorError)
+
+         actor
+      end
+
+      def for task, context
+         for!(task, context)
+      rescue InvalidActorKindError
       end
    end
 end
-
-require 'setup/actor/link'
-require 'setup/actor/touch'
-require 'setup/actor/copy'
-require 'setup/actor/spec'

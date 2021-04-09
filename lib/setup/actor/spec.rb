@@ -2,12 +2,22 @@
 # Actor spec
 module Setup::Actor::Spec
    class << self
-      # function apply
-      # generates spec according to the provided setup
-      def apply space, template = nil
+      def context_kind
+         Setup::Space
+      end
+
+      # +apply_to+ generates spec according to the provided setup
+      #
+      def apply_to space, template = nil
          spec = Setup::Spec.find(space.spec_type)
 
-         spec.draw(space, template)
+         rendered = spec.draw(space, template)
+
+         if space.options.output_file
+            File.open(space.options.output_file, "w") { |f| f.puts(rendered) }
+         end
+
+         rendered
       end
    end
 end

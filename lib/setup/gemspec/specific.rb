@@ -7,7 +7,7 @@ module Setup::Gemspec::Specific
 
          fix_preloaded_for(file)
 
-         FileUtils.chdir(File.dirname(file)) { spec = Gem::Specification.load(File.basename(file)) }
+         spec = FileUtils.chdir(File.dirname(file)) { Gem::Specification.load(File.basename(file)) }
 
          spec
       rescue Exception => e
@@ -16,6 +16,7 @@ module Setup::Gemspec::Specific
 
       def fix_preloaded_for file
          if Psych.constants.include?(:VERSION)
+            $".grep(/#{File.dirname(file)}/).each { |f| $".delete(f) }
             Psych.send(:remove_const, :VERSION)
          end
       end

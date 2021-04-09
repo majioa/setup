@@ -5,58 +5,38 @@ require 'setup/version'
 class Setup::Space
    class InvalidSpaceFileError < StandardError; end
 
+   TYPES = {
+      sources: Setup::Source
+   }
+
    @@space = {}
 
-   # +rootdir+ property returns the root dir for the space
+   # +spec+ property returns the hash of the loaded spec if any, it can be freely
+   # reassigned.
    #
-   # rootdir #=> /root/dir/for/the/space
+   # spec #=> {...}
    #
-   attr_reader :rootdir
+   attr_accessor :spec
 
-   # +sources+ property returns the array of the sources (as hashes) found in
-   # the space.
+   # +options+ property returns the hash of the loaded options if any
    #
-   # sources #=> [...]
-   attr_reader :sources
-
-   # +spec+ property returns the hash of the loaded spec if any
+   # options #=> {...}
    #
-   # sources #=> [...]
-   attr_reader :spec
-
-   class << self
-      def load_from space_in
-         space_h = case space_in
-         when IO, StringIO
-            YAML.load(space_in.readlines.join(""))
-         when String
-            raise InvalidSpaceFileError if !File.file?(space_in)
-
-            YAML.load(IO.read(space_in))
-         else
-            raise InvalidSpaceFileError
-         end
-
-         @@space[space_in] = self.new(space: space_h)
-      end
-
-      def load
-         load_from(Dir[".space"].first)
-      end
-   end
+   attr_reader :options
 
    # +name+ returns a default name of the space with a prefix if any. It returns name of a source when
    # its root is the same as the space's root, or returns name defined in the spec if any.
+   # If no spec defined returns name of last folder in rootdir or "root" as a default main source name.
    #
    # space.name # => space-name
    #
    def name
       return @name if @name
 
-      @name = main_source&.name || spec && spec["name"]
+      @name = main_source&.name || spec && spec["name"] || rootdir.split("/").last || "root"
    end
 
-   # +name+ returns a default version for the space. Returns version of a source when
+   # +version+ returns a default version for the space. Returns version of a source when
    # its root is the same as the space's root, or returns version defined in the spec if any,
    # or returns default one, which is the datestamp.
    #
@@ -68,8 +48,18 @@ class Setup::Space
       @version ||= main_source&.version || spec && spec["version"] || time_stamp
    end
 
+   attr_writer :rootdir
+
+   # +rootdir+ returns the root dir for the space got from the options.
+   #
+   # rootdir #=> /root/dir/for/the/space
+   #
+   def rootdir
+      @rootdir ||= options.rootdir || '/'
+   end
+
    def main_source
-      @main_source ||= sources.find { |source| source.rootdir == rootdir }
+      @main_source ||= valid_sources.find { |source| source.rootdir == rootdir }
    end
 
    def time_stamp
@@ -97,21 +87,24 @@ class Setup::Space
       @summaries ||= spec && spec["summaries"] || OpenStruct.new("" => main_source&.summary)
    end
 
-   # +licenses+ returns license list defined in all the sources found in the space.
+   # +licenses+ returns license list defined in all the valid sources found in the space.
    #
    # space.licenses => # ["MIT"]
    #
    def licenses
       return @licenses if @licenses
 
-      licenses = sources.map(&:licenses).flatten.uniq
-      @licenese = !licenses.blank? && licenses || spec && spec["licenses"] || nil
+      licenses = valid_sources.map { |source| source.licenses rescue [] }.flatten.uniq
+
+      @licenses = !licenses.blank? && licenses || spec && spec["licenses"] || []
    end
 
    # +dependencies+ returns main source dependencies list as an array of Gem::Dependency
    # objects, otherwise returning blank array.
    def dependencies
-      @dependencies ||= sources.map(&:dependencies).flatten.reject do |dep|
+      @dependencies ||= valid_sources.map do |source|
+         source.respond_to?(:dependencies) && source.dependencies || []
+      end.flatten.reject do |dep|
          sources.any? do |s|
             dep.name == s.name &&
             dep.requirement.satisfied_by?(Gem::Version.new(s.version))
@@ -120,48 +113,114 @@ class Setup::Space
    end
 
    def files
-      # binding.pry
-      @files ||= sources.map { |s| s.files rescue [] }.flatten.uniq
+      @files ||= valid_sources.map { |s| s.files rescue [] }.flatten.uniq
    end
 
    def executables
-      @executables ||= sources.map { |s| s.executables rescue [] }.flatten.uniq
+      @executables ||= valid_sources.map { |s| s.executables rescue [] }.flatten.uniq
    end
 
    def docs
-      @docs ||= sources.map { |s| s.docs rescue [] }.flatten.uniq
+      @docs ||= valid_sources.map { |s| s.docs rescue [] }.flatten.uniq
    end
 
    def compilables
-      @compilables ||= sources.map { |s| s.extensions rescue [] }.flatten.uniq
+      @compilables ||= valid_sources.map { |s| s.extensions rescue [] }.flatten.uniq
+   end
+
+   # +sources+ returns all the sources in the space. It will load from the space sources,
+   # or by default will search sources in the provided folder or the current one.
+   #
+   # space.sources => # [#<Setup::Source:...>, #<...>]
+   #
+   def sources
+      @sources ||= Setup::Source.search_in(options.rootdir || Dir.pwd, options)
+   end
+
+   # +valid_sources+ returns all the valid sources based on the current source list.
+   #
+   # space.valid_sources => # [#<Setup::Source:...>, #<...>]
+   #
+   def valid_sources
+      @valid_sources ||= sources.select do |source|
+         source.valid? && is_regarded?(source)
+      end
+   end
+
+   def is_regarded? source
+      !ignored_names.include?(source.name)
+   end
+
+   def ignored_names
+      @ignored_names ||= (options.ignored_names || []) - regarded_names
+   end
+
+   def regarded_names
+      @regarded_names ||= options.regarded_names || []
+   end
+
+   def spec_type
+      @spec_type ||= options.spec_type
    end
 
    protected
 
-   def initialize options: {}, space: {}, spec: nil
-      @rootdir ||= options.delete(:rootdir)
+   def initialize space: nil, options: nil, spec: nil
+      @options = options || {}.to_os
+      parse(space || {}.to_os)
+
       if @spec ||= spec
          @spec.space = self
-      elsif space["spec"]
-         spec_model = Setup::Spec.find(space["spec_type"])
-         @spec = spec_model.new(options: space["spec"], space: self)
+      elsif spec
+         spec_model = Setup::Spec.find(self.spec_type)
+         @spec = spec_model.new(options: spec, space: self)
       end
-
-      parse(space)
    end
 
-   def parse space
-      @rootdir ||= space.delete("rootdir")
-      # binding.pry
+   def parse space_in
+      space_in.each do |name, value_in|
+         value = case value_in
+            when Array
+               #value_in.map {|x| YAML.load(x) }
+               value_in
+            when Hash
+               value_in.to_os
+            when String
+               YAML.load(value_in)
+            else
+               value_in
+            end
 
-      @sources ||= Setup::Source.load(space.delete("sources"))
-
-      @space = space
+         instance_variable_set(:"@#{name}", value)
+      end
    end
 
    def method_missing method, *args
-      # binding.pry
-      @space[method.to_s] || spec && spec.respond_to?(method) && spec.send(method) || super
+      instance_variable_get(:"@#{method}") || (spec.send(method) rescue nil) || super
+   end
+
+   class << self
+      def load_from! space_in: Dir[".space"].first, options: nil
+         space = case space_in
+         when IO, StringIO
+            YAML.load(space_in.readlines.join(""))
+         when String
+            raise InvalidSpaceFileError.new(space_in: space_in) if !File.file?(space_in)
+
+            YAML.load(IO.read(space_in))
+         when NilClass
+         else
+            raise InvalidSpaceFileError
+         end.to_os
+
+         @@space[space.name] = self.new(space: space, options: options || {}.to_os)
+      end
+
+      def load_from space_in: Dir[".space"].first, options: nil
+         load_from!(space_in: space_in, options: options)
+      rescue InvalidSpaceFileError
+         @@space[nil] = new(options: options)
+      end
    end
 end
 

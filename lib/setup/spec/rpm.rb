@@ -3,7 +3,7 @@ require "erb"
 require 'setup/spec'
 
 class Setup::Spec::Rpm
-   attr_reader :home, :options, :spec, :comment
+   attr_reader :home, :spec, :comment
    attr_accessor :space
 
    FIELDS = {
@@ -46,11 +46,11 @@ class Setup::Spec::Rpm
       end
 
       def adopted_name
-         self["adopted_name"] || full_name.gsub(/[_\.]/, '-')
+         self["adopted_name"] || full_name&.gsub(/[_\.]/, '-')
       end
 
       def _adopted_name
-         options["adopted_name"]
+         @adopted_name
       end
 
       def has_compilable?
@@ -74,7 +74,6 @@ class Setup::Spec::Rpm
       end
 
       def has_devel?
-         # binding.pry
          source.respond_to?(:dependencies) && !source.dependencies.empty? || has_devel_sources?
       end
 
@@ -90,23 +89,23 @@ class Setup::Spec::Rpm
             deps | deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }
          end.map.with_index { |v, i| [ "#{i}", v ] }.to_h
 
-         @devel_deps = os(dep_list)
+         @devel_deps = eval(dep_list)
       end
 
       def files
-         @files ||= source&.files rescue [] || []
+         @files ||= (source&.files rescue []) || []
       end
 
       def executables
-         @executables ||= source&.executables rescue [] || []
+         @executables ||= (source&.executables rescue []) || []
       end
 
       def docs
-         @docs ||= source&.docs rescue [] || []
+         @docs ||= (source&.docs rescue []) || []
       end
 
       def compilables
-         @compilables ||= source&.extensions rescue [] || []
+         @compilables ||= (source&.extensions rescue []) || []
       end
 
       def readme
@@ -124,15 +123,8 @@ class Setup::Spec::Rpm
       end
 
       def [] name
-         #  binding.pry
-         options[name] && os(options[name])
-      end
-
-      def os value_in
-         value = eval(value_in)
-          #  binding.pry
-
-         JSON.parse value.to_json, object_class: OpenStruct
+         value = instance_variable_get(:"@#{name}")
+         value && eval(value)
       end
 
       def prefix
@@ -143,34 +135,57 @@ class Setup::Spec::Rpm
          if value_in.is_a?(String)
             value_in.gsub(/%[{\w}]+/) do |match|
                /%(?:{(?<m>\w+)}|(?<m>\w+))/ =~ match
-               options["context"][m]
+               self["context"][m]
             end
          else
             value_in
+         end
+      end
+
+      def parse_options options_in
+         options_in&.each do |name, value_in|
+            value =
+               if name == "secondaries"
+                  value_in.map { |_name, sec| Secondary.new(spec: self, options: sec) }
+               else
+                  JSON.parse value_in.to_json, object_class: OpenStruct
+               end
+
+            instance_variable_set(:"@#{name}", value)
          end
       end
    end
 
    class Secondary
       attr_reader :source, :spec
-      attr_accessor :options
 
       include CPkg
 
       FIELDS.each do |name, default|
          define_method(name) do
-            # binding.pry if name == :adopted_name
+            # binding.pry if name == :name
             self[name.to_s] ||
                source.respond_to?(name) && source.send(name) ||
                default.is_a?(Proc) && default[self] ||
                default
          end
-         define_method("_#{name}") { self.options[name.to_s] }
-         define_method("has_#{name}?") { !!self.options[name.to_s] }
+         define_method("_#{name}") { instance_variable_get(:"@#{name}") }
+         define_method("has_#{name}?") { !!instance_variable_get(:"@#{name}")}
       end
 
       def summaries
-         @summaries ||= self["summaries"] || OpenStruct.new("" => source.summary)
+         return @summaries if @summaries
+
+         if !summaries = self["summaries"]
+            summaries =
+               if default_summary = source.summary rescue nil
+                  OpenStruct.new("" => default_summary)
+               else
+                  {}.to_os
+               end
+         end
+
+         @summaries = summaries
       end
 
       def full_name
@@ -181,10 +196,14 @@ class Setup::Spec::Rpm
          @full_name = !pre_name.blank? && pre_name || spec["adopted_name"]
       end
 
+      def options= value
+         parse_options(value)
+      end
+
       def initialize spec: raise, source: nil, options: {}
          @source = source
          @spec = spec
-         @options = options
+         parse_options(options)
       end
    end
 
@@ -295,11 +314,100 @@ class Setup::Spec::Rpm
    def draw spec = nil
       b = binding
 
-      # binding.pry
+      #binding.pry
       ERB.new(spec || @@spec, trim_mode: "<>-", eoutvar: "@spec").result(b)
    end
 
-   # action
+   include CPkg
+
+   FIELDS.merge(ONLY_FIELDS).each do |name, default|
+      define_method(name) do
+         #binding.pry if name == :licenses
+         self[name.to_s] ||
+            space.respond_to?(name) && space.send(name) ||
+            (space.main_source.send(name) rescue nil) ||
+            default.is_a?(Proc) && default[self] ||
+            default
+      end
+      define_method("_#{name}") { instance_variable_get(:"@#{name}") }
+      define_method("has_#{name}?") { !!instance_variable_get(:"@#{name}") }
+   end
+
+   def adopted_name
+      super
+   end
+
+   def full_name
+      return @full_name if @full_name
+
+      prefix = space.main_source&.respond_to?(:name_prefix) && space.main_source.name_prefix || nil
+      pre_name = [ prefix, space.main_source&.name || space.name ].compact.join("-")
+      @full_name = !pre_name.blank? && pre_name || self["adopted_name"]
+   end
+
+   def has_any_compilable?
+      !space.compilables.empty?
+   end
+
+   # properties
+
+   def dependencies
+      return @dependencies if @dependencies
+
+      dep_list =
+      space.dependencies.reduce([]) do |deps, dep|
+         deph = Setup::Deps.to_rpm(dep.requirement)
+         deps | deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }
+      end.map.with_index { |v, i| [ "#{i}", v ] }.to_h
+
+      @dependencies = eval(dep_list)
+   end
+
+   def macros name
+      [ self["context"].__macros[name] ].flatten(1).map { |x| "%#{name} #{x}" }.join("\n")
+   end
+
+   def variables
+      vars = self["context"]
+      vars.__macros = nil
+      vars.delete_field("__macros")
+      vars
+   end
+
+   def secondaries
+      return @secondaries if @secondaries
+
+      adopted_names = self["secondaries"].to_h.keys.map(&:to_s)
+
+      secondaries = space.sources.reject do |source|
+         source.name == space.main_source&.name
+      end.map do |source|
+         sec = Secondary.new(source: source, spec: self)
+
+         if adopted_names.delete(sec.adopted_name)
+            sec.options = secondaries[sec.adopted_name]
+         end
+
+         sec
+      end
+
+      @secondaries = secondaries | adopted_names.map do |an|
+         Secondary.new(spec: self, options: secondaries[an])
+      end
+   end
+
+   protected
+
+   def source
+      space.main_source
+   end
+
+   def initialize space: nil, home: ENV['GEM_HOME'] || ::Gem.paths.home, options: nil
+      @space = space
+      @home = home
+      parse_options(options)
+   end
+
    class << self
       def draw space, spec_in = nil
          spec = space.spec || self.new(space: space)
@@ -472,95 +580,5 @@ class Setup::Spec::Rpm
 
          context
       end
-   end
-
-   include CPkg
-
-   FIELDS.merge(ONLY_FIELDS).each do |name, default|
-      define_method(name) do
-         #binding.pry if name == :adopted_name
-         self[name.to_s] ||
-            space.respond_to?(name) && space.send(name) ||
-            space.main_source&.respond_to?(name) && space.main_source.send(name) ||
-            default.is_a?(Proc) && default[self] ||
-            default
-      end
-      define_method("_#{name}") { self.options[name.to_s] }
-      define_method("has_#{name}?") { !!self.options[name.to_s] }
-   end
-
-   def adopted_name
-      super
-   end
-
-   def full_name
-      return @full_name if @full_name
-
-      prefix = space.main_source&.respond_to?(:name_prefix) && space.main_source.name_prefix || nil
-      pre_name = [ prefix, space&.main_source.name ].compact.join("-")
-      @full_name = !pre_name.blank? && pre_name || self["adopted_name"]
-   end
-
-   def has_any_compilable?
-      !space.compilables.empty?
-   end
-
-   # properties
-
-   def dependencies
-      return @dependencies if @dependencies
-
-      dep_list =
-      space.dependencies.reduce([]) do |deps, dep|
-         deph = Setup::Deps.to_rpm(dep.requirement)
-         deps | deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }
-      end.map.with_index { |v, i| [ "#{i}", v ] }.to_h
-
-      @dependencies = os(dep_list)
-   end
-
-   def macros name
-      [ self["context"].__macros[name] ].flatten(1).map { |x| "%#{name} #{x}" }.join("\n")
-   end
-
-   def variables
-      vars = self["context"]
-      vars.__macros = nil
-      vars.delete_field("__macros")
-      vars
-   end
-
-   def secondaries
-      return @secondaries if @secondaries
-
-      adopted_names = self["secondaries"].to_h.keys.map(&:to_s)
-
-      secondaries = space.sources.reject do |s|
-         s.name == space.main_source&.name
-      end.map do |s|
-         sec = Secondary.new(source: s, spec: self)
-
-         if adopted_names.delete(sec.adopted_name)
-            sec.options = options["secondaries"][sec.adopted_name]
-         end
-
-         sec
-      end
-
-      @secondaries = secondaries | adopted_names.map do |an|
-         Secondary.new(spec: self, options: options["secondaries"][an])
-      end
-   end
-
-   protected
-
-   def source
-      space.main_source
-   end
-
-   def initialize space: nil, home: ENV['GEM_HOME'] || ::Gem.paths.home, options: {}
-      @space = space
-      @options = options
-      @home = home
    end
 end

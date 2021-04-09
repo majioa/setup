@@ -123,9 +123,9 @@ module Bones
 end
 
 module Kernel
-   def Bones name = nil
+   def Bones name = nil, &prc
+      # require 'pry';binding.pry
+      include Bones::Methods
       yield
    end
 end
-
-include Bones::Methods

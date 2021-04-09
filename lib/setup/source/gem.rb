@@ -22,16 +22,16 @@ class Setup::Source::Gem < Setup::Source::Base
       spec: true,
    }
 
-   attr_reader :spec, :gem_version_replace
+   attr_reader :gem_version_replace
 
    class << self
       def spec_for options_in = {}
          spec_in = options_in["spec"]
          spec = spec_in.is_a?(String) && YAML.load(spec_in) || spec_in
-         if options_in["version_replaces"] && version = options_in["version_replaces"][spec.name]
+         if options_in["version-replaces"] && version = options_in["version-replaces"][spec.name]
             spec.version = Gem::Version.new(version)
          end
-         spec.require_paths = options_in["srclibdirs"] if options_in["srclibdirs"]
+         spec.require_paths = options_in["source-lib-folders"] if options_in["source-lib-folders"]
 
          spec
       end
@@ -48,7 +48,7 @@ class Setup::Source::Gem < Setup::Source::Base
          end.flatten(1).compact.sort_by do |(gemspec, _)|
             Setup::Gemspec.gemspecs.index(gemspec)
          end.map do |gemspec, f|
-            new_if_valid(gemspec.parse(f), { rootdir: File.dirname(f) }.merge(options_in))
+            new_if_valid(gemspec.parse(f), options_in.merge(rootdir: File.dirname(f)))
          end.flatten(1).compact
 
          specs.map { |x| x.name }.uniq.map { |name| specs.find { |spec| spec.name == name } }
@@ -56,7 +56,7 @@ class Setup::Source::Gem < Setup::Source::Base
 
       def new_if_valid spec, options_in = {}
          if spec && spec.platform == 'ruby'
-            self.new(source_options({ spec: spec }.merge(options_in)))
+            self.new(source_options(options_in.merge(spec: spec)))
          end
       end
    end
@@ -77,12 +77,23 @@ class Setup::Source::Gem < Setup::Source::Base
       [ name, version ].compact.join('-')
    end
 
+   def spec
+      return @spec if @spec.is_a?(Gem::Specification)
+
+      @spec =
+         if @spec.is_a?(String)
+            YAML.load(@spec)
+         else
+            Gem::Specification.new
+         end
+   end
+
    def name
-      spec && spec.name
+      spec.name
    end
 
    def version
-      spec && spec.version.to_s
+      spec.version.to_s
    end
 
    def gemspec_path
@@ -225,6 +236,6 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def method_missing name, *args
-      spec&.respond_to?(name) && spec.send(name, *args) || super
+      spec.respond_to?(name) && spec.send(name, *args) || super
    end
 end

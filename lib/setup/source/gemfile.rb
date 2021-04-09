@@ -5,7 +5,7 @@ class Setup::Source::Gemfile < Setup::Source::Base
    class << self
       def search dir, options_in = {}
          Dir.glob("#{dir}/**/Gemfile", File::FNM_DOTMATCH).map do |f|
-            self.new(source_options({ root: File.dirname(f) }.merge(options_in)))
+            self.new(source_options(options_in.merge(rootdir: File.dirname(f))))
          end
       end
    end

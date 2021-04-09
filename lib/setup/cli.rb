@@ -1,0 +1,76 @@
+require 'optparse'
+require 'ostruct'
+
+require 'setup'
+require 'setup/space'
+require 'setup/actor'
+
+class Setup::CLI
+   DEFAULT_OPTIONS = {
+      rootdir: Dir.pwd,
+      spec_type: "rpm",
+      ignored_names: [],
+      regarded_names: [],
+   }.to_os
+
+   def option_parser
+      @option_parser ||=
+         OptionParser.new do |opts|
+            opts.banner = "Usage: setup.rb [options & actions]"
+
+            opts.on("-r", "--rootdir=FOLDER", String, "Lib directories for the current source or at whole") do |folder|
+               options[:rootdir] = folder
+            end
+
+            opts.on("--source-lib-folders=FOLDERS", Array, "Lib directories for the current source or at whole") do |list|
+               options[:source_lib_folders] = list.compact
+            end
+
+            opts.on("-i", "--ignore-names=LIST", Array, "Source names comma-separated ignore list") do |list|
+               options.ignored_names |= list.compact
+            end
+
+            opts.on("-r", "--regard-names=LIST", Array, "Source names comma-separated regard list") do |list|
+               options.regarded_names |= list.compact
+            end
+
+            opts.on("-o", "--output-file=FILE", String, "Output file for a spec action") do |file|
+               options.output_file = file
+            end
+
+            opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
+               options[:verbose] = v
+            end
+         end
+   end
+
+   def options
+      @options ||= DEFAULT_OPTIONS.dup
+   end
+
+   def actions
+      @actions ||= parse.actions
+   end
+
+   def parse
+      return @parse if @parse
+
+      option_parser.parse!
+
+      @parse = OpenStruct.new(options: options, actions: option_parser.default_argv)
+   end
+
+   def space
+      @space ||= Setup::Space.load_from(options: parse.options)
+   end
+
+   def run
+      actions.reduce({}.to_os) do |res, action_name|
+         res[action_name] = Setup::Actor.for!(action_name, space)
+
+         res
+      end.map do |(action_name, actor)|
+         [ action_name, actor.apply_to(space) ]
+      end.to_os
+   end
+end

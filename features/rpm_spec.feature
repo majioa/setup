@@ -46,12 +46,13 @@ Feature: RPM Spec
       Then property "release" of space is "rc1"
 
    Scenario: Parse RPM Spec for a license
-      Given RPM spec file:
+      Given blank space with empty sources
+      And RPM spec file:
          """
          Name:                rpm
          License:             MIT or GPLv2 / Ruby
          """
-      When developer loads the spec
+      When developer loads the spec into the space
       Then property "licenses" of space has "MIT"
       And property "licenses" of space has "GPLv2"
       And property "licenses" of space has "Ruby"

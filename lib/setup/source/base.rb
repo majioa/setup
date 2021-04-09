@@ -40,34 +40,34 @@ class Setup::Source::Base
       version_replaces: true,
       gem_version_replace: true,
       rootdir: :rootdir_or_default,
-      srcridirses: :name_or_default,
-      srcincdirses: :name_or_default,
-      srcextdirses: :name_or_default,
-      srclibdirses: :name_or_default,
-      srcappdirses: :name_or_default,
-      srcexedirses: :name_or_default,
-      srcconfdirses: :name_or_default,
-      srctestdirses: :name_or_default,
-      srcmandirses: :name_or_default,
-      srcsupdirses: :name_or_default,
-      srcdatadirses: :name_or_default,
-      srcdocsrcdirses: :name_or_default,
-      srclogdirses: :name_or_default,
-      srcstatedirses: :name_or_default,
-      srcridirs: true,
-      srcincdirs: true,
-      srcextdirs: true,
-      srclibdirs: true,
-      srcappdirs: true,
-      srcexedirs: true,
-      srcconfdirs: true,
-      srctestdirs: true,
-      srcmandirs: true,
-      srcsupdirs: true,
-      srcdatadirs: true,
-      srcdocsrcdirs: true,
-      srclogdirs: true,
-      srcstatedirs: true,
+      "source-ri-folder-lists": :name_or_default,
+      "source-inc-folder-lists": :name_or_default,
+      "source-ext-folder-lists": :name_or_default,
+      "source-lib-folder-lists": :name_or_default,
+      "source-app-folder-lists": :name_or_default,
+      "source-exe-folder-lists": :name_or_default,
+      "source-conf-folder-lists": :name_or_default,
+      "source-test-folder-lists": :name_or_default,
+      "source-man-folder-lists": :name_or_default,
+      "source-sup-folder-lists": :name_or_default,
+      "source-data-folder-lists": :name_or_default,
+      "source-docsrc-folder-lists": :name_or_default,
+      "source-log-folder-lists": :name_or_default,
+      "source-state-folder-lists": :name_or_default,
+      "source-ri-folders": true,
+      "source-inc-folders": true,
+      "source-ext-folders": true,
+      "source-lib-folders": true,
+      "source-app-folders": true,
+      "source-exe-folders": true,
+      "source-conf-folders": true,
+      "source-test-folders": true,
+      "source-man-folders": true,
+      "source-sup-folders": true,
+      "source-data-folders": true,
+      "source-docsrc-folders": true,
+      "source-log-folders": true,
+      "source-state-folders": true,
    }
 
    attr_reader :rootdir
@@ -78,7 +78,7 @@ class Setup::Source::Base
             a.constants.include?(:OPTIONS_IN) &&
             a.const_get(:OPTIONS_IN).to_a ||
             nil
-         end.compact.flatten(1).to_h
+         end.compact.flatten(1).to_os
       end
 
       def name_for options_in
@@ -87,7 +87,7 @@ class Setup::Source::Base
          name || fullname
       end
 
-      def source_options options_in = {}
+      def source_options options_in = {}.to_os
          source_name = name_for(options_in)
 
          opts.map do |name_in, rule|
@@ -105,7 +105,7 @@ class Setup::Source::Base
                end
 
             value && [ name, value ] || nil
-         end.compact.to_h
+         end.compact.to_os
       end
 
       def name_or_default value_in, name, source_name
@@ -224,7 +224,7 @@ class Setup::Source::Base
       extfiles.any?
    end
 
-   def to_h
+   def to_os
       options.merge(type: type)
    end
 

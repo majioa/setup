@@ -4,7 +4,7 @@ Given('space file:') do |text|
 end
 
 When('developer loads the space') do
-   @space = Setup::Space.load_from(@space_in)
+   @space = Setup::Space.load_from(space_in: @space_in)
 end
 
 Then('he sees that space\'s {string} is a {string}') do |prop, value|

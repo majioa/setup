@@ -1,12 +1,12 @@
 # vim:setl sw=3 sts=3 ts=3 et:
 Given('default setup') do
    # load setup from a file
-   @space = Setup::Space.load_from("features/fixtures/default.setup")
+   @space = Setup::Space.load_from(space_in: "features/fixtures/default.setup")
 end
 
 When('developer applies {string} actor to the setup') do |actor_name|
-   actor = Setup::Actor.for(actor_name)
-   @spec = actor.apply(@space)
+   actor = Setup::Actor.for(actor_name, space)
+   @spec = actor.apply_to(space)
 end
 
 Then('he acquires a present spec for the setup') do
@@ -14,7 +14,7 @@ Then('he acquires a present spec for the setup') do
 end
 
 When(/(?:developer|he) draws the template:/) do |text|
-   @spec = Setup::Actor.for('spec').apply(@space, text)
+   @spec = Setup::Actor.for('spec', space).apply_to(space, text)
 end
 
 Then('he gets the RPM spec') do |doc_string|

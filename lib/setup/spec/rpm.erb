@@ -92,7 +92,7 @@ Summary:       Development files for <%= name %> gem
 Group:         Development/Ruby
 BuildArch:     noarch
 
-<% devel_deps.each do |dep| -%>
+<% devel_deps.each_pair do |_, dep| -%>
 Requires:      <%= dep %>
 <% end -%>
 
@@ -105,6 +105,31 @@ Development files for <%= name %> gem.
 
 <% end -%>
 <% secondaries.each do |secondary| -%>
+%package       -n <%= secondary.adopted_name %>
+Version:       <%= secondary.version %>
+<% secondary.summaries.each_pair do |cp, summary| -%>
+Summary<%= !cp.blank? && "(#{cp})" || nil %>:       <%= summary %>
+<% end -%>
+Group:         Development/Ruby
+<% secondary.requires.each do |_, dep| -%>
+Requires:            <%= dep %>
+<% end -%>
+<% secondary.obsoletes.each do |_, dep| -%>
+Obsoletes:           <%= dep %>
+<% end -%>
+<% secondary.provides.each do |_, dep| -%>
+Provides:            <%= dep %>
+<% end -%>
+<% secondary.conflicts.each do |_, dep| -%>
+Conflicts:           <%= dep %>
+<% end -%>
+
+<% secondary.descriptions.each_pair do |arg, description| -%>
+%description   -n <%= secondary.adopted_name %><%= !arg.blank? && " -l #{arg}" || nil %>
+<%= description %>
+
+<% end -%>
+
 <% if secondary.has_executable? -%>
 %package       -n <%= secondary.executable_name %>
 Summary:       Executable file for <%= secondary.name %> gem

@@ -3,6 +3,7 @@ require 'shoulda-matchers/cucumber'
 require 'timecop'
 
 require 'setup'
+require 'setup/cli'
 
 Shoulda::Matchers.configure do |config|
    config.integrate do |with|

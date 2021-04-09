@@ -13,8 +13,10 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/root_name
          sources:
-          - rootdir: /path/to/dot/space/root_name/sub
-          - rootdir: /path/to/dot/space/root_name
+          - !ruby/object:Setup::Source::Fake
+            rootdir: /path/to/dot/space/root_name/sub
+          - !ruby/object:Setup::Source::Fake
+            rootdir: /path/to/dot/space/root_name
          """
       When developer loads the space
       And developer draws the template:
@@ -39,8 +41,10 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/root_name
          sources:
-          - rootdir: /path/to/dot/space/root_name/sub
-          - rootdir: /path/to/dot/space/root_name
+          - !ruby/object:Setup::Source::Fake
+            rootdir: /path/to/dot/space/root_name/sub
+          - !ruby/object:Setup::Source::Fake
+            rootdir: /path/to/dot/space/root_name
          """
       When developer loads the space
       And developer locks the time to "01.01.2001"
@@ -68,10 +72,9 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources:
-          - rootdir: /path/to/dot/space/rootname
-            type: gem
-            spec: |
-               --- !ruby/object:Gem::Specification
+          - !ruby/object:Setup::Source::Gem
+            rootdir: /path/to/dot/space/rootname
+            spec: !ruby/object:Gem::Specification
                name: foo_boo
                version: !ruby/object:Gem::Version
                   version: "5.2"
@@ -138,10 +141,9 @@ Feature: Spec actor
                specification_version: 4
                summary: Foo Boo gem summary
                test_files: []
-          - rootdir: /path/to/dot/space/rootname
-            type: gem
-            spec: |
-               --- !ruby/object:Gem::Specification
+          - !ruby/object:Setup::Source::Gem
+            rootdir: /path/to/dot/space/rootname
+            spec: !ruby/object:Gem::Specification
                name: foo_boo_ext
                version: !ruby/object:Gem::Version
                   version: 1.1.7
@@ -262,20 +264,21 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
-            name: rpm
+         sources: []
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
             epoch: 1
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:        <%= _name %>
+         Name:        <%= adopted_name %>
          Epoch:       <%= epoch %>
          """
 
       Then he gets the RPM spec
          """
-         Name:        rpm
+         Name:        rootname
          Epoch:       1
          """
 
@@ -285,7 +288,8 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
             version: 1.1
          """
@@ -308,7 +312,8 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         sources: []
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
             release: rc1
          """
@@ -331,10 +336,11 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
-            summaries:
-               ! '': RPM Summary
+            summaries: !ruby/object:OpenStruct
+               table:
+                  !ruby/symbol '': RPM Summary
          """
       When developer loads the space
       And he draws the template:
@@ -355,7 +361,9 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         sources: []
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
             licenses:
              - MIT
@@ -380,7 +388,8 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         sources: []
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
             group: Group
          """
@@ -403,7 +412,8 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         sources: []
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
             uri: https://path/to/soft/rpm
          """
@@ -426,7 +436,8 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         sources: []
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
             vcs: https://path/to/vcs/rpm
          """
@@ -449,7 +460,7 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
             packager: Packer FIO <fio@example.com>
          """
@@ -472,7 +483,8 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         sources: []
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
             build_arch: arch64
          """
@@ -498,18 +510,20 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
-            source_files:
-               0: source_file.tar
-               1: source_file1.tar
+            source_files: !ruby/object:OpenStruct
+               table:
+                  :0: source_file.tar
+                  :1: source_file1.tar
          """
       When developer loads the space
       And he draws the template:
          """
          Name:                <%= adopted_name %>
          <% source_files.each_pair do |index, source_file| -%>
-         Source<%= index != :"0" && index || nil %>:              <%= source_file %>
+         <% i = index != :"0" && index || nil -%>
+         Source<%= i %>:<%= " " * [ 14 - "#{i}".size, 1 ].max %><%= source_file %>
          <% end -%>
          """
 
@@ -517,7 +531,7 @@ Feature: Spec actor
          """
          Name:                rpm
          Source:              source_file.tar
-         Source1:              source_file1.tar
+         Source1:             source_file1.tar
 
          """
 
@@ -526,19 +540,23 @@ Feature: Spec actor
          """
          ---
          spec_type: rpm
+         sources: []
          rootdir: /path/to/dot/space/rootname
-         spec:
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
-            patches:
-               0: patch.patch
-               1: patch1.patch
+            patches: !ruby/object:OpenStruct
+               table:
+                  :0: patch.patch
+                  :1: patch1.patch
          """
       When developer loads the space
       And he draws the template:
          """
          Name:                <%= adopted_name %>
          <% patches.each_pair do |index, patch| -%>
-         Patch<%= index != :"0" && index || nil %>:               <%= patch %>
+         <% i = index != :"0" && index || nil -%>
+         Patch<%= i %>:<%= " " * [ 15 - "#{i}".size, 1 ].max %><%= patch %>
          <% end -%>
          """
 
@@ -546,7 +564,7 @@ Feature: Spec actor
          """
          Name:                rpm
          Patch:               patch.patch
-         Patch1:               patch1.patch
+         Patch1:              patch1.patch
 
          """
 
@@ -555,13 +573,15 @@ Feature: Spec actor
          """
          ---
          spec_type: rpm
+         sources: []
          rootdir: /path/to/dot/space/rootname
-         spec:
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
-            requires:
-               0: req >= 1
-               1: req_new < 0.1
-               2: req_newline >= 2
+            requires: !ruby/object:OpenStruct
+               table:
+                  :0: req >= 1
+                  :1: req_new < 0.1
+                  :2: req_newline >= 2
          """
       When developer loads the space
       And he draws the template:
@@ -587,12 +607,13 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
-            build_requires:
-               0: req >= 1
-               1: req_new < 0.1
-               2: req_newline >= 2
+            build_requires: !ruby/object:OpenStruct
+               table:
+                  :0: req >= 1
+                  :1: req_new < 0.1
+                  :2: req_newline >= 2
          """
       When developer loads the space
       And he draws the template:
@@ -618,12 +639,14 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         sources: []
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
-            build_pre_requires:
-               0: req >= 1
-               1: req_new < 0.1
-               2: req_newline >= 2
+            build_pre_requires: !ruby/object:OpenStruct
+               table:
+                  :0: req >= 1
+                  :1: req_new < 0.1
+                  :2: req_newline >= 2
 
          """
       When developer loads the space
@@ -650,12 +673,14 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         sources: []
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
-            obsoletes:
-               0: req >= 1
-               1: req_new < 0.1
-               2: req_newline >= 2
+            obsoletes: !ruby/object:OpenStruct
+               table:
+                  :0: req >= 1
+                  :1: req_new < 0.1
+                  :2: req_newline >= 2
 
          """
       When developer loads the space
@@ -682,12 +707,13 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
-            provides:
-               0: req >= 1
-               1: req_new < 0.1
-               2: req_newline >= 2
+            provides: !ruby/object:OpenStruct
+               table:
+                  :0: req >= 1
+                  :1: req_new < 0.1
+                  :2: req_newline >= 2
 
          """
       When developer loads the space
@@ -714,12 +740,14 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         sources: []
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
-            conflicts:
-               0: req >= 1
-               1: req_new < 0.1
-               2: req_newline >= 2
+            conflicts: !ruby/object:OpenStruct
+               table:
+                  :0: req >= 1
+                  :1: req_new < 0.1
+                  :2: req_newline >= 2
          """
       When developer loads the space
       And he draws the template:
@@ -745,11 +773,13 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         sources: []
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
-            descriptions:
-               ! '': Description Defaults
-               'ru_RU.UTF8': Заметка
+            descriptions: !ruby/object:OpenStruct
+               table:
+                  ! '': Description Defaults
+                  'ru_RU.UTF8': Заметка
          """
       When developer loads the space
       And he draws the template:
@@ -777,33 +807,37 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         sources: []
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
-            secondaries:
-               rpm-doc:
-                  adopted_name: rpm-doc
-                  group: Group1
-                  build_arch: arch64
-                  summaries:
-                     ! '': Summary Defaults
-                     'ru_RU.UTF8': Итого
-                  descriptions:
-                     ! '': Description Defaults
-                     'ru_RU.UTF8': Заметка
+            secondaries: !ruby/object:OpenStruct
+               table:
+                  :rpm-doc: !ruby/object:Setup::Spec::Rpm::Secondary
+                     adopted_name: rpm-doc
+                     group: Group1
+                     build_arch: arch64
+                     summaries: !ruby/object:OpenStruct
+                        table:
+                           :'': Summary Defaults
+                           :'ru_RU.UTF8': Итого
+                     descriptions: !ruby/object:OpenStruct
+                        table:
+                           :'': Description Defaults
+                           :'ru_RU.UTF8': Заметка
          """
       When developer loads the space
       And he draws the template:
          """
          Name:          <%= adopted_name %>
-         <% secondaries.each do |sec| -%>
+         <% secondaries.each do |_name, sec| -%>
          %package       -n <%= sec.adopted_name %>
-         <% sec.summaries.each_pair do |cp, summary| -%>
+         <% sec.summaries.each do |cp, summary| -%>
          Summary<%= !cp.blank? && "(#{cp})" || nil %>:       <%= summary %>
          <% end -%>
          Group:         <%= sec.group %>
          BuildArch:     <%= sec.build_arch %>
 
-         <% sec.descriptions.each_pair do |cp, description| -%>
+         <% sec.descriptions.each do |cp, description| -%>
          %description   -n <%= sec.adopted_name %><%= !cp.blank? && " -l #{cp}" || nil %>
          <%= description %>
          <% end -%>
@@ -832,7 +866,8 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         sources: []
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
             prep: |-
                setup
@@ -881,20 +916,25 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         sources: []
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
             changes:
-             - date: "Mon Jan 01 2001"
-               author: "FIO Packer"
-               email: fio@example.com
-               version: 1.0
-               release: rc1
-               description: "- ! of important bug"
-             - date: "Mon Jan 02 2001"
-               author: "FIO Packer"
-               email: fio@example.com
-               version: 2.0
-               description: "- ^ new version"
+             - !ruby/object:OpenStruct
+               table:
+                  :date: "Mon Jan 01 2001"
+                  :author: "FIO Packer"
+                  :email: fio@example.com
+                  :version: 1.0
+                  :release: rc1
+                  :description: "- ! of important bug"
+             - !ruby/object:OpenStruct
+               table:
+                  :date: "Mon Jan 02 2001"
+                  :author: "FIO Packer"
+                  :email: fio@example.com
+                  :version: 2.0
+                  :description: "- ^ new version"
          """
       When developer loads the space
       And he draws the template:
@@ -927,17 +967,19 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         sources: []
+         spec: !ruby/object:Setup::Spec::Rpm
             adopted_name: rpm
             file_list: |-
                file1
                file2
-            secondaries:
-               rpm-doc:
-                  adopted_name: rpm-doc
-                  file_list: |-
-                     file3
-                     file4
+            secondaries: !ruby/object:OpenStruct
+               table:
+                  :rpm-doc: !ruby/object:Setup::Spec::Rpm::Secondary
+                     adopted_name: rpm-doc
+                     file_list: |-
+                        file3
+                        file4
          """
       When developer loads the space
       And he draws the template:
@@ -946,7 +988,7 @@ Feature: Spec actor
          %files
          <%= file_list %>
 
-         <% secondaries.each do |secondary| -%>
+         <% secondaries.each do |_name, secondary| -%>
          %files         -n <%= secondary.adopted_name %>
          <%= secondary.file_list %>
          <% end -%>
@@ -971,16 +1013,18 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         sources: []
+         spec: !ruby/object:Setup::Spec::Rpm
             name: "%{var}%var1"
-            context:
-               var: rpm
-               var1: 2
+            context: !ruby/object:OpenStruct
+               table:
+                  :var: rpm
+                  :var1: '2'
          """
       When developer loads the space
       And he draws the template:
          """
-         <% variables.each_pair do |name, value| -%>
+         <% variables.each do |name, value| -%>
          %define <%= name %> <%= value %>
          <% end -%>
 
@@ -1002,14 +1046,15 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec:
+         spec: !ruby/object:Setup::Spec::Rpm
             name: "%{var}%var1"
-            context:
-               __macros:
-                  macro:
-                     - "rpmn < 1"
-                     - "rpmn1 < 2"
-                  macro1: "rpmn < 11"
+            context: !ruby/object:OpenStruct
+               table:
+                  :__macros:
+                     macro:
+                        - "rpmn < 1"
+                        - "rpmn1 < 2"
+                     macro1: "rpmn < 11"
          """
       When developer loads the space
       And he draws the template:
@@ -1034,10 +1079,9 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources:
-          - rootdir: /path/to/dot/space/rootname
-            type: gem
-            spec: |
-               --- !ruby/object:Gem::Specification
+          - !ruby/object:Setup::Source::Gem
+            rootdir: /path/to/dot/space/rootname
+            spec: !ruby/object:Gem::Specification
                name: foo_boo
                version: !ruby/object:Gem::Version
                   version: "5.2"
@@ -1295,10 +1339,9 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources:
-          - rootdir: /path/to/dot/space/rootname
-            type: gem
-            spec: |
-               --- !ruby/object:Gem::Specification
+          - !ruby/object:Setup::Source::Gem
+            rootdir: /path/to/dot/space/rootname
+            spec: !ruby/object:Gem::Specification
                name: foo_boo
                version: !ruby/object:Gem::Version
                   version: "5.2"
@@ -1627,10 +1670,9 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources:
-          - rootdir: /path/to/dot/space/rootname
-            type: gem
-            spec: |
-               --- !ruby/object:Gem::Specification
+          - !ruby/object:Setup::Source::Gem
+            rootdir: /path/to/dot/space/rootname
+            spec: !ruby/object:Gem::Specification
                name: foo_boo
                version: !ruby/object:Gem::Version
                   version: "5.2"
@@ -1697,10 +1739,9 @@ Feature: Spec actor
                specification_version: 4
                summary: Foo Boo gem summary
                test_files: []
-          - rootdir: /path/to/dot/space/rootname
-            type: gem
-            spec: |
-               --- !ruby/object:Gem::Specification
+          - !ruby/object:Setup::Source::Gem
+            rootdir: /path/to/dot/space/rootname
+            spec: !ruby/object:Gem::Specification
                name: foo_boo_ext
                version: !ruby/object:Gem::Version
                   version: 1.1.7

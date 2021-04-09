@@ -2,6 +2,8 @@ module Setup::Spec
    class InvalidSpecKindError < StandardError; end
    class UndetectedSpecSourceError < StandardError; end
 
+   autoload(:Rpm, 'setup/spec/rpm')
+
    AUTOMAP = {
       Rpm: "setup/spec/rpm",
    }
@@ -19,7 +21,7 @@ module Setup::Spec
       end
 
       def find spec_kind
-         specs[spec_kind] || raise(InvalidSpecKindError)
+         specs[spec_kind] || raise(InvalidSpecKindError.new(spec_kind: spec_kind))
       end
 
       def load_from source_in
@@ -28,7 +30,7 @@ module Setup::Spec
          if spec
             spec.parse(source_in)
          else
-            raise(UndetectedSpecSourceError)
+            raise(UndetectedSpecSourceError.new(source_in: source_in))
          end
       end
    end
