@@ -2,11 +2,11 @@ module Setup::Spec
    class InvalidSpecKindError < StandardError; end
    class UndetectedSpecSourceError < StandardError; end
 
-   autoload(:Rpm, 'setup/spec/rpm')
-
-   AUTOMAP = {
-      Rpm: "setup/spec/rpm",
-   }
+   AUTOMAP =
+      %w(Rpm).reduce({}) do |types, name|
+         autoload(:"#{name}", File.dirname(__FILE__) + "/spec/#{name.downcase}")
+         types.merge(name.to_sym => "Setup/Spec/#{name}".downcase)
+      end
 
    class << self
       def kinds

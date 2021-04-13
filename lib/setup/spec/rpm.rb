@@ -309,7 +309,7 @@ class Setup::Spec::Rpm
       }
    }
 
-   @@spec = IO.read("lib/setup/spec/rpm.erb")
+   @@spec = IO.read(File.join(File.dirname(__FILE__), "rpm.erb"))
 
    def draw spec = nil
       b = binding

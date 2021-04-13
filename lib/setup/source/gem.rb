@@ -2,6 +2,7 @@ require 'setup/source/base'
 
 require 'tempfile'
 require 'yaml'
+require 'date'
 
 class Setup::Source::Gem < Setup::Source::Base
    BIN_IGNORES = %w(test)

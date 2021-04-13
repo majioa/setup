@@ -1,19 +1,13 @@
 require 'setup'
 
-class Setup::Source
+module ::Setup::Source
    attr_reader :rootdir
 
-   autoload(:Fake, 'setup/source/fake')
-   autoload(:Rakefile, 'setup/source/rakefile')
-   autoload(:Gemfile, 'setup/source/gemfile')
-   autoload(:Gem, 'setup/source/gem')
-
-   TYPES = {
-      rakefile: "Setup::Source::Rakefile",
-      gemfile: "Setup::Source::Gemfile",
-      gem: "Setup::Source::Gem",
-      fake: "Setup::Source::Fake",
-   }
+   TYPES =
+      %w(Fake Rakefile Gemfile Gem).reduce({}) do |types, name|
+         autoload(:"#{name}", File.dirname(__FILE__) + "/source/#{name.downcase}")
+         types.merge(name.downcase.to_sym => "Setup::Source::#{name}")
+      end
 
    class << self
       def search_in dir, options = {}
