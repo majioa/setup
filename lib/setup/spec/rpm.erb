@@ -14,7 +14,9 @@ Summary<%= !cp.blank? && "(#{cp})" || nil %>:       <%= summary %>
 License:       <%= licenses.join(" or ") %>
 Group:         <%= group %>
 Url:           <%= uri %>
+<% if has_vcs? -%>
 Vcs:           <%= vcs %>
+<% end -%>
 <% if !has_packager? -%>
 Packager:      <%= packager %>
 <% end -%>

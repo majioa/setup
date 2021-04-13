@@ -6,6 +6,15 @@ class Setup::Spec::Rpm
    attr_reader :home, :spec, :comment
    attr_accessor :space
 
+   URL_MATCHER = {
+      /(?<proto>https?:\/\/)?(?<user>[^\.]+).github.io\/(?<page>[^\/]+)/ => ->(m) do
+         "https://github.com/#{m["user"]}/#{m["page"]}.git"
+      end,
+      /(?<proto>https?:\/\/)?github.com\/(?<user>[^\/]+)\/(?<page>[^\/]+)/ => ->(m) do
+         "https://github.com/#{m["user"]}/#{m["page"]}.git"
+      end
+   }
+
    FIELDS = {
       name: nil,
       epoch: nil,
@@ -24,7 +33,6 @@ class Setup::Spec::Rpm
    ONLY_FIELDS = {
       licenses: [],
       uri: nil,
-      vcs: nil,
       packager: ->(this) { [ this.changes[0].author, "<#{this.changes[0].email}>" ].join(" ") },
       source_files: OpenStruct.new("0": "%name-%version.tar"),
       patches: {},
@@ -50,6 +58,10 @@ class Setup::Spec::Rpm
 
       def _adopted_name
          @adopted_name
+      end
+
+      def has_vcs?
+         !vcs.blank?
       end
 
       def has_compilable?
@@ -78,6 +90,12 @@ class Setup::Spec::Rpm
 
       def has_devel_sources?
          !files.grep(/.*\.h/).empty?
+      end
+
+      def vcs
+         @_vcs ||= URL_MATCHER.reduce(read_attribute(:vcs)) do |res, (rule, e)|
+            res || uri && (match = uri.match(rule)) && e[match] || nil
+         end
       end
 
       def devel_deps

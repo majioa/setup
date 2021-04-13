@@ -454,6 +454,87 @@ Feature: Spec actor
          Vcs:                 https://path/to/vcs/rpm
          """
 
+   Scenario: Space no VCS validation for loaded spec
+      Given space file:
+         """
+         ---
+         spec_type: rpm
+         rootdir: /path/to/dot/space/rootname
+         sources: []
+         spec: !ruby/object:Setup::Spec::Rpm
+            adopted_name: rpm
+         """
+      When developer loads the space
+      And he draws the template:
+         """
+         Name:                <%= adopted_name %>
+         <% if has_vcs? -%>
+         Vcs:                 <%= vcs %>
+         <% end -%>
+         """
+
+      Then he gets the RPM spec
+         """
+         Name:                rpm
+
+         """
+
+   Scenario: Space URL to VCS trial github conversion validation
+         for loaded spec
+      Given space file:
+         """
+         ---
+         spec_type: rpm
+         rootdir: /path/to/dot/space/rootname
+         sources: []
+         spec: !ruby/object:Setup::Spec::Rpm
+            adopted_name: rpm
+            uri: https://github.com/mygrid/ruby-ucf/
+         """
+      When developer loads the space
+      And he draws the template:
+         """
+         Name:                <%= adopted_name %>
+         <% if has_vcs? -%>
+         Vcs:                 <%= vcs %>
+         <% end -%>
+         """
+
+      Then he gets the RPM spec
+         """
+         Name:                rpm
+         Vcs:                 https://github.com/mygrid/ruby-ucf.git
+
+         """
+
+   Scenario: Space URL to VCS github io trial conversion validation
+         for loaded spec
+      Given space file:
+         """
+         ---
+         spec_type: rpm
+         rootdir: /path/to/dot/space/rootname
+         sources: []
+         spec: !ruby/object:Setup::Spec::Rpm
+            adopted_name: rpm
+            uri: https://mygrid.github.io/ruby-ucf/
+         """
+      When developer loads the space
+      And he draws the template:
+         """
+         Name:                <%= adopted_name %>
+         <% if has_vcs? -%>
+         Vcs:                 <%= vcs %>
+         <% end -%>
+         """
+
+      Then he gets the RPM spec
+         """
+         Name:                rpm
+         Vcs:                 https://github.com/mygrid/ruby-ucf.git
+
+         """
+
    Scenario: Space packager validation for loaded spec
       Given space file:
          """
