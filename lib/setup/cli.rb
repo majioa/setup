@@ -18,7 +18,7 @@ class Setup::CLI
          OptionParser.new do |opts|
             opts.banner = "Usage: setup.rb [options & actions]"
 
-            opts.on("-r", "--rootdir=FOLDER", String, "Lib directories for the current source or at whole") do |folder|
+            opts.on("-r", "--rootdir=FOLDER", String, "Root folder to scan the sources") do |folder|
                options[:rootdir] = folder
             end
 
@@ -41,6 +41,11 @@ class Setup::CLI
             opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
                options[:verbose] = v
             end
+
+            opts.on("-h", "--help", "This help") do |v|
+               puts opts
+               exit
+            end
          end
    end
 
@@ -55,6 +60,7 @@ class Setup::CLI
    def parse
       return @parse if @parse
 
+      option_parser.default_argv << "-h" if option_parser.default_argv.empty?
       option_parser.parse!
 
       @parse = OpenStruct.new(options: options, actions: option_parser.default_argv)

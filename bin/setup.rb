@@ -1,4 +1,4 @@
 #!/usr/bin/env ruby
 
 require 'setup/cli'
-Setup::CLI.run
+Setup::CLI.new.run
