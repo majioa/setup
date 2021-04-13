@@ -174,6 +174,9 @@ class Setup::Space
       elsif spec
          spec_model = Setup::Spec.find(self.spec_type)
          @spec = spec_model.new(options: spec, space: self)
+      elsif options.spec_file
+         @spec = Setup::Spec.load_from(IO.read(options.spec_file))
+         @spec.space = self
       end
    end
 

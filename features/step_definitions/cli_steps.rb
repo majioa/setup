@@ -34,3 +34,11 @@ end
 Then('property {string} of options is {string}') do |property, value|
    expect(space.options.send(property)).to eql(value)
 end
+
+Then('space\'s options {string} is {string}') do |option, value|
+   expect(space.options[option]).to eql(value)
+end
+
+Then('property {string} of space is of kind {string}') do |property, kind|
+   expect(space.send(property)).to be_kind_of(kind.constantize)
+end

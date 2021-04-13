@@ -59,3 +59,14 @@ Feature: Setup CLI
          """
       When developer loads setup.rb
       Then property "output_file" of options is "/tmp/output"
+
+   Scenario: Setup CLI spec file argument validation
+      Given blank setup CLI
+      And options for Setup CLI:
+         """
+         --spec-file=features/fixtures/default.spec
+         """
+      When developer loads setup.rb
+      Then space's options "spec_file" is "features/fixtures/default.spec"
+      And property "spec" of space is of kind "Setup::Spec::Rpm"
+

@@ -11,6 +11,7 @@ class Setup::CLI
       spec_type: "rpm",
       ignored_names: [],
       regarded_names: [],
+      spec_file: nil
    }.to_os
 
    def option_parser
@@ -36,6 +37,10 @@ class Setup::CLI
 
             opts.on("-o", "--output-file=FILE", String, "Output file for a spec action") do |file|
                options.output_file = file
+            end
+
+            opts.on("-s", "--spec-file=FILE", String, "Spec file for covering the setup space") do |file|
+               options.spec_file = file
             end
 
             opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|

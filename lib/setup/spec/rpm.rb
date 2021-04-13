@@ -1,4 +1,5 @@
 require "erb"
+require "json"
 
 require 'setup/spec'
 
@@ -48,6 +49,13 @@ class Setup::Spec::Rpm
    }
 
    module CPkg
+      def context
+         #require 'pry';binding.pry
+         @context ||= self["context"] ||
+            self.respond_to?(:spec) && self.spec.context ||
+            OpenStruct.new
+      end
+
       def summary
          summaries[""]
       end
@@ -180,7 +188,7 @@ class Setup::Spec::Rpm
          if value_in.is_a?(String)
             value_in.gsub(/%[{\w}]+/) do |match|
                /%(?:{(?<m>\w+)}|(?<m>\w+))/ =~ match
-               self["context"][m]
+               context[m]
             end
          else
             value_in
@@ -193,7 +201,7 @@ class Setup::Spec::Rpm
                if name == "secondaries"
                   value_in.map { |_name, sec| Secondary.new(spec: self, options: sec) }
                else
-                  JSON.parse value_in.to_json, object_class: OpenStruct
+                  ::JSON.parse value_in.to_json, object_class: OpenStruct
                end
 
             instance_variable_set(:"@#{name}", value)
@@ -500,7 +508,8 @@ class Setup::Spec::Rpm
             end
 
             if matched
-               matched[:flow].concat(line)
+               #require 'pry';binding.pry
+               matched[:flow] = [ matched[:flow], line ].map(&:strip).reject {|x| x.blank? }.join("\n")
             end
 
             opts
@@ -549,7 +558,7 @@ class Setup::Spec::Rpm
          rows = flow.split("* ").map { |p| p.strip }.compact.map { |p| p.split("\n") }
 
          rows[1..-1].map do |row|
-            /(?<date>^\w+\s+\w+\s+\w+\s+\w+)\s+(?<author>.*)\s*(?:<(?<email>.*)>)\s+(?<version>[\w\.]+)(?:-(?<release>\w+))?$/ =~ row[0]
+            /(?<date>^\w+\s+\w+\s+\w+\s+\w+)\s+(?<author>.*)\s*(?:<(?<email>.*)>)\s+(?<version>[\w\.]+)(?:-(?<release>[\w\._]+))?$/ =~ row[0]
 
             {
                date: date,
