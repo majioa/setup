@@ -191,7 +191,7 @@ class Object
    end
 
    def to_os
-      OpenStruct.new(self.to_h)
+      OpenStruct.new(self.to_h.map {|(x, y)| [x.to_s, y] }.to_h)
    end
 end
 

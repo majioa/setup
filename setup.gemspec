@@ -7,13 +7,15 @@ Gem::Specification.new do |spec|
    spec.email             = ["majioa@altlinux.org", "transfire@gmail.com", "aamine@loveruby.net"]
 
    spec.summary           = %q{Setup.rb as a stand-alone application}
-   spec.description       = %q{Every Rubyist is aware of Minero Aoki's ever useful setup.rb script.
-         It's how most of us used to install our Ruby programs before RubyGems\ncame along.
-         And it's still mighty useful in certain scenarios, not the\nleast of which is the
-         job of the distribution package managers. While\nstill providing the usual setup.rb
-         script that one can distribute with\na project, Setup also works as a stand-alone
-         application. Instead of\ndistributing setup.rb with a package, just instruct your
-         users to install Ruby Setup and use it instead.}
+   spec.description       = <<~DESC
+      Every Rubyist is aware of Minero Aoki's ever useful setup.rb script.
+      It's how most of us used to install our Ruby programs before RubyGems
+      came along. And it's still mighty useful in certain scenarios, not the least of which is the
+      job of the distribution package managers. While still providing the usual setup.rb
+      script that one can distribute with a project, Setup also works as a stand-alone
+      application. Instead of distributing setup.rb with a package, just instruct your
+      users to install Ruby Setup and use it instead.
+      DESC
    spec.homepage          = "https://github.com/majioa/setup"
    spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
 

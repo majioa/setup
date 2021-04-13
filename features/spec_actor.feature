@@ -801,6 +801,57 @@ Feature: Spec actor
 
          """
 
+   Scenario: Space multiline description with more than 80 chars in line
+         validation for loaded spec
+      Given space file:
+         """
+         ---
+         spec_type: rpm
+         rootdir: /path/to/dot/space/rootname
+         sources: []
+         spec: !ruby/object:Setup::Spec::Rpm
+            adopted_name: rpm
+            descriptions: !ruby/object:OpenStruct
+               table:
+                  ! '': |
+                     Description Defaults with text Lorem Satem with more than 80 chars because
+                     it is just set the line defining it, see it below: aaaaaaaaaa aaaaaaaaaa
+                     aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa
+
+                     So, it should be arranged as having near to 80 char per (see loop to fill it) line.
+                     * list1
+                     - list2
+
+                     Ok
+         """
+      When developer loads the space
+      And he draws the template:
+         """
+         Name:        <%= adopted_name %>
+         <% descriptions.each_pair do |arg, description| -%>
+         %description<%= !arg.blank? && "         -l #{arg}" || nil %>
+         <%= description %>
+         <% end -%>
+         """
+
+      Then he gets the RPM spec
+         """
+         Name:        rpm
+         %description
+         Description Defaults with text Lorem Satem with more than 80 chars because it is
+         just set the line defining it, see it below: aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa
+         aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa
+         aaaaaaaaaa aaaaaaaaaa
+
+         So, it should be arranged as having near to 80 char per (see loop to fill it)
+         line.
+         * list1
+         - list2
+
+         Ok
+
+         """
+
    Scenario: Space additional package validation for loaded spec
       Given space file:
          """

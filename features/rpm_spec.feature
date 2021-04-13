@@ -221,19 +221,26 @@ Feature: RPM Spec
          %description
          Multiline
          Description
+
          Of
+
          The
+
          RPM
+
          Spec
          """
       When developer loads the spec
       Then property "descriptions" of space with no argument is:
          """
-         Multiline
-         Description
+         Multiline Description
+
          Of
+
          The
+
          RPM
+
          Spec
          """
 
@@ -245,15 +252,19 @@ Feature: RPM Spec
          Многострочная
          Заметка
          РПМ
+
          Спека
+         * текст1
+         - текст2
          """
       When developer loads the spec
       Then space's property "descriptions" with argument "ru_RU.UTF-8" has text:
          """
-         Многострочная
-         Заметка
-         РПМ
+         Многострочная Заметка РПМ
+
          Спека
+         * текст1
+         - текст2
          """
 
    Scenario: Parse RPM Spec for an additional package with a code page

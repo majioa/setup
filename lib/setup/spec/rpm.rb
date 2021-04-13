@@ -18,7 +18,6 @@ class Setup::Spec::Rpm
       provides: {},
       obsoletes: {},
       conflicts: {},
-      descriptions: {},
       file_list: nil,
    }
 
@@ -108,6 +107,34 @@ class Setup::Spec::Rpm
          @compilables ||= (source&.extensions rescue []) || []
       end
 
+      def descriptions
+         @_descriptions ||= read_attribute(:descriptions, {}).map do |name, desc|
+            tdesc = desc.gsub(/\n{2,}/, "\x1F\x1F").gsub(/\n([\*\-])/, "\x1F\\1").gsub(/\n/, "\s")
+            new_desc =
+               tdesc.split(/ +/).reduce([]) do |res, token|
+                  line = res.last
+                  uptoken = token.gsub(/(\n[^\-\*])/, "\n\\1").strip
+                  temp = [ line, uptoken ].reject { |x| x.blank? }.join(" ")
+
+                  if temp.size > 80 || !line
+                     res << uptoken
+                  else
+                     line.replace(temp)
+                  end
+
+                  postline = res.last.split(/\x1F/, -1)
+                  if postline.size > 1
+                     res.last.replace(postline[0].strip)
+                     res.concat(postline[1..-1].map(&:strip))
+                  end
+
+                  res
+               end.join("\n")
+
+            [ name, new_desc ]
+         end.to_os
+      end
+
       def readme
          files.grep(/readme.*/i).join(" ")
       end
@@ -159,19 +186,13 @@ class Setup::Spec::Rpm
    class Secondary
       attr_reader :source, :spec
 
-      include CPkg
-
       FIELDS.each do |name, default|
-         define_method(name) do
-            # binding.pry if name == :name
-            self[name.to_s] ||
-               source.respond_to?(name) && source.send(name) ||
-               default.is_a?(Proc) && default[self] ||
-               default
-         end
+         define_method(name) { read_attribute(name, default) }
          define_method("_#{name}") { instance_variable_get(:"@#{name}") }
          define_method("has_#{name}?") { !!instance_variable_get(:"@#{name}")}
       end
+
+      include CPkg
 
       def summaries
          return @summaries if @summaries
@@ -198,6 +219,15 @@ class Setup::Spec::Rpm
 
       def options= value
          parse_options(value)
+      end
+
+      protected
+
+      def read_attribute name, default = nil
+         self[name.to_s] ||
+            source.respond_to?(name) && source.send(name) ||
+            default.is_a?(Proc) && default[self] ||
+            default
       end
 
       def initialize spec: raise, source: nil, options: {}
@@ -318,20 +348,13 @@ class Setup::Spec::Rpm
       ERB.new(spec || @@spec, trim_mode: "<>-", eoutvar: "@spec").result(b)
    end
 
-   include CPkg
-
    FIELDS.merge(ONLY_FIELDS).each do |name, default|
-      define_method(name) do
-         #binding.pry if name == :licenses
-         self[name.to_s] ||
-            space.respond_to?(name) && space.send(name) ||
-            (space.main_source.send(name) rescue nil) ||
-            default.is_a?(Proc) && default[self] ||
-            default
-      end
+      define_method(name) { read_attribute(name, default) }
       define_method("_#{name}") { instance_variable_get(:"@#{name}") }
       define_method("has_#{name}?") { !!instance_variable_get(:"@#{name}") }
    end
+
+   include CPkg
 
    def adopted_name
       super
@@ -400,6 +423,14 @@ class Setup::Spec::Rpm
 
    def source
       space.main_source
+   end
+
+   def read_attribute name, default = nil
+      self[name.to_s] ||
+         space.respond_to?(name) && space.send(name) ||
+         (space.main_source.send(name) rescue nil) ||
+         default.is_a?(Proc) && default[self] ||
+         default
    end
 
    def initialize space: nil, home: ENV['GEM_HOME'] || ::Gem.paths.home, options: nil
