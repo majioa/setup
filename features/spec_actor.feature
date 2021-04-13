@@ -451,7 +451,7 @@ Feature: Spec actor
       Then he gets the RPM spec
          """
          Name:                rpm
-         Vcs:                 https://path/to/vcs/rpm
+         Vcs:                 https://path/to/vcs/rpm.git
          """
 
    Scenario: Space no VCS validation for loaded spec
@@ -1426,7 +1426,7 @@ Feature: Spec actor
          License:       MIT or GPLv2
          Group:         Development/Ruby
          Url:           http://fooboo.org
-         Vcs:           https://github.com/foo/fooboo/tree/v5.2.4.4/fooboo
+         Vcs:           https://github.com/foo/fooboo/tree/v5.2.4.4/fooboo.git
          Packager:      Spec Author <author@example.org>
          BuildArch:     noarch
 
@@ -1708,7 +1708,7 @@ Feature: Spec actor
          License:       MIT or GPLv2
          Group:         Development/Ruby
          Url:           http://fooboo.org
-         Vcs:           https://github.com/foo/fooboo/tree/v5.2.4.4/fooboo
+         Vcs:           https://github.com/foo/fooboo/tree/v5.2.4.4/fooboo.git
          Packager:      Spec Author <author@example.org>
 
          Source:        %name-%version.tar
@@ -2146,7 +2146,7 @@ Feature: Spec actor
          License:       MIT or GPLv2
          Group:         Development/Ruby
          Url:           http://fooboo.org
-         Vcs:           https://github.com/foo/fooboo/tree/v5.2.4.4/fooboo
+         Vcs:           https://github.com/foo/fooboo/tree/v5.2.4.4/fooboo.git
          Packager:      Spec Author <author@example.org>
 
          Source:        %name-%version.tar

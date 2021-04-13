@@ -101,9 +101,13 @@ class Setup::Spec::Rpm
       end
 
       def vcs
-         @_vcs ||= URL_MATCHER.reduce(read_attribute(:vcs)) do |res, (rule, e)|
+         return @_vcs if @_vcs
+
+         vcs = URL_MATCHER.reduce(read_attribute(:vcs)) do |res, (rule, e)|
             res || uri && (match = uri.match(rule)) && e[match] || nil
          end
+
+         @_vcs = vcs && "#{vcs}#{/\.git/ !~ vcs && ".git" || ""}" || nil
       end
 
       def devel_deps

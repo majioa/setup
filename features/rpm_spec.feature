@@ -82,7 +82,7 @@ Feature: RPM Spec
          Vcs:                 https://path/to/vcs/rpm
          """
       When developer loads the spec
-      Then property "vcs" of space is "https://path/to/vcs/rpm"
+      Then property "vcs" of space is "https://path/to/vcs/rpm.git"
 
    Scenario: Parse RPM Spec for a packager
       Given RPM spec file:
