@@ -25,10 +25,10 @@ BuildArch:     noarch
 <% end -%>
 
 <% source_files.each_pair do |index, source_file| -%>
-Source<%= index != :"0" && index || nil %>:        <%= source_file %>
+Source<%= i %>:<%= " " * [ 14 - "#{i}".size, 1 ].max %><%= source_file %>
 <% end -%>
 <% patches.each_pair do |index, patch| -%>
-Patch<%= index != :"0" && index || nil %>:         <%= patch %>
+Patch<%= i %>:<%= " " * [ 15 - "#{i}".size, 1 ].max %><%= patch %>
 <% end -%>
 <% build_pre_requires.each_pair do |_, dep| -%>
 BuildRequires(pre): <%= dep %>
@@ -206,10 +206,10 @@ Development files for <%= secondary.name %> gem.
 <% end -%>
 
 <% secondaries.each do |secondary| -%>
-<% if secondary.has_readme? -%>
 %files         -n <%= secondary.adopted_name %>
-<% end -%>
+<% if secondary.has_readme? -%>
 %doc <%= secondary.readme %>
+<% end -%>
 %ruby_gemspecdir/<%= secondary.name %>-<%= secondary.version %>.gemspec
 %ruby_gemslibdir/<%= secondary.name %>-<%= secondary.version %>
 <% if secondary.has_compilable? -%>
@@ -223,7 +223,7 @@ Development files for <%= secondary.name %> gem.
 <% end -%>
 
 <% end -%>
-<% if secondary.has_doc? -%>
+<% if secondary.has_docs? -%>
 %files         -n <%= secondary.adopted_name %>-doc
 %ruby_gemsdocdir/<%= secondary.name %>-<%= secondary.version %>
 

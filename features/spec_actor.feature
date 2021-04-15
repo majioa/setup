@@ -1336,7 +1336,7 @@ Feature: Spec actor
 
 
          <% end -%>
-         <% if has_doc? -%>
+         <% if has_docs? -%>
          %package       doc
          Summary:       Documentation files for %gemname gem
          Summary(ru_RU.UTF-8): Файлы сведений для самоцвета %gemname
@@ -1398,7 +1398,7 @@ Feature: Spec actor
          <% end -%>
 
          <% end -%>
-         <% if has_doc? -%>
+         <% if has_docs? -%>
          %files         doc
          %ruby_gemdocdir
 
@@ -1616,7 +1616,7 @@ Feature: Spec actor
 
 
          <% end -%>
-         <% if has_doc? -%>
+         <% if has_docs? -%>
          %package       doc
          Summary:       Documentation files for %gemname gem
          Summary(ru_RU.UTF-8): Файлы сведений для самоцвета %gemname
@@ -1680,7 +1680,7 @@ Feature: Spec actor
          <% end -%>
 
          <% end -%>
-         <% if has_doc? -%>
+         <% if has_docs? -%>
          %files         doc
          %ruby_gemdocdir
 
@@ -2039,7 +2039,7 @@ Feature: Spec actor
 
 
          <% end -%>
-         <% if secondary.has_doc? -%>
+         <% if secondary.has_docs? -%>
          %package       -n <%= secondary.adopted_name %>-doc
          Summary:       Documentation files for %gemname gem
          Summary(ru_RU.UTF-8): Файлы сведений для самоцвета %gemname
@@ -2115,7 +2115,7 @@ Feature: Spec actor
          <% end -%>
 
          <% end -%>
-         <% if secondary.has_doc? -%>
+         <% if secondary.has_docs? -%>
          %files         -n <%= secondary.adopted_name %>-doc
          %ruby_gemsdocdir/<%= secondary.name %>-<%= secondary.version %>
 
@@ -2250,3 +2250,400 @@ Feature: Spec actor
 
          """
 
+   Scenario: Space gem pure source render validation with predefined spec to
+         a few gems with renaming
+      Given space file:
+         """
+         ---
+         spec_type: rpm
+         rootdir: /path/to/dot/space/rootname
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            adopted_name: ruby-foo_boo
+            version: 1.1
+            summaries: !ruby/object:OpenStruct
+               table:
+                  !ruby/symbol '': RPM Actual Summary
+            licenses:
+             - MIT
+             - Ruby
+            group: Group
+            uri: https://path/to/soft/rpm
+            packager: Packer FIO <fio@example.com>
+            build_arch: arch64
+            source_files: !ruby/object:OpenStruct
+               table:
+                  :0: source_file.tar
+                  :1: source_file1.tar
+            patches: !ruby/object:OpenStruct
+               table:
+                  :0: patch.patch
+                  :1: patch1.patch
+            requires: !ruby/object:OpenStruct
+               table:
+                  :0: req >= 1
+                  :1: gem(d) < 0.1
+                  :2: gem(e) >= 2
+            build_requires: !ruby/object:OpenStruct
+               table:
+                  :0: gem(a) >= 1
+                  :1: gem(b) < 0.1
+                  :2: gem(c) >= 2
+            build_pre_requires: !ruby/object:OpenStruct
+               table:
+                  :0: rpm-build-nonruby
+                  :0: rpm-build-python
+            obsoletes: !ruby/object:OpenStruct
+               table:
+                  :0: req >= 1
+                  :1: gem(p) < 0.1
+            provides: !ruby/object:OpenStruct
+               table:
+                  :0: req >= 1
+                  :1: gem(p) < 0.1
+            conflicts: !ruby/object:OpenStruct
+               table:
+                  :0: gem(g) >= 1
+            descriptions: !ruby/object:OpenStruct
+               table:
+                  ! '': Description Defaults
+                  'ru_RU.UTF8': Заметка
+            prep: |-
+               setup
+               patch
+            build: build
+            install: install
+            check: check
+            secondaries: !ruby/object:OpenStruct
+               table:
+                  :ruby-foo_boo-doc: !ruby/object:Setup::Spec::Rpm::Secondary
+                     adopted_name: ruby-foo_boo-doc
+                     group: Group1
+                     build_arch: noarch
+                     summaries: !ruby/object:OpenStruct
+                        table:
+                           :'': Summary Defaults
+                           :'ru_RU.UTF8': Итого
+                     descriptions: !ruby/object:OpenStruct
+                        table:
+                           :'': Description Defaults
+                           :'ru_RU.UTF8': Заметка
+            changes:
+             - !ruby/object:OpenStruct
+               table:
+                  :date: "Mon Jan 01 2001"
+                  :author: "FIO Packer"
+                  :email: fio@example.com
+                  :version: 1.0
+                  :release: rc1
+                  :description: "- ! of important bug"
+         sources:
+          - !ruby/object:Setup::Source::Gem
+            rootdir: /path/to/dot/space/rootname
+            spec: !ruby/object:Gem::Specification
+               name: foo_boo
+               version: !ruby/object:Gem::Version
+                  version: "5.2"
+               platform: ruby
+               authors:
+                - Gem Author
+               autorequire:
+               bindir: exe
+               cert_chain: []
+               date:
+               dependencies:
+                - !ruby/object:Gem::Dependency
+                  name: c
+                  requirement: !ruby/object:Gem::Requirement
+                     requirements:
+                      - - '>='
+                        - !ruby/object:Gem::Version
+                           version: "2"
+                  type: :runtime
+                  prerelease: false
+                  version_requirements: !ruby/object:Gem::Requirement
+                     requirements:
+                      - - '>='
+                        - !ruby/object:Gem::Version
+                           version: "2"
+               description: 'Foo Boo gem'
+               email: boo@example.com
+               extensions:
+                - ext/foo-boo-ext/extconf.rb
+               extra_rdoc_files: []
+               files:
+                - CHANGELOG.md
+                - MIT-LICENSE
+                - exe/foo
+                - lib/foo.rb
+                - ext/foo-boo-ext/foo.c
+                - ext/foo-boo-ext/foo.h
+               homepage: http://fooboo.org
+               licenses:
+                - MIT
+                - GPLv2
+               metadata:
+                  source_code_uri: https://github.com/foo/fooboo/tree/v5.2.4.4/fooboo
+                  changelog_uri: https://github.com/foo/fooboo/blob/v5.2.4.4/fooboo/CHANGELOG.md
+               post_install_message:
+               rdoc_options:
+                - "--exclude"
+                - "."
+               require_paths:
+                - lib
+               required_ruby_version: !ruby/object:Gem::Requirement
+                  requirements:
+                   - - ">="
+                     - !ruby/object:Gem::Version
+                       version: 2.2.2
+               required_rubygems_version: !ruby/object:Gem::Requirement
+                  requirements:
+                   - - ">="
+                     - !ruby/object:Gem::Version
+                        version: '0'
+               requirements: []
+               rubygems_version: 3.1.4
+               signing_key:
+               specification_version: 4
+               summary: Foo Boo gem summary
+               test_files: []
+         """
+      When developer loads the space
+      And developer locks the time to "02.01.2001"
+      And developer draws the template:
+         """
+         <% if source.is_a?(Setup::Source::Gem) -%>
+         %define        gemname <%= source.name %>
+
+         <% end -%>
+         <% if has_comment? -%>
+         <%= comment -%>
+
+         <% end -%>
+         Name:          <%= adopted_name %>
+         <% if has_epoch? -%>
+         Epoch:         <%= epoch %>
+         <% end -%>
+         Version:       <%= version %>
+         Release:       <%= release %>
+         Summary:       <%= summary %>
+         License:       <%= licenses.join(" or ") %>
+         Group:         <%= group %>
+         Url:           <%= uri %>
+         Vcs:           <%= vcs %>
+         Packager:      <%= packager %>
+         <% if !has_compilable? -%>
+         BuildArch:     noarch
+         <% end -%>
+
+         <% source_files.each_pair do |i, source_file| -%>
+         Source<%= i %>:<%= " " * [ 8 - "#{i}".size, 1 ].max %><%= source_file %>
+         <% end -%>
+         <% patches.each_pair do |i, patch| -%>
+         Patch<%= i %>:<%= " " * [ 9 - "#{i}".size, 1 ].max %><%= patch %>
+         <% end -%>
+         <% build_pre_requires.each_pair do |_, dep| -%>
+         BuildRequires(pre): <%= dep %>
+         <% end -%>
+         <% build_requires.each_pair do |_, dep| -%>
+         BuildRequires: <%= dep %>
+         <% end -%>
+
+         %add_findreq_skiplist %ruby_gemslibdir/**/*
+         %add_findprov_skiplist %ruby_gemslibdir/**/*
+         <% requires.each_pair do |_, dep| -%>
+         Requires:      <%= dep %>
+         <% end -%>
+         <% obsoletes.each_pair do |_, dep| -%>
+         Obsoletes:     <%= dep %>
+         <% end -%>
+         <% provides.each_pair do |_, dep| -%>
+         Provides:      <%= dep %>
+         <% end -%>
+         <% conflicts.each_pair do |_, dep| -%>
+         Conflicts:     <%= dep %>
+         <% end -%>
+
+         <% descriptions.each_pair do |arg, description| -%>
+         %description<%= !arg.blank? && "         -l #{arg}" || nil %>
+         <%= description %>
+
+         <% end -%>
+
+         <% secondaries.each do |secondary| -%>
+         %package       -n <%= secondary.adopted_name %>
+         Version:       <%= secondary.version %>
+         <% secondary.summaries.each_pair do |cp, summary| -%>
+         Summary<%= !cp.blank? && "(#{cp})" || nil %>:       <%= summary %>
+         <% end -%>
+         Group:         Development/Ruby
+
+         <% descriptions.each_pair do |arg, description| -%>
+         %description   -n <%= secondary.adopted_name %><%= !arg.blank? && " -l #{arg}" || nil %>
+         <%= description %>
+
+         <% end -%>
+
+         <% end -%>
+         %prep
+         %setup
+
+         %build
+         %ruby_build
+
+         %install
+         %ruby_install
+
+         %check
+         %ruby_test
+
+         %files
+         <% if has_readme? %>
+         %doc <%= readme %>
+         <% end -%>
+         %ruby_gemspec
+         %ruby_gemlibdir
+         <% if has_compilable? -%>
+         %ruby_gemextdir
+         <% end -%>
+
+         <% secondaries.each do |secondary| -%>
+         %files         -n <%= secondary.adopted_name %>
+         <% if secondary.has_readme? -%>
+         %doc <%= secondary.readme %>
+         <% end -%>
+         <% if secondary.is_lib? -%>
+         %ruby_gemspecdir/<%= secondary.name %>-<%= secondary.version %>.gemspec
+         %ruby_gemslibdir/<%= secondary.name %>-<%= secondary.version %>
+         <% if secondary.has_compilable? -%>
+         %ruby_gemsextdir/<%= secondary.name %>-<%= secondary.version %>
+         <% end -%>
+         <% end -%>
+         <% if secondary.is_exec? -%>
+         <% secondary.executables.each do |e| -%>
+         %_bindir/<%= e %>
+         <% end -%>
+         <% end -%>
+         <% if secondary.is_doc? -%>
+         <% if secondary.spec.is_same_source?(secondary.source) -%>
+         %ruby_gemdocdir
+         <% else -%>
+         %ruby_gemsdocdir/<%= secondary.source.name %>-<%= secondary.version %>
+         <% end -%>
+         <% end -%>
+         <% if secondary.is_devel? -%>
+         <% if secondary.has_devel_sources? -%>
+         %ruby_includedir/*
+         <% end -%>
+         <% end -%>
+
+         <% end -%>
+
+         %changelog
+         <% changes.reverse.each do |c| -%>
+         * <%= c.date %> <%= c.author %> <%= c.email && "<#{c.email}>" || "" %> <%= [ c.version, c.release ].compact.join("-") %>
+         <%= c.description %>
+
+         <% end -%>
+         """
+
+      Then he gets the RPM spec
+         """
+         %define        gemname foo_boo
+
+         Name:          gem-foo-boo
+         Version:       5.2
+         Release:       alt1
+         Summary:       RPM Actual Summary
+         License:       MIT or GPLv2
+         Group:         Development/Ruby
+         Url:           http://fooboo.org
+         Vcs:           https://github.com/foo/fooboo/tree/v5.2.4.4/fooboo.git
+         Packager:      Packer FIO <fio@example.com>
+         BuildArch:     noarch
+
+         Source:        %name-%version.tar
+         BuildRequires(pre): rpm-build-ruby
+         BuildRequires(pre): rpm-build-python
+         BuildRequires: gem(a) >= 1
+         BuildRequires: gem(b) < 0.1
+         BuildRequires: gem(c) >= 2
+
+         %add_findreq_skiplist %ruby_gemslibdir/**/*
+         %add_findprov_skiplist %ruby_gemslibdir/**/*
+         Requires:      req >= 1
+         Requires:      gem(d) < 0.1
+         Requires:      gem(e) >= 2
+         Obsoletes:     ruby-foo_boo < %EVR
+         Obsoletes:     req >= 1
+         Obsoletes:     gem(p) < 0.1
+         Provides:      ruby-foo_boo = %EVR
+         Provides:      req >= 1
+         Provides:      gem(p) < 0.1
+         Conflicts:     gem(g) >= 1
+
+         %description
+         Description Defaults
+
+         %description         -l ru_RU.UTF8
+         Заметка
+
+
+         %package       -n gem-foo-boo-doc
+         Version:       5.2
+         Summary:       Foo Boo gem summary
+         Group:         Development/Ruby
+
+         %description   -n gem-foo-boo-doc
+         Description Defaults
+
+         %description   -n gem-foo-boo-doc -l ru_RU.UTF8
+         Заметка
+
+
+         %package       -n gem-foo-boo-devel
+         Version:       5.2
+         Summary:       Foo Boo gem summary
+         Group:         Development/Ruby
+
+         %description   -n gem-foo-boo-devel
+         Description Defaults
+
+         %description   -n gem-foo-boo-devel -l ru_RU.UTF8
+         Заметка
+
+
+         %prep
+         %setup
+
+         %build
+         %ruby_build
+
+         %install
+         %ruby_install
+
+         %check
+         %ruby_test
+
+         %files
+         %ruby_gemspec
+         %ruby_gemlibdir
+         %ruby_gemextdir
+
+         %files         -n gem-foo-boo-doc
+         %ruby_gemdocdir
+
+         %files         -n gem-foo-boo-devel
+         %ruby_includedir/*
+
+
+         %changelog
+         * Tue Jan 02 2001 Spec Author <author@example.org> 5.2-alt1
+         - + packaged gem
+
+         * Mon Jan 01 2001 FIO Packer <fio@example.com> 1.0-rc1
+         - ! of important bug
+
+         """
+
+ 

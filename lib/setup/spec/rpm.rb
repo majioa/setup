@@ -7,6 +7,8 @@ class Setup::Spec::Rpm
    attr_reader :home, :spec, :comment
    attr_accessor :space
 
+   autoload(:Name, 'setup/spec/rpm/name')
+
    URL_MATCHER = {
       /(?<proto>https?:\/\/)?(?<user>[^\.]+).github.io\/(?<page>[^\/]+)/ => ->(m) do
          "https://github.com/#{m["user"]}/#{m["page"]}.git"
@@ -14,6 +16,13 @@ class Setup::Spec::Rpm
       /(?<proto>https?:\/\/)?github.com\/(?<user>[^\/]+)\/(?<page>[^\/]+)/ => ->(m) do
          "https://github.com/#{m["user"]}/#{m["page"]}.git"
       end
+   }
+
+   PARTS = {
+      lib: nil,
+      exec: :has_executable?,
+      doc: :has_docs?,
+      devel: :has_devel?,
    }
 
    FIELDS = {
@@ -61,7 +70,15 @@ class Setup::Spec::Rpm
       end
 
       def adopted_name
-         self["adopted_name"] || full_name&.gsub(/[_\.]/, '-')
+         autoname.adopted_name
+      end
+
+      def autoname
+         return @autoname if @autoname
+
+         adopted_name = self["adopted_name"] || full_name&.gsub(/[_\.]/, '-')
+
+         @autoname = Name.parse(adopted_name, kind: @kind)
       end
 
       def _adopted_name
@@ -88,7 +105,7 @@ class Setup::Spec::Rpm
          !readme.blank?
       end
 
-      def has_doc?
+      def has_docs?
          !docs.empty?
       end
 
@@ -185,7 +202,7 @@ class Setup::Spec::Rpm
       end
 
       def prefix
-         "gem"
+         autoname.default_prefix
       end
 
       def eval value_in
@@ -214,7 +231,9 @@ class Setup::Spec::Rpm
    end
 
    class Secondary
-      attr_reader :source, :spec
+      attr_reader :source, :spec, :kind
+
+      %w(lib exec doc devel app).each { |name| define_method("is_#{name}?") { @kind.to_s == name } }
 
       FIELDS.each do |name, default|
          define_method(name) { read_attribute(name, default) }
@@ -251,6 +270,14 @@ class Setup::Spec::Rpm
          parse_options(value)
       end
 
+      def resourced_from secondary
+         @kind = secondary.kind
+         @spec = secondary.spec
+         @source = secondary.source
+
+         self
+      end
+
       protected
 
       def read_attribute name, default = nil
@@ -260,9 +287,10 @@ class Setup::Spec::Rpm
             default
       end
 
-      def initialize spec: raise, source: nil, options: {}
+      def initialize spec: raise, source: nil, kind: nil, options: {}
          @source = source
          @spec = spec
+         @kind = kind
          parse_options(options)
       end
    end
@@ -428,28 +456,46 @@ class Setup::Spec::Rpm
    end
 
    def secondaries
-      return @secondaries if @secondaries
+      return @_secondaries if @_secondaries
 
-      adopted_names = self["secondaries"].to_h.keys.map(&:to_s)
+      autonames = self[:secondaries].to_h.map { |(_, x)| x.autoname }
 
       secondaries = space.sources.reject do |source|
          source.name == space.main_source&.name
       end.map do |source|
-         sec = Secondary.new(source: source, spec: self)
+         sec = Secondary.new(source: source, spec: self, kind: kind)
 
-         if adopted_names.delete(sec.adopted_name)
-            sec.options = secondaries[sec.adopted_name]
+         secondary_parts_for(sec, source)
+      end.concat(secondary_parts_for(self, source)).flatten.compact
+
+      secondaries.map do |sec|
+         if presec = autonames.delete(sec.autoname)
+            self[:secondaries][presec.origin_name].resourced_from(sec)
+         else
+            sec
          end
-
-         sec
       end
 
-      @secondaries = secondaries | adopted_names.map do |an|
-         Secondary.new(spec: self, options: secondaries[an])
+      @_secondaries = secondaries | autonames.map do |an|
+         Secondary.new(spec: self, kind: an.kind, options: { adopted_name: an.adopted_name })
       end
    end
 
+   def is_same_source? source
+      source && self.source == source
+   end
+
    protected
+
+   def secondary_parts_for object, source
+      PARTS.map do |(kind, func)|
+         next object.is_a?(Secondary) && object || nil if !func
+
+         if object.send(func)
+            Secondary.new(source: source, spec: self, kind: kind)
+         end
+      end
+   end
 
    def source
       space.main_source
