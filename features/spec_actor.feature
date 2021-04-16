@@ -2260,7 +2260,8 @@ Feature: Spec actor
          spec: |
             --- !ruby/object:Setup::Spec::Rpm
             adopted_name: ruby-foo_boo
-            version: 1.1
+            version: !ruby/object:Gem::Version
+               version: "1.1"
             summaries: !ruby/object:OpenStruct
                table:
                   !ruby/symbol '': RPM Actual Summary
@@ -2269,7 +2270,10 @@ Feature: Spec actor
              - Ruby
             group: Group
             uri: https://path/to/soft/rpm
-            packager: Packer FIO <fio@example.com>
+            packager: !ruby/object:OpenStruct
+               table:
+                  :name: Spec Author
+                  :email: author@example.org
             build_arch: arch64
             source_files: !ruby/object:OpenStruct
                table:
@@ -2431,7 +2435,7 @@ Feature: Spec actor
          Group:         <%= group %>
          Url:           <%= uri %>
          Vcs:           <%= vcs %>
-         Packager:      <%= packager %>
+         Packager:      <%= packager.name %> <<%= packager.email %>>
          <% if !has_compilable? -%>
          BuildArch:     noarch
          <% end -%>
@@ -2559,10 +2563,12 @@ Feature: Spec actor
          Group:         Development/Ruby
          Url:           http://fooboo.org
          Vcs:           https://github.com/foo/fooboo/tree/v5.2.4.4/fooboo.git
-         Packager:      Packer FIO <fio@example.com>
-         BuildArch:     noarch
+         Packager:      Spec Author <author@example.org>
 
          Source:        %name-%version.tar
+         Source1:       source_file1.tar
+         Patch0:        patch.patch
+         Patch1:        patch1.patch
          BuildRequires(pre): rpm-build-ruby
          BuildRequires(pre): rpm-build-python
          BuildRequires: gem(a) >= 1
@@ -2639,7 +2645,7 @@ Feature: Spec actor
 
          %changelog
          * Tue Jan 02 2001 Spec Author <author@example.org> 5.2-alt1
-         - + packaged gem
+         - ^ 1.1 -> 5.2
 
          * Mon Jan 01 2001 FIO Packer <fio@example.com> 1.0-rc1
          - ! of important bug

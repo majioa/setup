@@ -299,7 +299,11 @@ class Setup::Spec::Rpm
 
    SCHEME = {
       adopted_name: /^Name:\s+([^\s]+)/i,
-      version: /Version:\s+([^\s]+)/i,
+      version: {
+         non_contexted: true,
+         regexp: /Version:\s+([^\s]+)/i,
+         parse_func: :parse_version
+      },
       epoch: /Epoch:\s+([^\s]+)/i,
       release: /Release:\s+([^\s]+)/i,
       summaries: {
@@ -314,7 +318,11 @@ class Setup::Spec::Rpm
       group: /Group:\s+([^\s]+)/i,
       uri: /Url:\s+([^\s]+)/i,
       vcs: /Vcs:\s+([^\s]+)/i,
-      packager: /Packager:\s+([^\s].+)/i,
+      packager: {
+         non_contexted: true,
+         regexp: /Packager:\s+(?<author>.*)\s*(?:<(?<email>.*)>)$/i,
+         parse_func: :parse_packager
+      },
       build_arch: /BuildArch:\s+([^\s]+)/i,
       patches: {
          non_contexted: true,
@@ -481,6 +489,35 @@ class Setup::Spec::Rpm
       end
    end
 
+   def version
+      return @_version if @_version
+
+      @_version = space.version || self["version"]
+   end
+
+   def changes
+      return @_changes if @_changes
+
+      new_change =
+         if version != self["version"]
+
+            # TODO move to i18n and settings file
+            description = "- ^ #{self["version"]} -> #{version}"
+            release = "alt1"
+
+            OpenStruct.new(
+               date: Date.today.strftime("%a %b %d %Y"),
+               author: packager.name,
+               email: packager.email,
+               version: version,
+               release: release,
+               description: description
+            )
+         end
+
+      @_changes = self["changes"] | [ new_change ].compact
+   end
+
    def is_same_source? source
       source && self.source == source
    end
@@ -614,7 +651,7 @@ class Setup::Spec::Rpm
                date: date,
                author: author.strip,
                email: email,
-               version: version,
+               version: Gem::Version.new(version),
                release: release,
                description: row[1..-1].join("\n")
             }
@@ -657,6 +694,14 @@ class Setup::Spec::Rpm
          else
             { match[2] => match[3] }
          end
+      end
+
+      def parse_version match, *_
+         Gem::Version.new(match[1])
+      end
+
+      def parse_packager match, *_
+         OpenStruct.new(author: match["author"], email: match["email"])
       end
 
       def parse_context_line line, opts
