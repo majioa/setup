@@ -2441,10 +2441,10 @@ Feature: Spec actor
          <% end -%>
 
          <% source_files.each_pair do |i, source_file| -%>
-         Source<%= i %>:<%= " " * [ 8 - "#{i}".size, 1 ].max %><%= source_file %>
+         Source<%= i == :"0" && (i = "") || i %>:<%= " " * [ 8 - "#{i}".size, 1 ].max %><%= source_file %>
          <% end -%>
          <% patches.each_pair do |i, patch| -%>
-         Patch<%= i %>:<%= " " * [ 9 - "#{i}".size, 1 ].max %><%= patch %>
+         Patch<%= i == :"0" && (i = "") || i %>:<%= " " * [ 9 - "#{i}".size, 1 ].max %><%= patch %>
          <% end -%>
          <% build_pre_requires.each_pair do |_, dep| -%>
          BuildRequires(pre): <%= dep %>
@@ -2567,10 +2567,10 @@ Feature: Spec actor
 
          Source:        %name-%version.tar
          Source1:       source_file1.tar
-         Patch0:        patch.patch
+         Patch:         patch.patch
          Patch1:        patch1.patch
-         BuildRequires(pre): rpm-build-ruby
          BuildRequires(pre): rpm-build-python
+         BuildRequires(pre): rpm-build-ruby
          BuildRequires: gem(a) >= 1
          BuildRequires: gem(b) < 0.1
          BuildRequires: gem(c) >= 2
@@ -2580,12 +2580,12 @@ Feature: Spec actor
          Requires:      req >= 1
          Requires:      gem(d) < 0.1
          Requires:      gem(e) >= 2
-         Obsoletes:     ruby-foo_boo < %EVR
          Obsoletes:     req >= 1
          Obsoletes:     gem(p) < 0.1
-         Provides:      ruby-foo_boo = %EVR
+         Obsoletes:     ruby-foo_boo < %EVR
          Provides:      req >= 1
          Provides:      gem(p) < 0.1
+         Provides:      ruby-foo_boo = %EVR
          Conflicts:     gem(g) >= 1
 
          %description

@@ -66,8 +66,6 @@ class Setup::Spec::Rpm::Name
       [ prefix, name, suffix ].compact.join("-")
    end
 
-   protected
-
    def preadopted_name
       name&.gsub(/[\._]/, "-")
    end
@@ -79,6 +77,8 @@ class Setup::Spec::Rpm::Name
    def preadopted_prefix
       %w(lib doc devel).include?(kind) && default_prefix || prefix
    end
+
+   protected
 
    def initialize options = {}, prefix: nil, suffix: nil, name: nil, support_name: nil
       @aliases = name&.gsub(/[\.\_]+/, "-")

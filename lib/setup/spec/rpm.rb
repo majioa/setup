@@ -463,6 +463,58 @@ class Setup::Spec::Rpm
       vars
    end
 
+   def source_files
+      return @_source_files if @_source_files
+
+      source_files = self["source_files"].dup
+
+      if source_files[:"0"] != "%name-%version.tar"
+         # TODO state defaults
+         source_files[:"0"] = "%name-%version.tar"
+      end
+
+      @_source_files = source_files
+   end
+
+   def build_pre_requires
+      return @_build_pre_requires if @_build_pre_requires
+
+      build_pre_requires = self["build_pre_requires"].dup
+
+      if autoname.prefix != autoname.preadopted_prefix
+         # TODO state defaults
+         build_pre_requires[build_pre_requires.to_h.values.count.to_s] = "rpm-build-ruby"
+      end
+
+      @_build_pre_requires = build_pre_requires
+   end
+
+   def provides
+      return @_provides if @_provides
+
+      provides = self["provides"].dup
+
+      if autoname.prefix != autoname.preadopted_prefix
+         # TODO state defaults
+         provides[provides.to_h.values.count.to_s] = "#{autoname.prefix}-#{autoname.name} = %EVR"
+      end
+
+      @_provides = provides
+   end
+
+   def obsoletes
+      return @_obsoletes if @_obsoletes
+
+      obsoletes = self["obsoletes"].dup
+
+      if autoname.prefix != autoname.preadopted_prefix
+         # TODO state defaults
+         obsoletes[obsoletes.to_h.values.count.to_s] = "#{autoname.prefix}-#{autoname.name} < %EVR"
+      end
+
+      @_obsoletes = obsoletes
+   end
+
    def secondaries
       return @_secondaries if @_secondaries
 
