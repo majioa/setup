@@ -224,10 +224,10 @@ Feature: Spec actor
       When developer loads the space
       And developer draws the template:
          """
-         Name:          <%= adopted_name %>
+         Name:          <%= name %>
          Version:       <%= version %>
          <% secondaries.each do |secondary| -%>
-         %package       -n <%= secondary.adopted_name %>
+         %package       -n <%= secondary.name %>
          Version:       <%= secondary.version %>
          <% end -%>
          """
@@ -1321,7 +1321,7 @@ Feature: Spec actor
          <%= description %>
          <% end -%>
 
-         <% if has_executable? -%>
+         <% if has_executables? -%>
          %package       -n <%= executable_name %>
          Summary:       Executable file for %gemname gem
          Summary(ru_RU.UTF-8): Исполнямка для самоцвета %gemname
@@ -2259,88 +2259,91 @@ Feature: Spec actor
          rootdir: /path/to/dot/space/rootname
          spec: |
             --- !ruby/object:Setup::Spec::Rpm
-            adopted_name: ruby-foo_boo
-            version: !ruby/object:Gem::Version
-               version: "1.1"
-            summaries: !ruby/object:OpenStruct
-               table:
-                  !ruby/symbol '': RPM Actual Summary
-            licenses:
-             - MIT
-             - Ruby
-            group: Group
-            uri: https://path/to/soft/rpm
-            packager: !ruby/object:OpenStruct
-               table:
-                  :name: Spec Author
-                  :email: author@example.org
-            build_arch: arch64
-            source_files: !ruby/object:OpenStruct
-               table:
-                  :0: source_file.tar
-                  :1: source_file1.tar
-            patches: !ruby/object:OpenStruct
-               table:
-                  :0: patch.patch
-                  :1: patch1.patch
-            requires: !ruby/object:OpenStruct
-               table:
-                  :0: req >= 1
-                  :1: gem(d) < 0.1
-                  :2: gem(e) >= 2
-            build_requires: !ruby/object:OpenStruct
-               table:
-                  :0: gem(a) >= 1
-                  :1: gem(b) < 0.1
-                  :2: gem(c) >= 2
-            build_pre_requires: !ruby/object:OpenStruct
-               table:
-                  :0: rpm-build-nonruby
-                  :0: rpm-build-python
-            obsoletes: !ruby/object:OpenStruct
-               table:
-                  :0: req >= 1
-                  :1: gem(p) < 0.1
-            provides: !ruby/object:OpenStruct
-               table:
-                  :0: req >= 1
-                  :1: gem(p) < 0.1
-            conflicts: !ruby/object:OpenStruct
-               table:
-                  :0: gem(g) >= 1
-            descriptions: !ruby/object:OpenStruct
-               table:
-                  ! '': Description Defaults
-                  'ru_RU.UTF8': Заметка
-            prep: |-
-               setup
-               patch
-            build: build
-            install: install
-            check: check
-            secondaries: !ruby/object:OpenStruct
-               table:
-                  :ruby-foo_boo-doc: !ruby/object:Setup::Spec::Rpm::Secondary
-                     adopted_name: ruby-foo_boo-doc
-                     group: Group1
-                     build_arch: noarch
-                     summaries: !ruby/object:OpenStruct
-                        table:
-                           :'': Summary Defaults
-                           :'ru_RU.UTF8': Итого
-                     descriptions: !ruby/object:OpenStruct
-                        table:
-                           :'': Description Defaults
-                           :'ru_RU.UTF8': Заметка
-            changes:
-             - !ruby/object:OpenStruct
-               table:
-                  :date: "Mon Jan 01 2001"
-                  :author: "FIO Packer"
-                  :email: fio@example.com
-                  :version: 1.0
-                  :release: rc1
-                  :description: "- ! of important bug"
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  aliases: foo-boo
+                  prefix: ruby
+                  name: foo_boo
+                  kind: lib
+               version: !ruby/object:Gem::Version
+                  version: "1.1"
+               summaries: !ruby/object:OpenStruct
+                  table:
+                     !ruby/symbol '': RPM Actual Summary
+               licenses:
+                - MIT
+                - Ruby
+               group: Group
+               uri: https://path/to/soft/rpm
+               packager: !ruby/object:OpenStruct
+                  table:
+                     :name: Spec Author
+                     :email: author@example.org
+               build_arch: arch64
+               source_files: !ruby/object:OpenStruct
+                  table:
+                     :0: source_file.tar
+                     :1: source_file1.tar
+               patches: !ruby/object:OpenStruct
+                  table:
+                     :0: patch.patch
+                     :1: patch1.patch
+               requires:
+                - req >= 1
+                - gem(d) < 0.1
+                - gem(e) >= 2
+               build_requires:
+                - gem(a) >= 1
+                - gem(b) < 0.1
+                - gem(c) >= 2
+               build_pre_requires:
+                - rpm-build-nonruby
+                - rpm-build-python
+               obsoletes:
+                - req >= 1
+                - gem(p) < 0.1
+               provides:
+                - req >= 1
+                - gem(p) < 0.1
+               conflicts:
+                - gem(g) >= 1
+               descriptions: !ruby/object:OpenStruct
+                  table:
+                     ! '': Description Defaults
+                     'ru_RU.UTF8': Заметка
+               prep: |-
+                  setup
+                  patch
+               build: build
+               install: install
+               check: check
+               secondaries:
+                - !ruby/object:Setup::Spec::Rpm::Secondary
+                  name: !ruby/object:Setup::Spec::Rpm::Name
+                     aliases: foo-boo
+                     prefix: ruby
+                     suffix: doc
+                     name: foo_boo
+                     kind: doc
+                  group: Group1
+                  build_arch: noarch
+                  summaries: !ruby/object:OpenStruct
+                     table:
+                        :'': Summary Defaults
+                        :'ru_RU.UTF8': Итого
+                  descriptions: !ruby/object:OpenStruct
+                     table:
+                        :'': Description Defaults
+                        :'ru_RU.UTF8': Заметка
+               changes:
+                - !ruby/object:OpenStruct
+                  table:
+                     :date: "Mon Jan 01 2001"
+                     :author: "FIO Packer"
+                     :email: fio@example.com
+                     :version: 1.0
+                     :release: rc1
+                     :description: "- ! of important bug"
          sources:
           - !ruby/object:Setup::Source::Gem
             rootdir: /path/to/dot/space/rootname
@@ -2424,7 +2427,7 @@ Feature: Spec actor
          <%= comment -%>
 
          <% end -%>
-         Name:          <%= adopted_name %>
+         Name:          <%= name %>
          <% if has_epoch? -%>
          Epoch:         <%= epoch %>
          <% end -%>
@@ -2436,7 +2439,7 @@ Feature: Spec actor
          Url:           <%= uri %>
          Vcs:           <%= vcs %>
          Packager:      <%= packager.name %> <<%= packager.email %>>
-         <% if !has_compilable? -%>
+         <% if !has_compilables? -%>
          BuildArch:     noarch
          <% end -%>
 
@@ -2446,25 +2449,25 @@ Feature: Spec actor
          <% patches.each_pair do |i, patch| -%>
          Patch<%= i == :"0" && (i = "") || i %>:<%= " " * [ 9 - "#{i}".size, 1 ].max %><%= patch %>
          <% end -%>
-         <% build_pre_requires.each_pair do |_, dep| -%>
+         <% build_pre_requires.each do |dep| -%>
          BuildRequires(pre): <%= dep %>
          <% end -%>
-         <% build_requires.each_pair do |_, dep| -%>
+         <% build_requires.each do |dep| -%>
          BuildRequires: <%= dep %>
          <% end -%>
 
          %add_findreq_skiplist %ruby_gemslibdir/**/*
          %add_findprov_skiplist %ruby_gemslibdir/**/*
-         <% requires.each_pair do |_, dep| -%>
+         <% requires.each do |dep| -%>
          Requires:      <%= dep %>
          <% end -%>
-         <% obsoletes.each_pair do |_, dep| -%>
+         <% obsoletes.each do |dep| -%>
          Obsoletes:     <%= dep %>
          <% end -%>
-         <% provides.each_pair do |_, dep| -%>
+         <% provides.each do |dep| -%>
          Provides:      <%= dep %>
          <% end -%>
-         <% conflicts.each_pair do |_, dep| -%>
+         <% conflicts.each do |dep| -%>
          Conflicts:     <%= dep %>
          <% end -%>
 
@@ -2475,7 +2478,7 @@ Feature: Spec actor
          <% end -%>
 
          <% secondaries.each do |secondary| -%>
-         %package       -n <%= secondary.adopted_name %>
+         %package       -n <%= secondary.name %>
          Version:       <%= secondary.version %>
          <% secondary.summaries.each_pair do |cp, summary| -%>
          Summary<%= !cp.blank? && "(#{cp})" || nil %>:       <%= summary %>
@@ -2483,7 +2486,7 @@ Feature: Spec actor
          Group:         Development/Ruby
 
          <% descriptions.each_pair do |arg, description| -%>
-         %description   -n <%= secondary.adopted_name %><%= !arg.blank? && " -l #{arg}" || nil %>
+         %description   -n <%= secondary.name %><%= !arg.blank? && " -l #{arg}" || nil %>
          <%= description %>
 
          <% end -%>
@@ -2507,19 +2510,19 @@ Feature: Spec actor
          <% end -%>
          %ruby_gemspec
          %ruby_gemlibdir
-         <% if has_compilable? -%>
+         <% if has_compilables? -%>
          %ruby_gemextdir
          <% end -%>
 
          <% secondaries.each do |secondary| -%>
-         %files         -n <%= secondary.adopted_name %>
+         %files         -n <%= secondary.name %>
          <% if secondary.has_readme? -%>
          %doc <%= secondary.readme %>
          <% end -%>
          <% if secondary.is_lib? -%>
          %ruby_gemspecdir/<%= secondary.name %>-<%= secondary.version %>.gemspec
          %ruby_gemslibdir/<%= secondary.name %>-<%= secondary.version %>
-         <% if secondary.has_compilable? -%>
+         <% if secondary.has_compilables? -%>
          %ruby_gemsextdir/<%= secondary.name %>-<%= secondary.version %>
          <% end -%>
          <% end -%>
@@ -2560,8 +2563,8 @@ Feature: Spec actor
          Release:       alt1
          Summary:       RPM Actual Summary
          License:       MIT or GPLv2
-         Group:         Development/Ruby
-         Url:           http://fooboo.org
+         Group:         Group
+         Url:           https://path/to/soft/rpm
          Vcs:           https://github.com/foo/fooboo/tree/v5.2.4.4/fooboo.git
          Packager:      Spec Author <author@example.org>
 
@@ -2569,8 +2572,9 @@ Feature: Spec actor
          Source1:       source_file1.tar
          Patch:         patch.patch
          Patch1:        patch1.patch
-         BuildRequires(pre): rpm-build-python
          BuildRequires(pre): rpm-build-ruby
+         BuildRequires(pre): rpm-build-nonruby
+         BuildRequires(pre): rpm-build-python
          BuildRequires: gem(a) >= 1
          BuildRequires: gem(b) < 0.1
          BuildRequires: gem(c) >= 2
@@ -2580,12 +2584,12 @@ Feature: Spec actor
          Requires:      req >= 1
          Requires:      gem(d) < 0.1
          Requires:      gem(e) >= 2
+         Obsoletes:     ruby-foo_boo < %EVR
          Obsoletes:     req >= 1
          Obsoletes:     gem(p) < 0.1
-         Obsoletes:     ruby-foo_boo < %EVR
+         Provides:      ruby-foo_boo = %EVR
          Provides:      req >= 1
          Provides:      gem(p) < 0.1
-         Provides:      ruby-foo_boo = %EVR
          Conflicts:     gem(g) >= 1
 
          %description
@@ -2649,6 +2653,7 @@ Feature: Spec actor
 
          * Mon Jan 01 2001 FIO Packer <fio@example.com> 1.0-rc1
          - ! of important bug
+
 
          """
 

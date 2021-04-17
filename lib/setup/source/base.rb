@@ -293,12 +293,16 @@ class Setup::Source::Base
 
    def docs
       # TODO make docs to docdir
-      default_ridir
+      (!spec.rdoc_options.blank? && [ default_ridir ] || []) | spec.extra_rdoc_files
    end
 
    def compilables
       # TODO make compilables from ext
       extfiles
+   end
+
+   def summaries
+      [ spec.summary ]
    end
 
    protected

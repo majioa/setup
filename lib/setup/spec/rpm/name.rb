@@ -42,6 +42,10 @@ class Setup::Spec::Rpm::Name
       match?(other)
    end
 
+   def to_s
+      adopted_name
+   end
+
    def match_by? value, other
       case value
       when "name"

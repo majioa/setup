@@ -3,58 +3,92 @@ require 'setup/spec/rpm'
 class Setup::Spec::Rpm::Secondary
    attr_reader :source, :spec, :kind
 
-   %w(lib exec doc devel app).each { |name| define_method("is_#{name}?") { @kind.to_s == name } }
-
-   FIELDS = {
-      name: nil,
-      epoch: nil,
-      version: nil,
-      release: "alt1",
-      build_arch: nil,
-      summaries: {},
-      group: nil,
-      requires: {},
-      provides: {},
-      obsoletes: {},
-      conflicts: {},
-      file_list: nil,
+   STATE = {
+      name: {
+         seq: %w(of_options of_source of_state of_default _name),
+         default: "",
+      },
+      epoch: {
+         seq: %w(of_options of_state),
+         default: nil,
+      },
+      version: {
+         seq: %w(of_options of_source of_state _version),
+         default: nil,
+      },
+      release: {
+         seq: %w(of_options of_state),
+         default: "alt1",
+      },
+      build_arch: {
+         seq: %w(of_options of_state),
+         default: nil,
+      },
+      summaries: {
+         seq: %w(of_options of_state of_source _summaries),
+         default: {}.to_os,
+      },
+      group: {
+         seq: %w(of_options of_state),
+         default: nil,
+      },
+      requires: {
+         seq: %w(of_options of_state),
+         default: [],
+      },
+      provides: {
+         seq: %w(of_options of_state),
+         default: [],
+      },
+      obsoletes: {
+         seq: %w(of_options of_state),
+         default: [],
+      },
+      conflicts: {
+         seq: %w(of_options of_state),
+         default: [],
+      },
+      file_list: {
+         seq: %w(of_options of_state),
+         default: {}.to_os,
+      },
+      descriptions: {
+         seq: %w(of_options _descriptions),
+         default: nil,
+      },
+      readme: {
+         seq: %w(of_options of_source),
+         default: nil,
+      },
+      devel_sources: {
+         seq: %w(of_options _devel_sources of_state),
+         default: nil,
+      },
+      files: {
+         seq: %w(of_options of_space of_state),
+         default: []
+      }
    }
 
-   FIELDS.each do |name, default|
-      define_method(name) { read_attribute(name, default) }
-      define_method("_#{name}") { instance_variable_get(:"@#{name}") }
-      define_method("has_#{name}?") { !!instance_variable_get(:"@#{name}")}
+   %w(lib exec doc devel app).each do |name|
+      define_method("is_#{name}?") { @kind.to_s == name }
    end
 
    include Setup::RpmSpecCore
 
-   def summaries
-      return @summaries if @summaries
 
-      if !summaries = self["summaries"]
-         summaries =
-            if default_summary = source.summary rescue nil
-               OpenStruct.new("" => default_summary)
-            else
-               {}.to_os
-            end
-      end
-
-      @summaries = summaries
-   end
-
-   def full_name
-      return @full_name if @full_name
-
-      prefix = source.respond_to?(:name_prefix) && source.name_prefix || nil
-      pre_name = [ prefix, source.name ].compact.join("-")
-      @full_name = !pre_name.blank? && pre_name || spec["adopted_name"]
-   end
-
-   def options= value
-      parse_options(value)
-   end
-
+#   def full_name
+#      return @full_name if @full_name
+#
+#      prefix = source.respond_to?(:name_prefix) && source.name_prefix || nil
+#      pre_name = [ prefix, source.name ].compact.join("-")
+#      @full_name = !pre_name.blank? && pre_name || spec["adopted_name"]
+#   end
+#
+#   def options= value
+#      parse_options(value)
+#   end
+#
    def resourced_from secondary
       @kind = secondary.kind
       @spec = secondary.spec
@@ -64,18 +98,20 @@ class Setup::Spec::Rpm::Secondary
    end
 
    protected
-
-   def read_attribute name, default = nil
-      self[name.to_s] ||
-         source.respond_to?(name) && source.send(name) ||
-         default.is_a?(Proc) && default[self] ||
-         default
-   end
-
+#
+#   def read_attribute name, default = nil
+#      self[name.to_s] ||
+#         source.respond_to?(name) && source.send(name) ||
+#         default.is_a?(Proc) && default[self] ||
+#         default
+#   end
+#
    def initialize spec: raise, source: nil, kind: nil, options: {}
       @source = source
       @spec = spec
       @kind = kind
-      parse_options(options)
+      @options = {}
+      #binding.pry
+      #parse_options(options)
    end
 end
