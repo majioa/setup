@@ -43,7 +43,7 @@ class Setup::Spec::Rpm::Name
    end
 
    def to_s
-      adopted_name
+      fullname
    end
 
    def match_by? value, other
@@ -57,56 +57,70 @@ class Setup::Spec::Rpm::Name
       end
    end
 
-   # +adopted_name+ returns newly reconstructed adopted name based on the storen data.
+   # +fullname+ returns newly reconstructed adopted full name based on the storen data.
    # All the "." and "_" is replaced with "-", and "ruby" prefix with "gem".
    #
-   # name.adopted_name #=> "gem-foo-bar-baz-doc"
+   # name.fullname #=> "gem-foo-bar-baz-doc"
    #
-   def adopted_name
-      [ preadopted_prefix, preadopted_name, preadopted_suffix ].compact.join("-")
+   def fullname
+      [ autoprefix, autoname, autosuffix ].compact.join("-")
    end
 
-   def origin_name
+   def original_fullname
       [ prefix, name, suffix ].compact.join("-")
    end
 
-   def preadopted_name
+   def autoname
       name&.gsub(/[\._]/, "-")
    end
 
-   def preadopted_suffix
+   def autosuffix
       %w(doc devel).include?(kind) && kind || nil
    end
 
-   def preadopted_prefix
-      %w(lib doc devel).include?(kind) && default_prefix || prefix
+   def autoprefix
+      case kind
+      when "lib"
+         default_prefix
+      when "exec", "app"
+         nil
+      else
+         prefix && default_prefix || prefix
+      end
    end
 
    protected
 
-   def initialize options = {}, prefix: nil, suffix: nil, name: nil, support_name: nil
-      @aliases = name&.gsub(/[\.\_]+/, "-")
-      @prefix = prefix
-      @suffix = suffix
-      @name = name
+   def initialize options = {}
+      @aliases = options[:name]&.gsub(/[\.\_]+/, "-")
+      @prefix = options[:prefix]
+      @suffix = options[:suffix]
+      @name = options[:name]
       @support_name = support_name
-      @kind = options[:kind] && options[:kind].to_s || suffix ||
-         prefix && "lib" ||
-         support_name && support_name.name == name && "exec" ||
+      @kind = options[:kind] && options[:kind].to_s || @suffix ||
+         @prefix && "lib" ||
+         @support_name&.name == name && "exec" ||
          "app"
    end
 
    class << self
-      def parse adopted_name, options = {}
-         m = adopted_name.match(RULE)
+      def parse name_in, options_in = {}
+         m =
+            if name_in.is_a?(self)
+               name_in.original_fullname.match(RULE)
+            else
+               name_in.match(RULE)
+            end
 
          raise(InvalidAdoptedNameError) if !m
 
-         new(options,
+         options = {
              prefix: m["prefix"],
              suffix: m["suffix"],
              name: m["name"],
-             support_name: options.delete(:support))
+         }.merge(options_in)
+
+         new(options)
       end
    end
 end

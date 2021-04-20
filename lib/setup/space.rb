@@ -78,13 +78,15 @@ class Setup::Space
       @changes = spec && spec["changes"] || changes || []
    end
 
-   # +summaries+ returns a list of open-struct formatted summaries in the space or
-   # spec defined if any, otherwise returns blank array.
+   # +summaries+ returns an open-struct formatted summaries with locales as keys
+   # in the space or spec defined if any, otherwise returns blank open struct.
    #
-   # space.summaries # => []
+   # space.summaries # => #<OpenStruct en_US.UTF-8: ...>
    #
    def summaries
-      @summaries ||= spec && spec["summaries"] || OpenStruct.new("" => main_source&.summary)
+      retun @summaries if @summaries
+
+      spec && spec["summaries"] || { Setup::I18n.default_locale => main_source&.summary }.to_os 
    end
 
    # +licenses+ returns license list defined in all the valid sources found in the space.
@@ -134,7 +136,7 @@ class Setup::Space
    # space.sources => # [#<Setup::Source:...>, #<...>]
    #
    def sources
-      @sources ||= Setup::Source.search_in(options.rootdir || Dir.pwd, options)
+      @sources ||= Setup::Source.search_in(rootdir || Dir.pwd, options)
    end
 
    # +valid_sources+ returns all the valid sources based on the current source list.

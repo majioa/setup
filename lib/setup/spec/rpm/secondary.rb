@@ -1,7 +1,7 @@
 require 'setup/spec/rpm'
 
 class Setup::Spec::Rpm::Secondary
-   attr_reader :source, :spec, :kind
+   attr_reader :source, :spec
 
    STATE = {
       name: {
@@ -21,27 +21,27 @@ class Setup::Spec::Rpm::Secondary
          default: "alt1",
       },
       build_arch: {
-         seq: %w(of_options of_state),
-         default: nil,
+         seq: %w(of_options of_state of_source),
+         default: "noarch",
       },
       summaries: {
-         seq: %w(of_options of_state of_source _summaries),
-         default: {}.to_os,
+         seq: %w(of_options of_state of_source of_default _summaries),
+         default: ""
       },
       group: {
          seq: %w(of_options of_state),
-         default: nil,
+         default: ->(this) { t("spec.rpm.#{this.kind}.group") },
       },
       requires: {
-         seq: %w(of_options of_state),
+         seq: %w(of_options of_state of_default _requires),
          default: [],
       },
       provides: {
-         seq: %w(of_options of_state),
+         seq: %w(of_options of_state of_default _provides),
          default: [],
       },
       obsoletes: {
-         seq: %w(of_options of_state),
+         seq: %w(of_options of_state of_default _obsoletes),
          default: [],
       },
       conflicts: {
@@ -49,42 +49,53 @@ class Setup::Spec::Rpm::Secondary
          default: [],
       },
       file_list: {
-         seq: %w(of_options of_state),
-         default: {}.to_os,
+         seq: %w(of_options of_state of_source),
+         default: "",
+      },
+      compilables: {
+         seq: %w(of_options of_state of_source),
+         default: [],
       },
       descriptions: {
-         seq: %w(of_options _descriptions),
-         default: nil,
+         seq: %w(of_options of_state of_source of_default _descriptions _format_descriptions),
+         default: ""
       },
       readme: {
-         seq: %w(of_options of_source),
+         seq: %w(of_options of_source _readme of_state),
+         default: nil,
+      },
+      executables: {
+         seq: %w(of_options of_source of_space of_state),
+         default: [],
+      },
+      docs: {
+         seq: %w(of_options _docs of_state),
+         default: nil,
+      },
+      devel: {
+         seq: %w(of_options _devel of_state),
+         default: nil,
+      },
+      devel_requires: {
+         seq: %w(of_options _devel_requires of_state),
          default: nil,
       },
       devel_sources: {
          seq: %w(of_options _devel_sources of_state),
-         default: nil,
+         default: [],
       },
       files: {
-         seq: %w(of_options of_space of_state),
+         seq: %w(of_options _files of_state),
+         default: []
+      },
+      dependencies: {
+         seq: %w(of_options of_state of_source),
          default: []
       }
    }
 
-   %w(lib exec doc devel app).each do |name|
-      define_method("is_#{name}?") { @kind.to_s == name }
-   end
-
    include Setup::RpmSpecCore
 
-
-#   def full_name
-#      return @full_name if @full_name
-#
-#      prefix = source.respond_to?(:name_prefix) && source.name_prefix || nil
-#      pre_name = [ prefix, source.name ].compact.join("-")
-#      @full_name = !pre_name.blank? && pre_name || spec["adopted_name"]
-#   end
-#
 #   def options= value
 #      parse_options(value)
 #   end
@@ -97,21 +108,17 @@ class Setup::Spec::Rpm::Secondary
       self
    end
 
+   def kind
+      @kind ||= source.is_a?(Setup::Source::Gem) && :lib || :app
+   end
+
    protected
-#
-#   def read_attribute name, default = nil
-#      self[name.to_s] ||
-#         source.respond_to?(name) && source.send(name) ||
-#         default.is_a?(Proc) && default[self] ||
-#         default
-#   end
-#
+
    def initialize spec: raise, source: nil, kind: nil, options: {}
       @source = source
       @spec = spec
       @kind = kind
-      @options = {}
-      #binding.pry
+      @options = options
       #parse_options(options)
    end
 end

@@ -29,7 +29,7 @@ Feature: Spec actor
 
       Then he gets the RPM spec
          """
-         Name:          root_name
+         Name:          root-name
          %package       -n sub
 
          """
@@ -238,6 +238,16 @@ Feature: Spec actor
          Version:       5.2
          %package       -n gem-foo-boo-ext
          Version:       1.1.7
+         %package       -n gem-foo-boo-ext-doc
+         Version:       1.1.7
+         %package       -n gem-foo-boo-ext-devel
+         Version:       1.1.7
+         %package       -n foo
+         Version:       5.2
+         %package       -n gem-foo-boo-doc
+         Version:       5.2
+         %package       -n gem-foo-boo-devel
+         Version:       5.2
 
          """
 
@@ -267,12 +277,13 @@ Feature: Spec actor
          sources: []
          spec: |
             --- !ruby/object:Setup::Spec::Rpm
-            epoch: 1
+            state:
+               epoch: 1
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:        <%= adopted_name %>
+         Name:        <%= name %>
          Epoch:       <%= epoch %>
          """
 
@@ -290,13 +301,17 @@ Feature: Spec actor
          rootdir: /path/to/dot/space/rootname
          spec: |
             --- !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            version: 1.1
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               version: !ruby/object:Gem::Version
+                  version: "1.1"
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
+         Name:                <%= name %>
          Version:             <%= version %>
          """
 
@@ -313,14 +328,18 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources: []
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            release: rc1
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               release: rc1
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
+         Name:                <%= name %>
          Release:             <%= release %>
          """
 
@@ -336,16 +355,20 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            summaries: !ruby/object:OpenStruct
-               table:
-                  !ruby/symbol '': RPM Summary
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               summaries: !ruby/object:OpenStruct
+                  table:
+                     !ruby/symbol '': RPM Summary
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
+         Name:                <%= name %>
          Summary:             <%= summary %>
          """
 
@@ -364,15 +387,18 @@ Feature: Spec actor
          sources: []
          spec: |
             --- !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            licenses:
-             - MIT
-             - GPLv2
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               licenses:
+                - MIT
+                - GPLv2
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
+         Name:                <%= name %>
          License:             <%= licenses.join(" or ") %>
          """
 
@@ -389,14 +415,18 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources: []
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            group: Group
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               group: Group
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
+         Name:                <%= name %>
          Group:               <%= group %>
          """
 
@@ -413,14 +443,18 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources: []
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            uri: https://path/to/soft/rpm
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               uri: https://path/to/soft/rpm
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
+         Name:                <%= name %>
          Url:                 <%= uri %>
          """
 
@@ -437,14 +471,18 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources: []
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            vcs: https://path/to/vcs/rpm
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               vcs: https://path/to/vcs/rpm
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
+         Name:                <%= name %>
          Vcs:                 <%= vcs %>
          """
 
@@ -461,13 +499,17 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources: []
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
+         Name:                <%= name %>
          <% if has_vcs? -%>
          Vcs:                 <%= vcs %>
          <% end -%>
@@ -487,14 +529,18 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources: []
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            uri: https://github.com/mygrid/ruby-ucf/
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               uri: https://github.com/mygrid/ruby-ucf/
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
+         Name:                <%= name %>
          <% if has_vcs? -%>
          Vcs:                 <%= vcs %>
          <% end -%>
@@ -515,14 +561,18 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources: []
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            uri: https://mygrid.github.io/ruby-ucf/
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               uri: https://mygrid.github.io/ruby-ucf/
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
+         Name:                <%= name %>
          <% if has_vcs? -%>
          Vcs:                 <%= vcs %>
          <% end -%>
@@ -541,15 +591,22 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            packager: Packer FIO <fio@example.com>
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               packager: !ruby/object:OpenStruct
+                  table:
+                     :name: Packer FIO
+                     :email: fio@example.com
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
-         Packager:            <%= packager %>
+         Name:                <%= name %>
+         Packager:            <%= packager.name %> <<%= packager.email %>>
          """
 
       Then he gets the RPM spec
@@ -565,15 +622,19 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources: []
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            build_arch: arch64
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               build_arch: arch64
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
-         <% if has_build_arch? -%>
+         Name:                <%= name %>
+         <% unless is_lib? and has_compilables? -%>
          BuildArch:           <%= build_arch %>
          <% end -%>
          """
@@ -591,27 +652,30 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            source_files: !ruby/object:OpenStruct
-               table:
-                  :0: source_file.tar
-                  :1: source_file1.tar
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               source_files: !ruby/object:OpenStruct
+                  table:
+                     :0: source_file.tar
+                     :1: source_file1.tar
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
-         <% source_files.each_pair do |index, source_file| -%>
-         <% i = index != :"0" && index || nil -%>
-         Source<%= i %>:<%= " " * [ 14 - "#{i}".size, 1 ].max %><%= source_file %>
+         Name:                <%= name %>
+         <% source_files.each_pair do |i, source_file| -%>
+         Source<%= i == :"0" && (i = "") || i %>:<%= " " * [ 14 - "#{i}".size, 1 ].max %><%= source_file %>
          <% end -%>
          """
 
       Then he gets the RPM spec
          """
          Name:                rpm
-         Source:              source_file.tar
+         Source:              %name-%version.tar
          Source1:             source_file1.tar
 
          """
@@ -625,19 +689,21 @@ Feature: Spec actor
          rootdir: /path/to/dot/space/rootname
          spec: |
             --- !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            patches: !ruby/object:OpenStruct
-               table:
-                  :0: patch.patch
-                  :1: patch1.patch
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               patches: !ruby/object:OpenStruct
+                  table:
+                     :0: patch.patch
+                     :1: patch1.patch
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
-         <% patches.each_pair do |index, patch| -%>
-         <% i = index != :"0" && index || nil -%>
-         Patch<%= i %>:<%= " " * [ 15 - "#{i}".size, 1 ].max %><%= patch %>
+         Name:                <%= name %>
+         <% patches.each_pair do |i, patch| -%>
+         Patch<%= i == :"0" && (i = "") || i %>:<%= " " * [ 15 - "#{i}".size, 1 ].max %><%= patch %>
          <% end -%>
          """
 
@@ -656,19 +722,22 @@ Feature: Spec actor
          spec_type: rpm
          sources: []
          rootdir: /path/to/dot/space/rootname
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            requires: !ruby/object:OpenStruct
-               table:
-                  :0: req >= 1
-                  :1: req_new < 0.1
-                  :2: req_newline >= 2
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               requires:
+                - req >= 1
+                - req_new < 0.1
+                - req_newline >= 2
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
-         <% requires.each_pair do |_, dep| -%>
+         Name:                <%= name %>
+         <% requires.each do |dep| -%>
          Requires:            <%= dep %>
          <% end -%>
          """
@@ -688,19 +757,22 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            build_requires: !ruby/object:OpenStruct
-               table:
-                  :0: req >= 1
-                  :1: req_new < 0.1
-                  :2: req_newline >= 2
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               build_requires:
+                - req >= 1
+                - req_new < 0.1
+                - req_newline >= 2
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
-         <% build_requires.each_pair do |_, dep| -%>
+         Name:                <%= name %>
+         <% build_requires.each do |dep| -%>
          BuildRequires:       <%= dep %>
          <% end -%>
          """
@@ -721,20 +793,23 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources: []
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            build_pre_requires: !ruby/object:OpenStruct
-               table:
-                  :0: req >= 1
-                  :1: req_new < 0.1
-                  :2: req_newline >= 2
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               build_pre_requires:
+                - req >= 1
+                - req_new < 0.1
+                - req_newline >= 2
 
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
-         <% build_pre_requires.each_pair do |_, dep| -%>
+         Name:                <%= name %>
+         <% build_pre_requires.each do |dep| -%>
          BuildRequires(pre):  <%= dep %>
          <% end -%>
          """
@@ -755,20 +830,23 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources: []
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            obsoletes: !ruby/object:OpenStruct
-               table:
-                  :0: req >= 1
-                  :1: req_new < 0.1
-                  :2: req_newline >= 2
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               obsoletes:
+                - req >= 1
+                - req_new < 0.1
+                - req_newline >= 2
 
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
-         <% obsoletes.each_pair do |_, dep| -%>
+         Name:                <%= name %>
+         <% obsoletes.each do |dep| -%>
          Obsoletes:           <%= dep %>
          <% end -%>
          """
@@ -788,20 +866,23 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            provides: !ruby/object:OpenStruct
-               table:
-                  :0: req >= 1
-                  :1: req_new < 0.1
-                  :2: req_newline >= 2
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               provides:
+                - req >= 1
+                - req_new < 0.1
+                - req_newline >= 2
 
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
-         <% provides.each_pair do |_, dep| -%>
+         Name:                <%= name %>
+         <% provides.each do |dep| -%>
          Provides:            <%= dep %>
          <% end -%>
          """
@@ -822,19 +903,22 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources: []
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            conflicts: !ruby/object:OpenStruct
-               table:
-                  :0: req >= 1
-                  :1: req_new < 0.1
-                  :2: req_newline >= 2
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               conflicts:
+                - req >= 1
+                - req_new < 0.1
+                - req_newline >= 2
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:                <%= adopted_name %>
-         <% conflicts.each_pair do |_, dep| -%>
+         Name:                <%= name %>
+         <% conflicts.each do |dep| -%>
          Conflicts:           <%= dep %>
          <% end -%>
          """
@@ -855,19 +939,23 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources: []
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            descriptions: !ruby/object:OpenStruct
-               table:
-                  ! '': Description Defaults
-                  'ru_RU.UTF8': Заметка
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               descriptions: !ruby/object:OpenStruct
+                  table:
+                     :'': Description Defaults
+                     :'ru_RU.UTF-8': Заметка
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:        <%= adopted_name %>
-         <% descriptions.each_pair do |arg, description| -%>
-         %description<%= !arg.blank? && "         -l #{arg}" || nil %>
+         Name:        <%= name %>
+         <% descriptions.each_pair do |cp, description| -%>
+         %description<%= !cp.blank? && "         -l #{cp}" || nil %>
          <%= description %>
          <% end -%>
          """
@@ -877,7 +965,7 @@ Feature: Spec actor
          Name:        rpm
          %description
          Description Defaults
-         %description         -l ru_RU.UTF8
+         %description         -l ru_RU.UTF-8
          Заметка
 
          """
@@ -890,27 +978,31 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources: []
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            descriptions: !ruby/object:OpenStruct
-               table:
-                  ! '': |
-                     Description Defaults with text Lorem Satem with more than 80 chars because
-                     it is just set the line defining it, see it below: aaaaaaaaaa aaaaaaaaaa
-                     aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               descriptions: !ruby/object:OpenStruct
+                  table:
+                     :'': |
+                        Description Defaults with text Lorem Satem with more than 80 chars because
+                        it is just set the line defining it, see it below: aaaaaaaaaa aaaaaaaaaa
+                        aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa
 
-                     So, it should be arranged as having near to 80 char per (see loop to fill it) line.
-                     * list1
-                     - list2
+                        So, it should be arranged as having near to 80 char per (see loop to fill it) line.
+                        * list1
+                        - list2
 
-                     Ok
+                        Ok
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:        <%= adopted_name %>
-         <% descriptions.each_pair do |arg, description| -%>
-         %description<%= !arg.blank? && "         -l #{arg}" || nil %>
+         Name:        <%= name %>
+         <% descriptions.each_pair do |cp, description| -%>
+         %description<%= !cp.blank? && "         -l #{cp}" || nil %>
          <%= description %>
          <% end -%>
          """
@@ -940,37 +1032,44 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources: []
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            secondaries: !ruby/object:OpenStruct
-               table:
-                  :rpm-doc: !ruby/object:Setup::Spec::Rpm::Secondary
-                     adopted_name: rpm-doc
-                     group: Group1
-                     build_arch: arch64
-                     summaries: !ruby/object:OpenStruct
-                        table:
-                           :'': Summary Defaults
-                           :'ru_RU.UTF8': Итого
-                     descriptions: !ruby/object:OpenStruct
-                        table:
-                           :'': Description Defaults
-                           :'ru_RU.UTF8': Заметка
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               secondaries: !ruby/object:OpenStruct
+                - !ruby/object:Setup::Spec::Rpm::Secondary
+                  name: !ruby/object:Setup::Spec::Rpm::Name
+                     name: rpm
+                     kind: doc
+                  group: Group1
+                  build_arch: arch64
+                  summaries: !ruby/object:OpenStruct
+                     table:
+                        :'': Summary Defaults
+                        :'ru_RU.UTF-8': Итого
+                  descriptions: !ruby/object:OpenStruct
+                     table:
+                        :'': Description Defaults
+                        :'ru_RU.UTF-8': Заметка
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:          <%= adopted_name %>
-         <% secondaries.each do |_name, sec| -%>
-         %package       -n <%= sec.adopted_name %>
-         <% sec.summaries.each do |cp, summary| -%>
-         Summary<%= !cp.blank? && "(#{cp})" || nil %>:       <%= summary %>
+         Name:          <%= name %>
+         <% secondaries.each do |secondary| -%>
+         %package       -n <%= secondary.name %>
+         <% secondary.summaries.each_pair do |cp, summary| -%>
+         Summary<%= !cp.blank? && "(#{cp})" || nil %>:<%= " " * (cp.blank? && 7 || 1 ) %><%= summary %>
          <% end -%>
-         Group:         <%= sec.group %>
-         BuildArch:     <%= sec.build_arch %>
+         Group:         <%= secondary.group %>
+         <% unless secondary.is_lib? and secondary.has_compilables? -%>
+         BuildArch:     <%= secondary.build_arch %>
+         <% end -%>
 
-         <% sec.descriptions.each do |cp, description| -%>
-         %description   -n <%= sec.adopted_name %><%= !cp.blank? && " -l #{cp}" || nil %>
+         <% secondary.descriptions.each_pair do |arg, description| -%>
+         %description   -n <%= secondary.name %><%= !arg.blank? && " -l #{arg}" || nil %>
          <%= description %>
          <% end -%>
          <% end -%>
@@ -981,13 +1080,13 @@ Feature: Spec actor
          Name:          rpm
          %package       -n rpm-doc
          Summary:       Summary Defaults
-         Summary(ru_RU.UTF8):       Итого
+         Summary(ru_RU.UTF-8): Итого
          Group:         Group1
          BuildArch:     arch64
 
          %description   -n rpm-doc
          Description Defaults
-         %description   -n rpm-doc -l ru_RU.UTF8
+         %description   -n rpm-doc -l ru_RU.UTF-8
          Заметка
 
          """
@@ -999,19 +1098,23 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources: []
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            prep: |-
-               setup
-               patch
-            build: build
-            install: install
-            check: check
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               prep: |-
+                  setup
+                  patch
+               build: build
+               install: install
+               check: check
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:        <%= adopted_name %>
+         Name:        <%= name %>
          %prep
          <%= prep %>
 
@@ -1049,29 +1152,33 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources: []
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            changes:
-             - !ruby/object:OpenStruct
-               table:
-                  :date: "Mon Jan 01 2001"
-                  :author: "FIO Packer"
-                  :email: fio@example.com
-                  :version: 1.0
-                  :release: rc1
-                  :description: "- ! of important bug"
-             - !ruby/object:OpenStruct
-               table:
-                  :date: "Mon Jan 02 2001"
-                  :author: "FIO Packer"
-                  :email: fio@example.com
-                  :version: 2.0
-                  :description: "- ^ new version"
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               changes:
+                - !ruby/object:OpenStruct
+                  table:
+                     :date: "Mon Jan 01 2001"
+                     :author: "FIO Packer"
+                     :email: fio@example.com
+                     :version: 1.0
+                     :release: rc1
+                     :description: "- ! of important bug"
+                - !ruby/object:OpenStruct
+                  table:
+                     :date: "Mon Jan 02 2001"
+                     :author: "FIO Packer"
+                     :email: fio@example.com
+                     :version: 2.0
+                     :description: "- ^ new version"
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:        <%= adopted_name %>
+         Name:        <%= name %>
          %changelog
          <% changes.reverse.each do |c| -%>
          * <%= c.date %> <%= c.author %> <%= c.email && "<#{c.email}>" || "" %> <%= [ c.version, c.release ].compact.join("-") %>
@@ -1100,28 +1207,34 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources: []
-         spec: !ruby/object:Setup::Spec::Rpm
-            adopted_name: rpm
-            file_list: |-
-               file1
-               file2
-            secondaries: !ruby/object:OpenStruct
-               table:
-                  :rpm-doc: !ruby/object:Setup::Spec::Rpm::Secondary
-                     adopted_name: rpm-doc
-                     file_list: |-
-                        file3
-                        file4
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: rpm
+                  kind: app
+               file_list: |-
+                  file1
+                  file2
+               secondaries:
+                - !ruby/object:Setup::Spec::Rpm::Secondary
+                     state:
+                        name: !ruby/object:Setup::Spec::Rpm::Name
+                           name: rpm
+                           kind: doc
+                        file_list: |-
+                           file3
+                           file4
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:          <%= adopted_name %>
+         Name:          <%= name %>
          %files
          <%= file_list %>
 
-         <% secondaries.each do |_name, secondary| -%>
-         %files         -n <%= secondary.adopted_name %>
+         <% secondaries.each do |secondary| -%>
+         %files         -n <%= secondary.name %>
          <%= secondary.file_list %>
          <% end -%>
          """
@@ -1146,12 +1259,16 @@ Feature: Spec actor
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
          sources: []
-         spec: !ruby/object:Setup::Spec::Rpm
-            name: "%{var}%var1"
-            context: !ruby/object:OpenStruct
-               table:
-                  :var: rpm
-                  :var1: '2'
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: "%{var}%var1"
+                  kind: app
+               context: !ruby/object:OpenStruct
+                  table:
+                     :var: rpm
+                     :var1: '2'
          """
       When developer loads the space
       And he draws the template:
@@ -1160,7 +1277,7 @@ Feature: Spec actor
          %define <%= name %> <%= value %>
          <% end -%>
 
-         Name:          <%= _name %>
+         Name:          <%= name %>
          """
 
       Then he gets the RPM spec
@@ -1170,7 +1287,7 @@ Feature: Spec actor
 
          Name:          %{var}%var1
          """
-      And property "name" of space is "rpm2"
+      And stringified property "name" of space is "%{var}%var1"
 
    Scenario: Space macros validation for loaded spec
       Given space file:
@@ -1178,20 +1295,24 @@ Feature: Spec actor
          ---
          spec_type: rpm
          rootdir: /path/to/dot/space/rootname
-         spec: !ruby/object:Setup::Spec::Rpm
-            name: "%{var}%var1"
-            context: !ruby/object:OpenStruct
-               table:
-                  :__macros:
-                     macro:
-                        - "rpmn < 1"
-                        - "rpmn1 < 2"
-                     macro1: "rpmn < 11"
+         spec: |
+            --- !ruby/object:Setup::Spec::Rpm
+            state:
+               name: !ruby/object:Setup::Spec::Rpm::Name
+                  name: "%{var}%var1"
+                  kind: app
+               context: !ruby/object:OpenStruct
+                  table:
+                     :__macros:
+                        macro:
+                         - "rpmn < 1"
+                         - "rpmn1 < 2"
+                        macro1: "rpmn < 11"
          """
       When developer loads the space
       And he draws the template:
          """
-         Name:          <%= _name %>
+         Name:          <%= name %>
          <%= macros("macro") %>
          <%= macros("macro1") %>
          """
@@ -1242,9 +1363,6 @@ Feature: Spec actor
                   source_code_uri: https://github.com/foo/fooboo/tree/v5.2.4.4/fooboo
                   changelog_uri: https://github.com/foo/fooboo/blob/v5.2.4.4/fooboo/CHANGELOG.md
                post_install_message:
-               rdoc_options:
-                - "--exclude"
-                - "."
                require_paths:
                 - lib
                required_ruby_version: !ruby/object:Gem::Requirement
@@ -1272,101 +1390,74 @@ Feature: Spec actor
          <%= comment -%>
 
          <% end -%>
-         Name:          <%= adopted_name %>
+         Name:          <%= name %>
          <% if has_epoch? -%>
          Epoch:         <%= epoch %>
          <% end -%>
          Version:       <%= version %>
          Release:       <%= release %>
-         Summary:       <%= summary %>
+         <% summaries.each_pair do |cp, summary| -%>
+         Summary<%= !cp.blank? && "(#{cp})" || nil %>:<%= " " * (cp.blank? && 7 || 1 ) %><%= summary %>
+         <% end -%>
          License:       <%= licenses.join(" or ") %>
          Group:         <%= group %>
          Url:           <%= uri %>
          Vcs:           <%= vcs %>
-         Packager:      <%= packager %>
-         <% if !has_compilable? -%>
+         Packager:      <%= packager.name %> <<%= packager.email %>>
+         <% unless is_lib? and has_compilables? -%>
          BuildArch:     noarch
          <% end -%>
 
-         <% source_files.each_pair do |index, source_file| -%>
-         Source<%= index != :"0" && index || nil %>:        <%= source_file %>
+         <% source_files.each_pair do |i, source_file| -%>
+         Source<%= i == :"0" && (i = "") || i %>:<%= " " * [ 8 - "#{i}".size, 1 ].max %><%= source_file %>
          <% end -%>
-         <% patches.each_pair do |index, patch| -%>
-         Patch<%= index != :"0" && index || nil %>:         <%= patch %>
+         <% patches.each_pair do |i, patch| -%>
+         Patch<%= i == :"0" && (i = "") || i %>:<%= " " * [ 9 - "#{i}".size, 1 ].max %><%= patch %>
          <% end -%>
-         <% build_pre_requires.each_pair do |_, dep| -%>
+         <% build_pre_requires.each do |dep| -%>
          BuildRequires(pre): <%= dep %>
          <% end -%>
-         <% build_requires.each_pair do |_, dep| -%>
+         <% build_requires.each do |dep| -%>
          BuildRequires: <%= dep %>
          <% end -%>
 
          %add_findreq_skiplist %ruby_gemslibdir/**/*
          %add_findprov_skiplist %ruby_gemslibdir/**/*
-         <% requires.each_pair do |_, dep| -%>
+         <% requires.each do |dep| -%>
          Requires:      <%= dep %>
          <% end -%>
-         <% obsoletes.each_pair do |_, dep| -%>
+         <% obsoletes.each do |dep| -%>
          Obsoletes:     <%= dep %>
          <% end -%>
-         <% provides.each_pair do |_, dep| -%>
+         <% provides.each do |dep| -%>
          Provides:      <%= dep %>
          <% end -%>
-         <% conflicts.each_pair do |_, dep| -%>
+         <% conflicts.each do |dep| -%>
          Conflicts:     <%= dep %>
          <% end -%>
 
          <% descriptions.each_pair do |arg, description| -%>
          %description<%= !arg.blank? && "         -l #{arg}" || nil %>
          <%= description %>
+
          <% end -%>
 
-         <% if has_executables? -%>
-         %package       -n <%= executable_name %>
-         Summary:       Executable file for %gemname gem
-         Summary(ru_RU.UTF-8): Исполнямка для самоцвета %gemname
-         Group:         Development/Ruby
+         <% secondaries.each do |secondary| -%>
+         %package       -n <%= secondary.name %>
+         Version:       <%= secondary.version %>
+         <% secondary.summaries.each_pair do |cp, summary| -%>
+         Summary<%= !cp.blank? && "(#{cp})" || nil %>:<%= " " * (cp.blank? && 7 || 1 ) %><%= summary %>
+         <% end -%>
+         Group:         <%= secondary.group %>
+         <% unless secondary.is_lib? and secondary.has_compilables? -%>
          BuildArch:     noarch
-
-         %description   -n %pkgname
-         Executable file for %gemname gem.
-
-         %description   -n %pkgname -l ru_RU.UTF8
-         Исполнямка для %gemname самоцвета.
-
-
-         <% end -%>
-         <% if has_docs? -%>
-         %package       doc
-         Summary:       Documentation files for %gemname gem
-         Summary(ru_RU.UTF-8): Файлы сведений для самоцвета %gemname
-         Group:         Development/Documentation
-         BuildArch:     noarch
-
-         %description   doc
-         Documentation files for %gemname gem.
-
-         %description   doc -l ru_RU.UTF8
-         Файлы сведений для самоцвета %gemname.
-
-
-         <% end -%>
-         <% if has_devel? -%>
-         %package       devel
-         Summary:       Development files for %gemname gem
-         Group:         Development/Ruby
-         BuildArch:     noarch
-
-         <% devel_deps.each_pair do |_, dep| -%>
-         Requires:      <%= dep %>
          <% end -%>
 
-         %description   devel
-         Development files for %gemname gem.
+         <% secondary.descriptions.each_pair do |arg, description| -%>
+         %description   -n <%= secondary.name %><%= !arg.blank? && " -l #{arg}" || nil %>
+         <%= description %>
 
-         %description   devel -l ru_RU.UTF8
-         Файлы заголовков для самоцвета %gemname.
-
+         <% end -%>
 
          <% end -%>
          %prep
@@ -1387,25 +1478,39 @@ Feature: Spec actor
          <% end -%>
          %ruby_gemspec
          %ruby_gemlibdir
-         <% if has_compilable? -%>
+         <% if has_compilables? -%>
          %ruby_gemextdir
          <% end -%>
 
-         <% if has_executable? -%>
-         %files         -n <%= executable_name %>
-         <% executables.each do |e| -%>
+         <% secondaries.each do |secondary| -%>
+         %files         -n <%= secondary.name %>
+         <% if secondary.has_readme? -%>
+         %doc <%= secondary.readme %>
+         <% end -%>
+         <% if secondary.is_lib? -%>
+         %ruby_gemspecdir/<%= secondary.name %>-<%= secondary.version %>.gemspec
+         %ruby_gemslibdir/<%= secondary.name %>-<%= secondary.version %>
+         <% if secondary.has_compilables? -%>
+         %ruby_gemsextdir/<%= secondary.name %>-<%= secondary.version %>
+         <% end -%>
+         <% end -%>
+         <% if secondary.is_exec? -%>
+         <% secondary.executables.each do |e| -%>
          %_bindir/<%= e %>
          <% end -%>
-
          <% end -%>
-         <% if has_docs? -%>
-         %files         doc
+         <% if secondary.is_doc? -%>
+         <% if secondary.spec.is_same_source?(secondary.source) -%>
          %ruby_gemdocdir
-
+         <% else -%>
+         %ruby_gemsdocdir/<%= secondary.source&.name %>-<%= secondary.version %>
          <% end -%>
-         <% if has_devel? -%>
-         %files         devel
-         %ruby_includedir
+         <% end -%>
+         <% if secondary.is_devel? -%>
+         <% if secondary.has_devel_sources? -%>
+         %ruby_includedir/*
+         <% end -%>
+         <% end -%>
 
          <% end -%>
 
@@ -1502,7 +1607,9 @@ Feature: Spec actor
                description: 'Foo Boo gem'
                email: boo@example.com
                executables:
-                - foo
+                - foo.barke
+                - foo_bazeeq
+                - foo-barzerq
                extensions:
                 - ext/foo-boo-ext/extconf.rb
                extra_rdoc_files: []
@@ -1549,49 +1656,49 @@ Feature: Spec actor
          <%= comment -%>
 
          <% end -%>
-         Name:          <%= adopted_name %>
+         Name:          <%= name %>
          <% if has_epoch? -%>
          Epoch:         <%= epoch %>
          <% end -%>
          Version:       <%= version %>
          Release:       <%= release %>
          <% summaries.each_pair do |cp, summary| -%>
-         Summary<%= !cp.blank? && "(#{cp})" || nil %>:       <%= summary %>
+         Summary<%= !cp.blank? && "(#{cp})" || nil %>:<%= " " * (cp.blank? && 7 || 1 ) %><%= summary %>
          <% end -%>
          License:       <%= licenses.join(" or ") %>
          Group:         <%= group %>
          Url:           <%= uri %>
          Vcs:           <%= vcs %>
-         Packager:      <%= packager %>
-         <% if !has_any_compilable? -%>
+         Packager:      <%= packager.name %> <<%= packager.email %>>
+         <% unless is_lib? and has_compilables? -%>
          BuildArch:     noarch
          <% end -%>
 
-         <% source_files.each_pair do |index, source_file| -%>
-         Source<%= index != :"0" && index || nil %>:        <%= source_file %>
+         <% source_files.each_pair do |i, source_file| -%>
+         Source<%= i == :"0" && (i = "") || i %>:<%= " " * [ 8 - "#{i}".size, 1 ].max %><%= source_file %>
          <% end -%>
-         <% patches.each_pair do |index, patch| -%>
-         Patch<%= index != :"0" && index || nil %>:         <%= patch %>
+         <% patches.each_pair do |i, patch| -%>
+         Patch<%= i == :"0" && (i = "") || i %>:<%= " " * [ 9 - "#{i}".size, 1 ].max %><%= patch %>
          <% end -%>
-         <% build_pre_requires.each_pair do |_, dep| -%>
+         <% build_pre_requires.each do |dep| -%>
          BuildRequires(pre): <%= dep %>
          <% end -%>
-         <% build_requires.each_pair do |_, dep| -%>
+         <% build_requires.each do |dep| -%>
          BuildRequires: <%= dep %>
          <% end -%>
 
          %add_findreq_skiplist %ruby_gemslibdir/**/*
          %add_findprov_skiplist %ruby_gemslibdir/**/*
-         <% requires.each_pair do |_, dep| -%>
+         <% requires.each do |dep| -%>
          Requires:      <%= dep %>
          <% end -%>
-         <% obsoletes.each_pair do |_, dep| -%>
+         <% obsoletes.each do |dep| -%>
          Obsoletes:     <%= dep %>
          <% end -%>
-         <% provides.each_pair do |_, dep| -%>
+         <% provides.each do |dep| -%>
          Provides:      <%= dep %>
          <% end -%>
-         <% conflicts.each_pair do |_, dep| -%>
+         <% conflicts.each do |dep| -%>
          Conflicts:     <%= dep %>
          <% end -%>
 
@@ -1601,54 +1708,22 @@ Feature: Spec actor
          <% end -%>
 
 
-         <% if has_executable? -%>
-         %package       -n <%= executable_name %>
-         Summary:       Executable file for %gemname gem
-         Summary(ru_RU.UTF-8): Исполнямка для самоцвета %gemname
-         Group:         Development/Ruby
+         <% secondaries.each do |secondary| -%>
+         %package       -n <%= secondary.name %>
+         Version:       <%= secondary.version %>
+         <% secondary.summaries.each_pair do |cp, summary| -%>
+         Summary<%= !cp.blank? && "(#{cp})" || nil %>:<%= " " * (cp.blank? && 7 || 1 ) %><%= summary %>
+         <% end -%>
+         Group:         <%= secondary.group %>
+         <% unless secondary.is_lib? and secondary.has_compilables? -%>
          BuildArch:     noarch
-
-         %description   -n <%= executable_name %>
-         Executable file for %gemname gem.
-
-         %description   -n <%= executable_name %> -l ru_RU.UTF8
-         Исполнямка для %gemname самоцвета.
-
-
-         <% end -%>
-         <% if has_docs? -%>
-         %package       doc
-         Summary:       Documentation files for %gemname gem
-         Summary(ru_RU.UTF-8): Файлы сведений для самоцвета %gemname
-         Group:         Development/Documentation
-         BuildArch:     noarch
-
-         %description   doc
-         Documentation files for %gemname gem.
-
-         %description   doc -l ru_RU.UTF8
-         Файлы сведений для самоцвета %gemname.
-
-
-         <% end -%>
-         <% if has_devel? -%>
-         %package       devel
-         Summary:       Development files for %gemname gem
-         Group:         Development/Ruby
-         BuildArch:     noarch
-
-         <% if devel_deps.empty? -%>
-         <% devel_deps.each do |dep| -%>
-         Requires:      <%= dep %>
          <% end -%>
 
+         <% secondary.descriptions.each_pair do |arg, description| -%>
+         %description   -n <%= secondary.name %><%= !arg.blank? && " -l #{arg}" || nil %>
+         <%= description %>
+
          <% end -%>
-         %description   devel
-         Development files for %gemname gem.
-
-         %description   devel -l ru_RU.UTF8
-         Файлы заголовков для самоцвета %gemname.
-
 
          <% end -%>
          %prep
@@ -1669,25 +1744,39 @@ Feature: Spec actor
          <% end -%>
          %ruby_gemspec
          %ruby_gemlibdir
-         <% if has_compilable? -%>
+         <% if has_compilables? -%>
          %ruby_gemextdir
-
          <% end -%>
-         <% if has_executable? -%>
-         %files         -n <%= executable_name %>
-         <% executables.each do |e| -%>
+
+         <% secondaries.each do |secondary| -%>
+         %files         -n <%= secondary.name %>
+         <% if secondary.has_readme? -%>
+         %doc <%= secondary.readme %>
+         <% end -%>
+         <% if secondary.is_lib? -%>
+         %ruby_gemspecdir/<%= secondary.name %>-<%= secondary.version %>.gemspec
+         %ruby_gemslibdir/<%= secondary.name %>-<%= secondary.version %>
+         <% if secondary.has_compilables? -%>
+         %ruby_gemsextdir/<%= secondary.name %>-<%= secondary.version %>
+         <% end -%>
+         <% end -%>
+         <% if secondary.is_exec? -%>
+         <% secondary.executables.each do |e| -%>
          %_bindir/<%= e %>
          <% end -%>
-
          <% end -%>
-         <% if has_docs? -%>
-         %files         doc
+         <% if secondary.is_doc? -%>
+         <% if secondary.spec.is_same_source?(secondary.source) -%>
          %ruby_gemdocdir
-
+         <% else -%>
+         %ruby_gemsdocdir/<%= secondary.source&.name %>-<%= secondary.version %>
          <% end -%>
-         <% if has_devel? -%>
-         %files         devel
-         %ruby_includedir
+         <% end -%>
+         <% if secondary.is_devel? -%>
+         <% if secondary.has_devel_sources? -%>
+         %ruby_includedir/*
+         <% end -%>
+         <% end -%>
 
          <% end -%>
 
@@ -1717,47 +1806,58 @@ Feature: Spec actor
 
          %add_findreq_skiplist %ruby_gemslibdir/**/*
          %add_findprov_skiplist %ruby_gemslibdir/**/*
+         Requires:      gem(b_oofoo) = 5.2.4.4
 
          %description
          Foo Boo gem
 
 
-         %package       -n foo
-         Summary:       Executable file for %gemname gem
-         Summary(ru_RU.UTF-8): Исполнямка для самоцвета %gemname
-         Group:         Development/Ruby
+         %package       -n foo-ba
+         Version:       5.2
+         Summary:       Foo Boo gem summary executable(s)
+         Summary(ru_RU.UTF-8): Исполнямка для самоцвета foo_boo
+         Group:         Development
          BuildArch:     noarch
 
-         %description   -n foo
-         Executable file for %gemname gem.
+         %description   -n foo-ba
+         Foo Boo gem summary executable(s).
 
-         %description   -n foo -l ru_RU.UTF8
-         Исполнямка для %gemname самоцвета.
+         Foo Boo gem
+
+         %description   -n foo-ba -l ru_RU.UTF-8
+         Исполнямка для самоцвета foo_boo.
 
 
-         %package       doc
-         Summary:       Documentation files for %gemname gem
-         Summary(ru_RU.UTF-8): Файлы сведений для самоцвета %gemname
+         %package       -n gem-foo-boo-doc
+         Version:       5.2
+         Summary:       Foo Boo gem summary documentation files
+         Summary(ru_RU.UTF-8): Файлы сведений для самоцвета foo_boo
          Group:         Development/Documentation
          BuildArch:     noarch
 
-         %description   doc
-         Documentation files for %gemname gem.
+         %description   -n gem-foo-boo-doc
+         Foo Boo gem summary documentation files.
 
-         %description   doc -l ru_RU.UTF8
-         Файлы сведений для самоцвета %gemname.
+         Foo Boo gem
+
+         %description   -n gem-foo-boo-doc -l ru_RU.UTF-8
+         Файлы сведений для самоцвета foo_boo.
 
 
-         %package       devel
-         Summary:       Development files for %gemname gem
+         %package       -n gem-foo-boo-devel
+         Version:       5.2
+         Summary:       Foo Boo gem summary development package
+         Summary(ru_RU.UTF-8): Файлы для разработки самоцвета foo_boo
          Group:         Development/Ruby
          BuildArch:     noarch
 
-         %description   devel
-         Development files for %gemname gem.
+         %description   -n gem-foo-boo-devel
+         Foo Boo gem summary development package.
 
-         %description   devel -l ru_RU.UTF8
-         Файлы заголовков для самоцвета %gemname.
+         Foo Boo gem
+
+         %description   -n gem-foo-boo-devel -l ru_RU.UTF-8
+         Файлы для разработки самоцвета foo_boo.
 
 
          %prep
@@ -1778,14 +1878,18 @@ Feature: Spec actor
          %ruby_gemlibdir
          %ruby_gemextdir
 
-         %files         -n foo
-         %_bindir/foo
+         %files         -n foo-ba
+         %doc readme.md
+         %_bindir/foo.barke
+         %_bindir/foo_bazeeq
+         %_bindir/foo-barzerq
 
-         %files         doc
+         %files         -n gem-foo-boo-doc
+         %doc readme.md
          %ruby_gemdocdir
 
-         %files         devel
-         %ruby_includedir
+         %files         -n gem-foo-boo-devel
+         %doc readme.md
 
 
          %changelog
@@ -1925,6 +2029,9 @@ Feature: Spec actor
                 - LICENSE.txt
                 - CHANGELOG.md
                files:
+                - README.md
+                - LICENSE.txt
+                - CHANGELOG.md
                 - ext/foo-boo-ext/foo.c
                 - ext/foo-boo-ext/foo.h
                 - exe/foo_boo_ext
@@ -1950,7 +2057,7 @@ Feature: Spec actor
                rubygems_version: 3.1.4
                signing_key:
                specification_version: 4
-               summary: Foo boo Ext gem.
+               summary: Foo boo Ext gem
                test_files: []
          """
       When developer loads the space
@@ -1961,7 +2068,7 @@ Feature: Spec actor
          <%= comment -%>
 
          <% end -%>
-         Name:          <%= adopted_name %>
+         Name:          <%= name %>
          <% if has_epoch? -%>
          Epoch:         <%= epoch %>
          <% end -%>
@@ -1972,36 +2079,36 @@ Feature: Spec actor
          Group:         <%= group %>
          Url:           <%= uri %>
          Vcs:           <%= vcs %>
-         Packager:      <%= packager %>
-         <% if !has_any_compilable? -%>
+         Packager:      <%= packager.name %> <<%= packager.email %>>
+         <% unless is_lib? and has_compilables? -%>
          BuildArch:     noarch
          <% end -%>
 
-         <% source_files.each_pair do |index, source_file| -%>
-         Source<%= index != :"0" && index || nil %>:        <%= source_file %>
+         <% source_files.each_pair do |i, source_file| -%>
+         Source<%= i == :"0" && (i = "") || i %>:<%= " " * [ 8 - "#{i}".size, 1 ].max %><%= source_file %>
          <% end -%>
-         <% patches.each_pair do |index, patch| -%>
-         Patch<%= index != :"0" && index || nil %>:         <%= patch %>
+         <% patches.each_pair do |i, patch| -%>
+         Patch<%= i == :"0" && (i = "") || i %>:<%= " " * [ 9 - "#{i}".size, 1 ].max %><%= patch %>
          <% end -%>
-         <% build_pre_requires.each_pair do |_, dep| -%>
+         <% build_pre_requires.each do |dep| -%>
          BuildRequires(pre): <%= dep %>
          <% end -%>
-         <% build_requires.each_pair do |_, dep| -%>
+         <% build_requires.each do |dep| -%>
          BuildRequires: <%= dep %>
          <% end -%>
 
          %add_findreq_skiplist %ruby_gemslibdir/**/*
          %add_findprov_skiplist %ruby_gemslibdir/**/*
-         <% requires.each_pair do |_, dep| -%>
+         <% requires.each do |dep| -%>
          Requires:      <%= dep %>
          <% end -%>
-         <% obsoletes.each_pair do |_, dep| -%>
+         <% obsoletes.each do |dep| -%>
          Obsoletes:     <%= dep %>
          <% end -%>
-         <% provides.each_pair do |_, dep| -%>
+         <% provides.each do |dep| -%>
          Provides:      <%= dep %>
          <% end -%>
-         <% conflicts.each_pair do |_, dep| -%>
+         <% conflicts.each do |dep| -%>
          Conflicts:     <%= dep %>
          <% end -%>
 
@@ -2011,69 +2118,35 @@ Feature: Spec actor
          <% end -%>
 
          <% secondaries.each do |secondary| -%>
-         %package       -n <%= secondary.adopted_name %>
+         %package       -n <%= secondary.name %>
          Version:       <%= secondary.version %>
          <% secondary.summaries.each_pair do |cp, summary| -%>
-         Summary<%= !cp.blank? && "(#{cp})" || nil %>:       <%= summary %>
+         Summary<%= !cp.blank? && "(#{cp})" || nil %>:<%= " " * (cp.blank? && 7 || 1 ) %><%= summary %>
          <% end -%>
-         Group:         Development/Ruby
+         Group:         <%= secondary.group %>
+         <% unless secondary.is_lib? and secondary.has_compilables? -%>
+         BuildArch:     noarch
+         <% end -%>
 
-         <% descriptions.each_pair do |arg, description| -%>
-         %description   -n <%= secondary.adopted_name %><%= !arg.blank? && " -l #{arg}" || nil %>
+         <% secondary.requires.each do |dep| -%>
+         Requires:      <%= dep %>
+         <% end -%>
+         <% secondary.obsoletes.each do |dep| -%>
+         Obsoletes:     <%= dep %>
+         <% end -%>
+         <% secondary.provides.each do |dep| -%>
+         Provides:      <%= dep %>
+         <% end -%>
+         <% secondary.conflicts.each do |dep| -%>
+         Conflicts:     <%= dep %>
+         <% end -%>
+
+         <% secondary.descriptions.each_pair do |arg, description| -%>
+         %description   -n <%= secondary.name %><%= !arg.blank? && " -l #{arg}" || nil %>
          <%= description %>
 
          <% end -%>
 
-         <% if secondary.has_executable? -%>
-         %package       -n <%= secondary.executable_name %>
-         Summary:       Executable file for %gemname gem
-         Summary(ru_RU.UTF-8): Исполнямка для самоцвета %gemname
-         Group:         Development/Ruby
-         BuildArch:     noarch
-
-         %description   -n <%= secondary.executable_name %>
-         Executable file for %gemname gem.
-
-         %description   -n <%= secondary.executable_name %> -l ru_RU.UTF8
-         Исполнямка для %gemname самоцвета.
-
-
-         <% end -%>
-         <% if secondary.has_docs? -%>
-         %package       -n <%= secondary.adopted_name %>-doc
-         Summary:       Documentation files for %gemname gem
-         Summary(ru_RU.UTF-8): Файлы сведений для самоцвета %gemname
-         Group:         Development/Documentation
-         BuildArch:     noarch
-
-         %description   -n <%= secondary.adopted_name %>-doc
-         Documentation files for %gemname gem.
-
-         %description   -n <%= secondary.adopted_name %>-doc -l ru_RU.UTF8
-         Файлы сведений для самоцвета %gemname.
-
-
-         <% end -%>
-         <% if secondary.has_devel? -%>
-         %package       -n <%= secondary.adopted_name %>-devel
-         Summary:       Development files for %gemname gem
-         Group:         Development/Ruby
-         BuildArch:     noarch
-
-         <% if !secondary.devel_deps.empty? -%>
-         <% secondary.devel_deps.each_pair do |_, dep| -%>
-         Requires:      <%= dep %>
-         <% end -%>
-
-         <% end -%>
-         %description   -n <%= secondary.adopted_name %>-devel
-         Development files for %gemname gem.
-
-         %description   -n <%= secondary.adopted_name %>-devel -l ru_RU.UTF8
-         Файлы заголовков для самоцвета %gemname.
-
-
-         <% end -%>
          <% end -%>
          %prep
          %setup
@@ -2093,35 +2166,35 @@ Feature: Spec actor
          <% end -%>
          %ruby_gemspec
          %ruby_gemlibdir
-         <% if has_compilable? -%>
+         <% if has_compilables? -%>
          %ruby_gemextdir
          <% end -%>
 
          <% secondaries.each do |secondary| -%>
+         %files         -n <%= secondary.name %>
          <% if secondary.has_readme? -%>
-         %files         -n <%= secondary.adopted_name %>
-         <% end -%>
          %doc <%= secondary.readme %>
-         %ruby_gemspecdir/<%= secondary.name %>-<%= secondary.version %>.gemspec
-         %ruby_gemslibdir/<%= secondary.name %>-<%= secondary.version %>
-         <% if secondary.has_compilable? -%>
-         %ruby_gemsextdir/<%= secondary.name %>-<%= secondary.version %>
-
          <% end -%>
-         <% if secondary.has_executable? -%>
-         %files         -n <%= secondary.executable_name %>
+         <% if secondary.is_lib? -%>
+         %ruby_gemspecdir/<%= secondary.of_source(:name) %>-<%= secondary.version %>.gemspec
+         %ruby_gemslibdir/<%= secondary.of_source(:name) %>-<%= secondary.version %>
+         <% if secondary.has_compilables? -%>
+         %ruby_gemsextdir/<%= secondary.of_source(:name) %>-<%= secondary.version %>
+         <% end -%>
+         <% end -%>
+         <% if secondary.is_exec? -%>
          <% secondary.executables.each do |e| -%>
          %_bindir/<%= e %>
          <% end -%>
-
          <% end -%>
-         <% if secondary.has_docs? -%>
-         %files         -n <%= secondary.adopted_name %>-doc
-         %ruby_gemsdocdir/<%= secondary.name %>-<%= secondary.version %>
-
+         <% if secondary.is_doc? -%>
+         <% if secondary.spec.is_same_source?(secondary.source) -%>
+         %ruby_gemdocdir
+         <% else -%>
+         %ruby_gemsdocdir/<%= secondary.of_source(:name) %>-<%= secondary.version %>
          <% end -%>
-         <% if secondary.has_devel? -%>
-         %files         -n <%= secondary.adopted_name %>-devel
+         <% end -%>
+         <% if secondary.is_devel? -%>
          <% if secondary.has_devel_sources? -%>
          %ruby_includedir/*
          <% end -%>
@@ -2148,6 +2221,7 @@ Feature: Spec actor
          Url:           http://fooboo.org
          Vcs:           https://github.com/foo/fooboo/tree/v5.2.4.4/fooboo.git
          Packager:      Spec Author <author@example.org>
+         BuildArch:     noarch
 
          Source:        %name-%version.tar
          BuildRequires(pre): rpm-build-ruby
@@ -2156,47 +2230,65 @@ Feature: Spec actor
 
          %add_findreq_skiplist %ruby_gemslibdir/**/*
          %add_findprov_skiplist %ruby_gemslibdir/**/*
+         Requires:      gem(b_oofoo) = 5.2.4.4
 
          %description
          Foo Boo gem
 
          %package       -n gem-foo-boo-ext
          Version:       1.1.7
-         Summary:       Foo boo Ext gem.
+         Summary:       Foo boo Ext gem
          Group:         Development/Ruby
 
+         Requires:      gem(foo_boo) = 5.2
+         Requires:      gem(b_oofoo_dev) >= 5.2.4
+
          %description   -n gem-foo-boo-ext
-         Foo Boo gem
+         Foo boo Ext gem desc
 
 
          %package       -n foo-boo-ext
-         Summary:       Executable file for %gemname gem
-         Summary(ru_RU.UTF-8): Исполнямка для самоцвета %gemname
-         Group:         Development/Ruby
+         Version:       1.1.7
+         Summary:       Foo boo Ext gem executable(s)
+         Summary(ru_RU.UTF-8): Исполнямка для самоцвета foo_boo_ext
+         Group:         Development
          BuildArch:     noarch
 
-         %description   -n foo-boo-ext
-         Executable file for %gemname gem.
+         Requires:      gem(foo_boo) = 5.2
+         Requires:      gem(b_oofoo_dev) >= 5.2.4
 
-         %description   -n foo-boo-ext -l ru_RU.UTF8
-         Исполнямка для %gemname самоцвета.
+         %description   -n foo-boo-ext
+         Foo boo Ext gem executable(s).
+
+         Foo boo Ext gem desc
+
+         %description   -n foo-boo-ext -l ru_RU.UTF-8
+         Исполнямка для самоцвета foo_boo_ext.
 
 
          %package       -n gem-foo-boo-ext-doc
-         Summary:       Documentation files for %gemname gem
-         Summary(ru_RU.UTF-8): Файлы сведений для самоцвета %gemname
+         Version:       1.1.7
+         Summary:       Foo boo Ext gem documentation files
+         Summary(ru_RU.UTF-8): Файлы сведений для самоцвета foo_boo_ext
          Group:         Development/Documentation
          BuildArch:     noarch
 
-         %description   -n gem-foo-boo-ext-doc
-         Documentation files for %gemname gem.
+         Requires:      gem(foo_boo) = 5.2
+         Requires:      gem(b_oofoo_dev) >= 5.2.4
 
-         %description   -n gem-foo-boo-ext-doc -l ru_RU.UTF8
-         Файлы сведений для самоцвета %gemname.
+         %description   -n gem-foo-boo-ext-doc
+         Foo boo Ext gem documentation files.
+
+         Foo boo Ext gem desc
+
+         %description   -n gem-foo-boo-ext-doc -l ru_RU.UTF-8
+         Файлы сведений для самоцвета foo_boo_ext.
 
 
          %package       -n gem-foo-boo-ext-devel
-         Summary:       Development files for %gemname gem
+         Version:       1.1.7
+         Summary:       Foo boo Ext gem development package
+         Summary(ru_RU.UTF-8): Файлы для разработки самоцвета foo_boo_ext
          Group:         Development/Ruby
          BuildArch:     noarch
 
@@ -2204,10 +2296,66 @@ Feature: Spec actor
          Requires:      gem(b_oofoo_dev) >= 5.2.4
 
          %description   -n gem-foo-boo-ext-devel
-         Development files for %gemname gem.
+         Foo boo Ext gem development package.
 
-         %description   -n gem-foo-boo-ext-devel -l ru_RU.UTF8
-         Файлы заголовков для самоцвета %gemname.
+         Foo boo Ext gem desc
+
+         %description   -n gem-foo-boo-ext-devel -l ru_RU.UTF-8
+         Файлы для разработки самоцвета foo_boo_ext.
+
+
+         %package       -n foo
+         Version:       5.2
+         Summary:       Foo Boo gem summary executable(s)
+         Summary(ru_RU.UTF-8): Исполнямка для самоцвета foo_boo
+         Group:         Development
+         BuildArch:     noarch
+
+         Requires:      gem(b_oofoo) = 5.2.4.4
+
+         %description   -n foo
+         Foo Boo gem summary executable(s).
+
+         Foo Boo gem
+
+         %description   -n foo -l ru_RU.UTF-8
+         Исполнямка для самоцвета foo_boo.
+
+
+         %package       -n gem-foo-boo-doc
+         Version:       5.2
+         Summary:       Foo Boo gem summary documentation files
+         Summary(ru_RU.UTF-8): Файлы сведений для самоцвета foo_boo
+         Group:         Development/Documentation
+         BuildArch:     noarch
+
+         Requires:      gem(b_oofoo) = 5.2.4.4
+
+         %description   -n gem-foo-boo-doc
+         Foo Boo gem summary documentation files.
+
+         Foo Boo gem
+
+         %description   -n gem-foo-boo-doc -l ru_RU.UTF-8
+         Файлы сведений для самоцвета foo_boo.
+
+
+         %package       -n gem-foo-boo-devel
+         Version:       5.2
+         Summary:       Foo Boo gem summary development package
+         Summary(ru_RU.UTF-8): Файлы для разработки самоцвета foo_boo
+         Group:         Development/Ruby
+         BuildArch:     noarch
+
+         Requires:      gem(b_oofoo) = 5.2.4.4
+
+         %description   -n gem-foo-boo-devel
+         Foo Boo gem summary development package.
+
+         Foo Boo gem
+
+         %description   -n gem-foo-boo-devel -l ru_RU.UTF-8
+         Файлы для разработки самоцвета foo_boo.
 
 
          %prep
@@ -2234,13 +2382,27 @@ Feature: Spec actor
          %ruby_gemsextdir/foo_boo_ext-1.1.7
 
          %files         -n foo-boo-ext
+         %doc README.md
          %_bindir/foo_boo_ext
 
          %files         -n gem-foo-boo-ext-doc
+         %doc README.md
          %ruby_gemsdocdir/foo_boo_ext-1.1.7
 
          %files         -n gem-foo-boo-ext-devel
+         %doc README.md
          %ruby_includedir/*
+
+         %files         -n foo
+         %doc readme.md
+         %_bindir/foo
+
+         %files         -n gem-foo-boo-doc
+         %doc readme.md
+         %ruby_gemdocdir
+
+         %files         -n gem-foo-boo-devel
+         %doc readme.md
 
 
          %changelog
@@ -2269,7 +2431,7 @@ Feature: Spec actor
                   version: "1.1"
                summaries: !ruby/object:OpenStruct
                   table:
-                     !ruby/symbol '': RPM Actual Summary
+                     :'': RPM Actual Summary
                licenses:
                 - MIT
                 - Ruby
@@ -2293,7 +2455,7 @@ Feature: Spec actor
                 - gem(d) < 0.1
                 - gem(e) >= 2
                build_requires:
-                - gem(a) >= 1
+                - gem-a >= 1
                 - gem(b) < 0.1
                 - gem(c) >= 2
                build_pre_requires:
@@ -2309,8 +2471,8 @@ Feature: Spec actor
                 - gem(g) >= 1
                descriptions: !ruby/object:OpenStruct
                   table:
-                     ! '': Description Defaults
-                     'ru_RU.UTF8': Заметка
+                     :'': Description Defaults
+                     :'ru_RU.UTF-8': Заметка
                prep: |-
                   setup
                   patch
@@ -2330,11 +2492,11 @@ Feature: Spec actor
                   summaries: !ruby/object:OpenStruct
                      table:
                         :'': Summary Defaults
-                        :'ru_RU.UTF8': Итого
+                        :'ru_RU.UTF-8': Итого
                   descriptions: !ruby/object:OpenStruct
                      table:
                         :'': Description Defaults
-                        :'ru_RU.UTF8': Заметка
+                        :'ru_RU.UTF-8': Заметка
                changes:
                 - !ruby/object:OpenStruct
                   table:
@@ -2433,14 +2595,18 @@ Feature: Spec actor
          <% end -%>
          Version:       <%= version %>
          Release:       <%= release %>
-         Summary:       <%= summary %>
+         <% summaries.each_pair do |cp, summary| -%>
+         Summary<%= !cp.blank? && "(#{cp})" || nil %>:<%= " " * (cp.blank? && 7 || 1 ) %><%= summary %>
+         <% end -%>
          License:       <%= licenses.join(" or ") %>
          Group:         <%= group %>
          Url:           <%= uri %>
+         <% if has_vcs? -%>
          Vcs:           <%= vcs %>
+         <% end -%>
          Packager:      <%= packager.name %> <<%= packager.email %>>
-         <% if !has_compilables? -%>
-         BuildArch:     noarch
+         <% unless is_lib? and has_compilables? -%>
+         BuildArch:     <%= build_arch %>
          <% end -%>
 
          <% source_files.each_pair do |i, source_file| -%>
@@ -2471,8 +2637,8 @@ Feature: Spec actor
          Conflicts:     <%= dep %>
          <% end -%>
 
-         <% descriptions.each_pair do |arg, description| -%>
-         %description<%= !arg.blank? && "         -l #{arg}" || nil %>
+         <% descriptions.each_pair do |cp, description| -%>
+         %description<%= !cp.blank? && "         -l #{cp}" || nil %>
          <%= description %>
 
          <% end -%>
@@ -2481,9 +2647,12 @@ Feature: Spec actor
          %package       -n <%= secondary.name %>
          Version:       <%= secondary.version %>
          <% secondary.summaries.each_pair do |cp, summary| -%>
-         Summary<%= !cp.blank? && "(#{cp})" || nil %>:       <%= summary %>
+         Summary<%= !cp.blank? && "(#{cp})" || nil %>:<%= " " * (cp.blank? && 7 || 1 ) %><%= summary %>
          <% end -%>
-         Group:         Development/Ruby
+         Group:         <%= secondary.group %>
+         <% unless secondary.is_lib? and secondary.has_compilables? -%>
+         BuildArch:     <%= secondary.build_arch %>
+         <% end -%>
 
          <% descriptions.each_pair do |arg, description| -%>
          %description   -n <%= secondary.name %><%= !arg.blank? && " -l #{arg}" || nil %>
@@ -2505,7 +2674,7 @@ Feature: Spec actor
          %ruby_test
 
          %files
-         <% if has_readme? %>
+         <% if has_readme? -%>
          %doc <%= readme %>
          <% end -%>
          %ruby_gemspec
@@ -2535,7 +2704,7 @@ Feature: Spec actor
          <% if secondary.spec.is_same_source?(secondary.source) -%>
          %ruby_gemdocdir
          <% else -%>
-         %ruby_gemsdocdir/<%= secondary.source.name %>-<%= secondary.version %>
+         %ruby_gemsdocdir/<%= secondary.source&.name %>-<%= secondary.version %>
          <% end -%>
          <% end -%>
          <% if secondary.is_devel? -%>
@@ -2575,15 +2744,13 @@ Feature: Spec actor
          BuildRequires(pre): rpm-build-ruby
          BuildRequires(pre): rpm-build-nonruby
          BuildRequires(pre): rpm-build-python
-         BuildRequires: gem(a) >= 1
-         BuildRequires: gem(b) < 0.1
+         BuildRequires: gem-a >= 1
          BuildRequires: gem(c) >= 2
 
          %add_findreq_skiplist %ruby_gemslibdir/**/*
          %add_findprov_skiplist %ruby_gemslibdir/**/*
          Requires:      req >= 1
-         Requires:      gem(d) < 0.1
-         Requires:      gem(e) >= 2
+         Requires:      gem(c) >= 2
          Obsoletes:     ruby-foo_boo < %EVR
          Obsoletes:     req >= 1
          Obsoletes:     gem(p) < 0.1
@@ -2595,31 +2762,35 @@ Feature: Spec actor
          %description
          Description Defaults
 
-         %description         -l ru_RU.UTF8
+         %description         -l ru_RU.UTF-8
          Заметка
 
 
          %package       -n gem-foo-boo-doc
          Version:       5.2
-         Summary:       Foo Boo gem summary
-         Group:         Development/Ruby
+         Summary:       Summary Defaults
+         Summary(ru_RU.UTF-8): Итого
+         Group:         Group1
+         BuildArch:     noarch
 
          %description   -n gem-foo-boo-doc
          Description Defaults
 
-         %description   -n gem-foo-boo-doc -l ru_RU.UTF8
+         %description   -n gem-foo-boo-doc -l ru_RU.UTF-8
          Заметка
 
 
          %package       -n gem-foo-boo-devel
          Version:       5.2
-         Summary:       Foo Boo gem summary
+         Summary:       Foo Boo gem summary development package
+         Summary(ru_RU.UTF-8): Файлы для разработки самоцвета foo_boo
          Group:         Development/Ruby
+         BuildArch:     noarch
 
          %description   -n gem-foo-boo-devel
          Description Defaults
 
-         %description   -n gem-foo-boo-devel -l ru_RU.UTF8
+         %description   -n gem-foo-boo-devel -l ru_RU.UTF-8
          Заметка
 
 
@@ -2657,4 +2828,4 @@ Feature: Spec actor
 
          """
 
- 
+

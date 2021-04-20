@@ -1,4 +1,4 @@
-Given('an adopted name:') do |text|
+Given('an full name:') do |text|
    name_list << text
 end
 
@@ -35,6 +35,6 @@ Then('the names are fully not matched') do
    names.combination(2).each { |(n1, n2)| expect(n1.match?(n2)).to be_falsey }
 end
 
-Then('the name\'s adopted name is :') do |text|
-   expect(names.first.adopted_name).to eql(text)
+Then('the name\'s full name is :') do |text|
+   expect(names.first.fullname).to eql(text)
 end

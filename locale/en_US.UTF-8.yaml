@@ -1,0 +1,26 @@
+---
+spec:
+   rpm:
+      change:
+         upgrade: "- ^ %previous_version -> %version"
+         new: "- + packaged gem with Ruby Policy 2.0"
+      app:
+         summary: "%summary"
+         description: "%summary."
+         group: Other
+      lib:
+         summary: "%summary"
+         description: "%summary."
+         group: Development/Ruby
+      exec:
+         summary: "%summary executable(s)"
+         description: "%summary executable(s)."
+         group: Development
+      doc:
+         summary: "%summary documentation files"
+         description: "%summary documentation files."
+         group: Development/Documentation
+      devel:
+         summary: "%summary development package"
+         description: "%summary development package."
+         group: Development/Ruby

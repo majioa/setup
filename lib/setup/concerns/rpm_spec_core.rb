@@ -31,6 +31,7 @@ module Setup::RpmSpecCore
    def of_default name
       default = self.class::STATE[name][:default]
 
+        #    binding.pry if name == :summaries
       default.is_a?(Proc) && default[self] || default
    end
 
@@ -44,6 +45,7 @@ module Setup::RpmSpecCore
 
    def read_attribute name, seq = nil
       aa = (seq || self.class::STATE[name][:seq]).reduce(nil) do |value_in, func|
+       #binding.pry if name == :summaries
          if func[0] == "_"
             send(func, value_in)
          else
@@ -73,52 +75,47 @@ module Setup::RpmSpecCore
       summaries[""]
    end
 
-#   def adopted_name
-#      autoname.adopted_name
-#   end
-#
-   def _name value_in
-      #adopted_name = self["adopted_name"] || full_name&.gsub(/[_\.]/, '-')
-      #adopted_name = self["adopted_name"] || full_name&.gsub(/[_\.]/, '-')
+   # +executable_name+ returns a name of the executable package, based on
+   # the all the sources executables.
+   #
+   # spec.executable_name # => foo
+   #
+   def executable_name
+      # TODO make smart selection of executable name
+      @executable_name =
+         if executables.size > 1
+            max = executables.max { |x| x.size }.size
+            exec_map = executables.map {|exec| (exec + " " * (max - exec.size)).unpack("U*") }
+            filter = [45, 46, 95]
 
-      if value_in.is_a?(Setup::Spec::Rpm::Name)
-         value_in
-      else
-         #binding.pry
-         Setup::Spec::Rpm::Name.parse(value_in, kind: @kind)
-      end
+            exec_map.transpose.reverse.reduce([]) do |r, chars|
+               if (chars | filter).size == chars.size || ([ chars.first ] | chars).size == 1
+                  r.concat([ chars.first ])
+               else
+                  []
+               end
+            end.reverse.pack("U*")
+         else
+            executables.first&.gsub(/[_\.]/, '-') || ""
+         end
    end
 
-#   def _adopted_name
-#      @adopted_name
-#   end
-#
-#   def has_vcs?
-#      !vcs.blank?
-#   end
-#
-#   def has_compilable?
-#      !compilables.empty?
-#   end
-#
-#   def has_comment?
-#      !comment.blank?
-#   end
-#
-#   def has_executable?
-#      !executables.empty?
-#   end
-#
-#   def has_readme?
-#      !readme.blank?
-#   end
-#
-#   def has_docs?
-#      !docs.empty?
-#   end
-#
+   def prefix
+      name.default_prefix
+   end
+
+   protected
+
+   def _name value_in
+      return value_in if value_in.is_a?(Setup::Spec::Rpm::Name)
+
+      name = is_exec? && executable_name.size >= 3 && executable_name || value_in
+
+      Setup::Spec::Rpm::Name.parse(name, kind: kind, prefix: options[:name_prefix])
+   end
+
    def _devel _in = nil
-      source.respond_to?(:dependencies) && source.dependencies || devel_sources
+      dependencies | devel_sources
    end
 
    def _devel_sources _in = nil
@@ -126,42 +123,35 @@ module Setup::RpmSpecCore
    end
 
    def _docs _in = nil
-      source.docs || []
+      of_source(:docs) || of_default(:docs)
    end
 
    def _summaries value_in
-      if value_in.is_a?(Array)
-         value_in.map { |v| [ "", v ] }.to_os
-      else
-         value_in
+      source_name = source&.name
+
+      Setup::I18n.defaulted_locales.map do |locale_in|
+         locale = locale_in.blank? && Setup::I18n.default_locale || locale_in
+         summary = value_in[locale] || value_in[locale_in]
+
+         [ locale_in, t(:"spec.rpm.#{self.kind}.summary", locale: locale, binding: binding) ]
+      end.reject { |_, d| d.blank? }.to_os
+   end
+
+   def _devel_requires value_in
+      value_in ||= source.dependencies
+
+      value_in.reduce([]) do |deps, dep|
+         deph = Setup::Deps.to_rpm(dep.requirement)
+         deps | deph.map {|a, b| "#{name.autoprefix}(#{dep.name}) #{a} #{b}" }
       end
    end
 
-#   def vcs
-#      return @_vcs if @_vcs
-#
-#      vcs = URL_MATCHER.reduce(read_attribute(:vcs)) do |res, (rule, e)|
-#         res || uri && (match = uri.match(rule)) && e[match] || nil
-#      end
-#
-#      @_vcs = vcs && "#{vcs}#{/\.git/ !~ vcs && ".git" || ""}" || nil
-#   end
-#
-#   def devel_deps
-#      return @devel_deps if @devel_deps
-#
-#      dep_list = source.dependencies.reduce([]) do |deps, dep|
-#         deph = Setup::Deps.to_rpm(dep.requirement)
-#         deps | deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }
-#      end.map.with_index { |v, i| [ "#{i}", v ] }.to_h
-#
-#      @devel_deps = eval(dep_list)
-#   end
-#
-#   def files
-#      @files ||= (source&.files rescue []) || []
-#   end
-#
+   def _files _in
+      source&.spec&.files || []
+   rescue
+      []
+   end
+
 #   def executables
 #      @executables ||= (source&.executables rescue []) || []
 #   end
@@ -175,6 +165,22 @@ module Setup::RpmSpecCore
 #   end
 #
    def _descriptions value_in
+      source_name = of_source(:name)
+      summary = of_source(:summary)
+
+      Setup::I18n.defaulted_locales.map do |locale|
+         sum = t(:"spec.rpm.#{self.kind}.description", locale: locale, binding: binding)
+
+         [ locale, sum ]
+      end.compact.map do |locale_in, summary_in|
+         locale = locale_in.blank? && Setup::I18n.default_locale || locale_in
+         summary = !%i(lib app).include?(self.kind) && summary_in || nil
+
+         [ locale_in, [ summary, value_in[locale] || value_in[locale_in] ].compact.join("\n\n") ]
+      end.reject { |_, d| d.blank? }.to_os
+   end
+
+   def _format_descriptions value_in
       value_in.map do |name, desc|
          tdesc = desc.gsub(/\n{2,}/, "\x1F\x1F").gsub(/\n([\*\-])/, "\x1F\\1").gsub(/\n/, "\s")
          new_desc =
@@ -206,40 +212,54 @@ module Setup::RpmSpecCore
       Gem::Version.new(value_in.to_s)
    end
 
-#   def readme
-#      files.grep(/readme.*/i).join(" ")
-#   end
-#
-#   # +executable_name+ returns a name of the executable package, based on
-#   # the all the sources executables.
-#   #
-#   # spec.executable_name # => foo
-#   #
-#   def executable_name
-#      # TODO make smart selection of executable name
-#      executables.first&.gsub(/[_\.]/, '-')
-#   end
-#
-#   def [] name
-#      value = instance_variable_get(:"@#{name}")
-#      value && eval(value)
-#   end
-#
-#   def prefix
-#      autoname.default_prefix
-#   end
-#
-#   def eval value_in
-#      if value_in.is_a?(String)
-#         value_in.gsub(/%[{\w}]+/) do |match|
-#            /%(?:{(?<m>\w+)}|(?<m>\w+))/ =~ match
-#            context[m]
-#         end
-#      else
-#         value_in
-#      end
-#   end
-#
+   def _readme _in
+      files.grep(/readme.*/i).join(" ")
+   end
+
+   def _requires value_in
+      #binding.pry if !of_source(:dependencies)
+      deps = value_in.map do |dep|
+         if !m = dep.match(/gem\((.*)\) ([>=<]+) ([\w\d\.\-]+)/)
+            dep
+            # Gem::Dependency.new(m[1], Gem::Requirement.new(["#{m[2]} #{m[3]}"]), :runtime)
+         end
+      end.compact | dependencies
+
+      deps.reduce([]) do |deps, dep|
+         deps |
+            if dep.is_a?(Gem::Dependency)
+               deph = Setup::Deps.to_rpm(dep.requirement)
+               deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }
+            else
+               [ dep ]
+            end
+      end
+   end
+
+   def _provides value_in
+      provides = value_in.dup
+      stated_name = of_state(:name)
+
+      if stated_name && stated_name.prefix != name.autoprefix && %i(lib app).include?(self.kind)
+         # TODO optionalize defaults
+         provides.unshift([ stated_name.prefix, stated_name.name ].compact.join("-") + " = %EVR")
+      end
+
+      provides
+   end
+
+   def _obsoletes value_in
+      obsoletes = value_in.dup
+      stated_name = of_state(:name)
+
+      if stated_name && stated_name.prefix != name.autoprefix && %i(lib app).include?(self.kind)
+         # TODO optionalize defaults
+         obsoletes.unshift([ stated_name.prefix, stated_name.name ].compact.join("-") + " < %EVR")
+      end
+
+      obsoletes
+   end
+
 #   def parse_options options_in
 #      options_in&.each do |name, value_in|
 #         value =
@@ -259,6 +279,11 @@ module Setup::RpmSpecCore
             obj.define_method(name) { self[name] ||= read_attribute(name, opts[:seq]) || of_default(name) }
             #obj.define_method("_#{name}") { of_state[name] }
             obj.define_method("has_#{name}?") { !read_attribute(name, opts["seq"]).blank? }
+
+         end
+
+         %w(lib exec doc devel app).each do |name|
+            obj.define_method("is_#{name}?") { self.kind.to_s == name }
          end
       end
    end

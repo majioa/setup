@@ -291,18 +291,22 @@ class Setup::Source::Base
       end
    end
 
-   def docs
-      # TODO make docs to docdir
-      (!spec.rdoc_options.blank? && [ default_ridir ] || []) | spec.extra_rdoc_files
-   end
-
    def compilables
       # TODO make compilables from ext
       extfiles
    end
 
+   # +summaries+ returns an open-struct formatted summaries with a default locale as a key
+   # in the spec defined if any, otherwise returns blank open struct.
+   #
+   # source.summaries # => #<OpenStruct en_US.UTF-8: ...>
+   #
    def summaries
-      [ spec.summary ]
+      if spec.summary
+         { Setup::I18n.default_locale => spec.summary }.to_os
+      else
+         {}.to_os
+      end
    end
 
    protected

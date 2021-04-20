@@ -27,7 +27,7 @@ class Setup::Spec::Rpm
          default: nil,
       },
       version: {
-         seq: %w(of_options of_space of_state _version),
+         seq: %w(of_options of_source of_state _version),
          default: nil,
       },
       release: {
@@ -35,27 +35,27 @@ class Setup::Spec::Rpm
          default: "alt1",
       },
       build_arch: {
-         seq: %w(of_options of_space of_state),
+         seq: %w(of_options of_state of_source),
          default: nil,
       },
       summaries: {
-         seq: %w(of_options of_state of_source of_space _summaries),
-         default: {}.to_os,
+         seq: %w(of_options of_state of_source of_default _summaries),
+         default: ""
       },
       group: {
          seq: %w(of_options of_state of_space of_source),
-         default: "Development/Ruby",
+         default: ->(this) { t("spec.rpm.#{this.kind}.group") },
       },
       requires: {
-         seq: %w(of_options of_space of_state),
+         seq: %w(of_options of_state of_default _requires),
          default: [],
       },
       provides: {
-         seq: %w(of_options of_space of_state _provides),
+         seq: %w(of_options of_state of_default _provides),
          default: [],
       },
       obsoletes: {
-         seq: %w(of_options of_space of_state _obsoletes),
+         seq: %w(of_options of_state of_default _obsoletes),
          default: [],
       },
       conflicts: {
@@ -63,11 +63,11 @@ class Setup::Spec::Rpm
          default: [],
       },
       file_list: {
-         seq: %w(of_options of_space of_state),
-         default: {}.to_os,
+         seq: %w(of_options of_state of_source),
+         default: "",
       },
       licenses: {
-         seq: %w(of_options of_space of_state),
+         seq: %w(of_options of_state _licenses),
          default: [],
       },
       uri: {
@@ -80,13 +80,17 @@ class Setup::Spec::Rpm
       },
       packager: {
          seq: %w(of_options of_space of_state),
-         default: ->(this) { OpenStruct.new(
-            name: this.changes[0].author,
-            email: this.changes[0].email
-         ) }
+         default: ->(this) do
+            changes = this.of_space(:changes)
+
+            OpenStruct.new(
+               name: changes[0].author,
+               email: changes[0].email
+            )
+         end
       },
       source_files: {
-         seq: %w(of_options of_space of_state _source_files),
+         seq: %w(of_options of_space of_state of_default _source_files),
          default: { "0": "%name-%version.tar" }.to_os,
       },
       patches: {
@@ -94,16 +98,29 @@ class Setup::Spec::Rpm
          default: {}.to_os,
       },
       build_requires: {
-         seq: %w(of_options of_state),
-         default: {}.to_os,
+         seq: %w(of_options of_state of_default _build_requires),
+         default: [],
       },
       build_pre_requires: {
-         seq: %w(of_options of_space of_state _build_pre_requires),
+         seq: %w(of_options of_space of_state of_default _build_pre_requires),
          default: [ "rpm-build-ruby" ],
       },
       changes: {
-         seq: %w(of_options of_space of_state _changes),
-         default: [],
+         seq: %w(of_options of_state of_source of_default _changes),
+         default: ->(this) do
+            version = this.version
+            description = t("spec.rpm.change.new", binding: binding)
+            release = "alt1"
+
+            [ OpenStruct.new(
+               date: Date.today.strftime("%a %b %d %Y"),
+               author: this.packager.name,
+               email: this.packager.email,
+               version: version,
+               release: this.release,
+               description: description
+            ) ]
+         end,
       },
       prep: {
          seq: %w(of_options of_space of_state),
@@ -123,10 +140,10 @@ class Setup::Spec::Rpm
       },
       secondaries: {
          seq: %w(of_options of_state of_default _secondaries),
-         default: {}.to_os,
+         default: [],
       },
       context: {
-         seq: %w(of_options of_space of_state),
+         seq: %w(of_options of_state of_space),
          default: {},
       },
       comment: {
@@ -135,24 +152,23 @@ class Setup::Spec::Rpm
       },
       spec_template: {
          seq: %w(of_options of_state),
-         default: ->(_) { IO.read(File.join(File.dirname(__FILE__), "rpm.erb"))
-         },
+         default: ->(_) { IO.read(File.join(File.dirname(__FILE__), "rpm.erb")) },
       },
       compilables: {
-         seq: %w(of_options of_space of_state),
+         seq: %w(of_options of_state of_source),
          default: [],
       },
       descriptions: {
-         seq: %w(of_options of_state of_source of_space _descriptions),
-         default: [],
+         seq: %w(of_options of_state of_source of_default _descriptions _format_descriptions),
+         default: ""
       },
       readme: {
-         seq: %w(of_options of_source of_space of_state),
+         seq: %w(of_options of_source of_space _readme of_state),
          default: nil,
       },
       executables: {
          seq: %w(of_options of_source of_space of_state),
-         default: nil,
+         default: [],
       },
       docs: {
          seq: %w(of_options _docs of_state),
@@ -162,12 +178,20 @@ class Setup::Spec::Rpm
          seq: %w(of_options _devel of_state),
          default: nil,
       },
-      devel_sources: {
-         seq: %w(of_options _devel_sources of_state),
+      devel_requires: {
+         seq: %w(of_options of_state _devel_requires),
          default: nil,
       },
+      devel_sources: {
+         seq: %w(of_options _devel_sources of_state),
+         default: [],
+      },
       files: {
-         seq: %w(of_options of_space of_state),
+         seq: %w(of_options _files of_state),
+         default: []
+      },
+      dependencies: {
+         seq: %w(of_options of_state of_source),
          default: []
       }
    }
@@ -181,10 +205,6 @@ class Setup::Spec::Rpm
 
    include Setup::RpmSpecCore
 
-#   def adopted_name
-#      super
-#   end
-#
 #   def full_name
 #      return @full_name if @full_name
 #
@@ -199,29 +219,29 @@ class Setup::Spec::Rpm
 #
 #   # properties
 #
-#   def macros name
-#      [ self["context"].__macros[name] ].flatten(1).map { |x| "%#{name} #{x}" }.join("\n")
-#   end
-#
-#   def variables
-#      vars = self["context"]
-#      vars.__macros = nil
-#      vars.delete_field("__macros")
-#      vars
-#   end
-#
+   def macros name
+      [ context.__macros[name] ].flatten(1).map { |x| "%#{name} #{x}" }.join("\n")
+   end
+
+   def variables
+      vars = context.dup
+      vars.__macros = nil
+      vars.delete_field("__macros")
+      vars
+   end
+
    def _secondaries value_in
       names = value_in.map { |x| x.name }
 
       secondaries = space.sources.reject do |source|
          source.name == space.main_source&.name
       end.map do |source|
-         sec = Secondary.new(source: source, spec: self, kind: :lib)
+         sec = Secondary.new(source: source, spec: self, options: { name_prefix: name.prefix })
 
          secondary_parts_for(sec, source)
       end.concat(secondary_parts_for(self, source)).flatten.compact
 
-      secondaries.map do |sec|
+      secondaries = secondaries.map do |sec|
          if presec = names.delete(sec.name)
             of_state(:secondaries).find do |osec|
                osec.name == presec
@@ -232,31 +252,38 @@ class Setup::Spec::Rpm
       end
 
       secondaries | names.map do |an|
-         Secondary.new(spec: self, kind: an.kind, options: { name: an.adopted_name })
+         value_in.find {|sec| sec.name == an } ||
+            Secondary.new(spec: self,
+                          kind: an.kind,
+                          options: { name: an.fullname })
       end
    end
 
-#   def version
-#      return @_version if @_version
-#
-#      @_version = space.version || self["version"]
-#   end
-#
    def is_same_source? source
       source && self.source == source
    end
 
    protected
 
-   def _build_requires
-      binding.pry
-      dep_list =
-      space.dependencies.reduce([]) do |deps, dep|
-         deph = Setup::Deps.to_rpm(dep.requirement)
-         deps | deph.map {|a, b| "#{name.prefix}(#{dep.name}) #{a} #{b}" }
-      end.map.with_index { |v, i| [ "#{i}", v ] }.to_h
+   def _build_requires value_in
+      deps = value_in.map do |dep|
+         if !m = dep.match(/gem\((.*)\) ([>=<]+) ([\w\d\.\-]+)/)
+            dep
+            #Gem::Dependency.new(m[1], Gem::Requirement.new(["#{m[2]} #{m[3]}"]), :runtime)
+         end
+      end.compact | of_space(:dependencies)
 
-      eval(dep_list)
+      #binding.pry
+      deps.reduce([]) do |deps, dep|
+         deps |
+            if dep.is_a?(Gem::Dependency)
+               deph = Setup::Deps.to_rpm(dep.requirement)
+
+               deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }
+            else
+               [ dep ]
+            end
+      end
    end
 
    def _vcs value_in
@@ -277,42 +304,27 @@ class Setup::Spec::Rpm
    end
 
    def _build_pre_requires value_in
-      build_pre_requires = value_in.dup
+      build_pre_requires = value_in.dup || []
+      stated_name = of_state(:name)
 
-      if name.prefix != name.preadopted_prefix
+      if stated_name && stated_name.prefix != name.autoprefix
          build_pre_requires.unshift(of_default(:build_pre_requires)[0])
       end
 
       build_pre_requires
    end
 
-   def _provides value_in
-      provides = value_in.dup
-
-      if name.prefix != name.preadopted_prefix
-         # TODO optionalize defaults
-         provides.unshift("#{name.prefix}-#{name.name} = %EVR")
-      end
-
-      provides
-   end
-
-   def _obsoletes value_in
-      obsoletes = value_in.dup
-
-      if name.prefix != name.preadopted_prefix
-         # TODO optionalize defaults
-         obsoletes.unshift("#{name.prefix}-#{name.name} < %EVR")
-      end
-
-      obsoletes
+   def _licenses value_in
+      of_space(:licenses).blank? && value_in || of_space(:licenses)
    end
 
    def _changes value_in
       new_change =
-         if version != of_state(:version)
+         if of_state(:version) && version != of_state(:version)
             # TODO move to i18n and settings file
-            description = "- ^ #{of_state(:version)} -> #{version}"
+            previous_version = of_state(:version)
+            version = self.version
+            description = t("spec.rpm.change.upgrade", binding: binding)
             release = "alt1"
 
             OpenStruct.new(
@@ -325,9 +337,7 @@ class Setup::Spec::Rpm
             )
          end
 
-      changes = of_state(:changes) || of_default(:changes)
-
-      changes | [ new_change ].compact
+      value_in | [ new_change ].compact
    end
 
    def secondary_parts_for object, source
@@ -335,7 +345,7 @@ class Setup::Spec::Rpm
          next object.is_a?(Secondary) && object || nil if !func
 
          if object.send(func)
-            Secondary.new(source: source, spec: self, kind: kind)
+            Secondary.new(source: source, spec: self, kind: kind, options: { name_prefix: name.prefix })
          end
       end
    end
@@ -344,10 +354,14 @@ class Setup::Spec::Rpm
       space.main_source
    end
 
-   def initialize space: nil, state: {}.to_os, options: {}
+   def kind
+      @kind ||= source.is_a?(Setup::Source::Gem) && :lib || :app
+   end
+
+   def initialize space: nil, state: {}, options: {}
       @space = space
       @state = state
-      #parse_options(options)
+      @options = options
    end
 
    class << self

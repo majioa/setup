@@ -15,6 +15,10 @@ Then('property {string} of space is {string}') do |property, value|
    expect(space.send(property)).to eql(value)
 end
 
+Then('stringified property {string} of space is {string}') do |property, value|
+   expect(space.send(property).to_s).to eql(value)
+end
+
 Then('property {string} of space with no argument is {string}') do |property, string|
    expect(space.send(property)[""]).to eql(string)
 end

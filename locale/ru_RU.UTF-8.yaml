@@ -1,0 +1,22 @@
+---
+spec:
+   rpm:
+      change:
+         upgrade: "- ^ %previous_version -> %version"
+         new: "- + самоцвет упакован на основе политик Ruby 2.0"
+      app:
+         group: Other
+      lib:
+         group: Development/Ruby
+      exec:
+         summary: Исполнямка для самоцвета %source_name
+         description: Исполнямка для самоцвета %source_name.
+         group: Development
+      doc:
+         summary: Файлы сведений для самоцвета %source_name
+         description: Файлы сведений для самоцвета %source_name.
+         group: Development/Documentation
+      devel:
+         summary: Файлы для разработки самоцвета %source_name
+         description: Файлы для разработки самоцвета %source_name.
+         group: Development/Ruby

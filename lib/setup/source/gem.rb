@@ -138,6 +138,11 @@ class Setup::Source::Gem < Setup::Source::Base
       @docsrctree ||= super { { '.' => spec.extra_rdoc_files } }
    end
 
+   def docs
+      # TODO make docs to docdir
+      (!spec.rdoc_options.blank? && [ default_ridir ] || []) | spec.extra_rdoc_files
+   end
+
    # custom
 
    def extroot_for file
@@ -154,7 +159,11 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def compilable?
-      extfiles.any?
+      compilables.any?
+   end
+
+   def compilables
+      extfiles | spec.extensions
    end
 
    def to_h
@@ -197,7 +206,7 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def descriptions
-      OpenStruct.new("": spec.description)
+      OpenStruct.new(Setup::I18n.default_locale => spec.description)
    end
 
    # Default prefix "gem" for gem names

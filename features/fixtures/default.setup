@@ -3134,717 +3134,714 @@ sources:
       specification_version: 4
       summary: WebSocket framework for Rails.
       test_files: []
-spec: !ruby/object:Setup::Spec::Rpm
-   name: rpm
-   version: 5.2
-   release: rc1
-   epoch: 1
-   summaaries: !ruby/object:OpenStruct
-      table:
-         ! '': RPM sum
-   licenses:
-    - MIT
-   group: Group
-   uri: https://uri.domain
-   vcs: https://vcs.domain
-   packager: Packager FIO <fio@example.com>
-   build_arch: arch64
-   source_files: !ruby/object:OpenStruct
-      table:
-         :0: source_file.tar
-         :1: source_file1.tar
-   patches: !ruby/object:OpenStruct
-      table:
-         :0: patch.patch
-         :1: patch1.patch
-   requires: !ruby/object:OpenStruct
-      table:
-         :0: req >= 1
-         :1: req_new < 0.1
-         :2: req_newline >= 2
-   build_requires: !ruby/object:OpenStruct
-      table:
-         :0: req >= 1
-         :1: req_new < 0.1
-         :2: req_newline >= 2
-   build_pre_requires: !ruby/object:OpenStruct
-      table:
-         :0: req >= 1
-         :1: req_new < 0.1
-         :2: req_newline >= 2
-   obsoletes: !ruby/object:OpenStruct
-      table:
-         :0: req >= 1
-         :1: req_new < 0.1
-         :2: req_newline >= 2
-   provides: !ruby/object:OpenStruct
-      table:
-         :0: req >= 1
-         :1: req_new < 0.1
-         :2: req_newline >= 2
-   conflicts: !ruby/object:OpenStruct
-      table:
-         :0: req >= 1
-         :1: req_new < 0.1
-         :2: req_newline >= 2
-   descriptions: !ruby/object:OpenStruct
-      table:
-         ! '': RPM desc
-         'ru_RU.UTF8': Заметка
-   secondaries: {}
-
-   spec: !ruby/object:Gem::Specification
-      name: railties
+spec: |
+   --- !ruby/object:Setup::Spec::Rpm
+   state:
+      name: !ruby/object:Setup::Spec::Rpm::Name
+         name: rpm
+         kind: app
       version: !ruby/object:Gem::Version
-         version: 5.2.4.4
-      platform: ruby
-      authors:
-      - David Heinemeier Hansson
-      autorequire:
-      bindir: exe
-      cert_chain: []
-      date:
-      dependencies:
-      - !ruby/object:Gem::Dependency
-         name: activesupport
-         requirement: !ruby/object:Gem::Requirement
-            requirements:
-             - - '='
-               - !ruby/object:Gem::Version
-                  version: 5.2.4.4
-         type: :runtime
-         prerelease: false
-         version_requirements: !ruby/object:Gem::Requirement
-            requirements:
-             - - '='
-               - !ruby/object:Gem::Version
-                  version: 5.2.4.4
-      - !ruby/object:Gem::Dependency
-         name: actionpack
-         requirement: !ruby/object:Gem::Requirement
-            requirements:
-             - - '='
-               - !ruby/object:Gem::Version
-                  version: 5.2.4.4
-         type: :runtime
-         prerelease: false
-         version_requirements: !ruby/object:Gem::Requirement
-            requirements:
-             - - '='
-               - !ruby/object:Gem::Version
-                  version: 5.2.4.4
-      - !ruby/object:Gem::Dependency
-         name: rake
-         requirement: !ruby/object:Gem::Requirement
-            requirements:
-             - - ">="
-               - !ruby/object:Gem::Version
-                  version: 0.8.7
-         type: :runtime
-         prerelease: false
-         version_requirements: !ruby/object:Gem::Requirement
-            requirements:
-             - - ">="
-               - !ruby/object:Gem::Version
-                  version: 0.8.7
-      - !ruby/object:Gem::Dependency
-         name: thor
-         requirement: !ruby/object:Gem::Requirement
-            requirements:
-             - - ">="
-               - !ruby/object:Gem::Version
-                  version: 0.19.0
-             - - "<"
-               - !ruby/object:Gem::Version
-                  version: '2.0'
-         type: :runtime
-         prerelease: false
-         version_requirements: !ruby/object:Gem::Requirement
-            requirements:
-             - - ">="
-               - !ruby/object:Gem::Version
-                  version: 0.19.0
-             - - "<"
-               - !ruby/object:Gem::Version
-                  version: '2.0'
-      - !ruby/object:Gem::Dependency
-         name: method_source
-         requirement: !ruby/object:Gem::Requirement
-            requirements:
-             - - ">="
-               - !ruby/object:Gem::Version
-                  version: '0'
-         type: :runtime
-         prerelease: false
-         version_requirements: !ruby/object:Gem::Requirement
-            requirements:
-             - - ">="
-               - !ruby/object:Gem::Version
-                  version: '0'
-      - !ruby/object:Gem::Dependency
-         name: actionview
-         requirement: !ruby/object:Gem::Requirement
-            requirements:
-             - - '='
-               - !ruby/object:Gem::Version
-                  version: 5.2.4.4
-         type: :development
-         prerelease: false
-         version_requirements: !ruby/object:Gem::Requirement
-            requirements:
-             - - '='
-               - !ruby/object:Gem::Version
-                  version: 5.2.4.4
-      description: 'Rails internals: application bootup, plugins, generators, and rake tasks.'
-      email: david@loudthinking.com
-      executables:
-      - rails
-      extensions: []
-      extra_rdoc_files: []
-      files:
-      - CHANGELOG.md
-      - README.rdoc
-      - MIT-LICENSE
-      - RDOC_MAIN.rdoc
-      - exe/rails
-      - lib/rails
-      - lib/rails/welcome_controller.rb
-      - lib/rails/version.rb
-      - lib/rails/test_unit
-      - lib/rails/test_unit/testing.rake
-      - lib/rails/test_unit/runner.rb
-      - lib/rails/test_unit/reporter.rb
-      - lib/rails/test_unit/railtie.rb
-      - lib/rails/test_unit/line_filtering.rb
-      - lib/rails/test_help.rb
-      - lib/rails/templates
-      - lib/rails/templates/rails
-      - lib/rails/templates/rails/welcome
-      - lib/rails/templates/rails/welcome/index.html.erb
-      - lib/rails/templates/rails/mailers
-      - lib/rails/templates/rails/mailers/mailer.html.erb
-      - lib/rails/templates/rails/mailers/index.html.erb
-      - lib/rails/templates/rails/mailers/email.html.erb
-      - lib/rails/templates/rails/info
-      - lib/rails/templates/rails/info/routes.html.erb
-      - lib/rails/templates/rails/info/properties.html.erb
-      - lib/rails/templates/layouts
-      - lib/rails/templates/layouts/application.html.erb
-      - lib/rails/tasks
-      - lib/rails/tasks/yarn.rake
-      - lib/rails/tasks/tmp.rake
-      - lib/rails/tasks/statistics.rake
-      - lib/rails/tasks/routes.rake
-      - lib/rails/tasks/restart.rake
-      - lib/rails/tasks/misc.rake
-      - lib/rails/tasks/middleware.rake
-      - lib/rails/tasks/log.rake
-      - lib/rails/tasks/initializers.rake
-      - lib/rails/tasks/framework.rake
-      - lib/rails/tasks/engine.rake
-      - lib/rails/tasks/dev.rake
-      - lib/rails/tasks/annotations.rake
-      - lib/rails/tasks.rb
-      - lib/rails/source_annotation_extractor.rb
-      - lib/rails/secrets.rb
-      - lib/rails/ruby_version_check.rb
-      - lib/rails/railtie
-      - lib/rails/railtie/configuration.rb
-      - lib/rails/railtie/configurable.rb
-      - lib/rails/railtie.rb
-      - lib/rails/rack
-      - lib/rails/rack/logger.rb
-      - lib/rails/rack.rb
-      - lib/rails/plugin
-      - lib/rails/plugin/test.rb
-      - lib/rails/paths.rb
-      - lib/rails/mailers_controller.rb
-      - lib/rails/initializable.rb
-      - lib/rails/info_controller.rb
-      - lib/rails/info.rb
-      - lib/rails/generators
-      - lib/rails/generators/testing
-      - lib/rails/generators/testing/setup_and_teardown.rb
-      - lib/rails/generators/testing/behaviour.rb
-      - lib/rails/generators/testing/assertions.rb
-      - lib/rails/generators/test_unit
-      - lib/rails/generators/test_unit/system
-      - lib/rails/generators/test_unit/system/templates
-      - lib/rails/generators/test_unit/system/templates/system_test.rb.tt
-      - lib/rails/generators/test_unit/system/templates/application_system_test_case.rb.tt
-      - lib/rails/generators/test_unit/system/system_generator.rb
-      - lib/rails/generators/test_unit/scaffold
-      - lib/rails/generators/test_unit/scaffold/templates
-      - lib/rails/generators/test_unit/scaffold/templates/system_test.rb.tt
-      - lib/rails/generators/test_unit/scaffold/templates/functional_test.rb.tt
-      - lib/rails/generators/test_unit/scaffold/templates/api_functional_test.rb.tt
-      - lib/rails/generators/test_unit/scaffold/scaffold_generator.rb
-      - lib/rails/generators/test_unit/plugin
-      - lib/rails/generators/test_unit/plugin/templates
-      - lib/rails/generators/test_unit/plugin/templates/test_helper.rb
-      - lib/rails/generators/test_unit/plugin/templates/%file_name%_test.rb.tt
-      - lib/rails/generators/test_unit/plugin/plugin_generator.rb
-      - lib/rails/generators/test_unit/model
-      - lib/rails/generators/test_unit/model/templates
-      - lib/rails/generators/test_unit/model/templates/unit_test.rb.tt
-      - lib/rails/generators/test_unit/model/templates/fixtures.yml.tt
-      - lib/rails/generators/test_unit/model/model_generator.rb
-      - lib/rails/generators/test_unit/mailer
-      - lib/rails/generators/test_unit/mailer/templates
-      - lib/rails/generators/test_unit/mailer/templates/preview.rb.tt
-      - lib/rails/generators/test_unit/mailer/templates/functional_test.rb.tt
-      - lib/rails/generators/test_unit/mailer/mailer_generator.rb
-      - lib/rails/generators/test_unit/job
-      - lib/rails/generators/test_unit/job/templates
-      - lib/rails/generators/test_unit/job/templates/unit_test.rb.tt
-      - lib/rails/generators/test_unit/job/job_generator.rb
-      - lib/rails/generators/test_unit/integration
-      - lib/rails/generators/test_unit/integration/templates
-      - lib/rails/generators/test_unit/integration/templates/integration_test.rb.tt
-      - lib/rails/generators/test_unit/integration/integration_generator.rb
-      - lib/rails/generators/test_unit/helper
-      - lib/rails/generators/test_unit/helper/helper_generator.rb
-      - lib/rails/generators/test_unit/generator
-      - lib/rails/generators/test_unit/generator/templates
-      - lib/rails/generators/test_unit/generator/templates/generator_test.rb.tt
-      - lib/rails/generators/test_unit/generator/generator_generator.rb
-      - lib/rails/generators/test_unit/controller
-      - lib/rails/generators/test_unit/controller/templates
-      - lib/rails/generators/test_unit/controller/templates/functional_test.rb.tt
-      - lib/rails/generators/test_unit/controller/controller_generator.rb
-      - lib/rails/generators/test_unit.rb
-      - lib/rails/generators/test_case.rb
-      - lib/rails/generators/resource_helpers.rb
-      - lib/rails/generators/rails
-      - lib/rails/generators/rails/task
-      - lib/rails/generators/rails/task/templates
-      - lib/rails/generators/rails/task/templates/task.rb.tt
-      - lib/rails/generators/rails/task/task_generator.rb
-      - lib/rails/generators/rails/task/USAGE
-      - lib/rails/generators/rails/system_test
-      - lib/rails/generators/rails/system_test/system_test_generator.rb
-      - lib/rails/generators/rails/system_test/USAGE
-      - lib/rails/generators/rails/scaffold_controller
-      - lib/rails/generators/rails/scaffold_controller/templates
-      - lib/rails/generators/rails/scaffold_controller/templates/controller.rb.tt
-      - lib/rails/generators/rails/scaffold_controller/templates/api_controller.rb.tt
-      - lib/rails/generators/rails/scaffold_controller/scaffold_controller_generator.rb
-      - lib/rails/generators/rails/scaffold_controller/USAGE
-      - lib/rails/generators/rails/scaffold
-      - lib/rails/generators/rails/scaffold/templates
-      - lib/rails/generators/rails/scaffold/templates/scaffold.css
-      - lib/rails/generators/rails/scaffold/scaffold_generator.rb
-      - lib/rails/generators/rails/scaffold/USAGE
-      - lib/rails/generators/rails/resource_route
-      - lib/rails/generators/rails/resource_route/resource_route_generator.rb
-      - lib/rails/generators/rails/resource
-      - lib/rails/generators/rails/resource/resource_generator.rb
-      - lib/rails/generators/rails/resource/USAGE
-      - lib/rails/generators/rails/plugin
-      - lib/rails/generators/rails/plugin/templates
-      - lib/rails/generators/rails/plugin/templates/test
-      - lib/rails/generators/rails/plugin/templates/test/test_helper.rb.tt
-      - lib/rails/generators/rails/plugin/templates/test/integration
-      - lib/rails/generators/rails/plugin/templates/test/integration/navigation_test.rb.tt
-      - lib/rails/generators/rails/plugin/templates/test/application_system_test_case.rb.tt
-      - lib/rails/generators/rails/plugin/templates/test/%namespaced_name%_test.rb.tt
-      - lib/rails/generators/rails/plugin/templates/rails
-      - lib/rails/generators/rails/plugin/templates/rails/stylesheets.css
-      - lib/rails/generators/rails/plugin/templates/rails/routes.rb.tt
-      - lib/rails/generators/rails/plugin/templates/rails/javascripts.js.tt
-      - lib/rails/generators/rails/plugin/templates/rails/engine_manifest.js.tt
-      - lib/rails/generators/rails/plugin/templates/rails/dummy_manifest.js.tt
-      - lib/rails/generators/rails/plugin/templates/rails/boot.rb.tt
-      - lib/rails/generators/rails/plugin/templates/rails/application.rb.tt
-      - lib/rails/generators/rails/plugin/templates/lib
-      - lib/rails/generators/rails/plugin/templates/lib/tasks
-      - lib/rails/generators/rails/plugin/templates/lib/tasks/%namespaced_name%_tasks.rake.tt
-      - lib/rails/generators/rails/plugin/templates/lib/%namespaced_name%
-      - lib/rails/generators/rails/plugin/templates/lib/%namespaced_name%/version.rb.tt
-      - lib/rails/generators/rails/plugin/templates/lib/%namespaced_name%/railtie.rb.tt
-      - lib/rails/generators/rails/plugin/templates/lib/%namespaced_name%/engine.rb.tt
-      - lib/rails/generators/rails/plugin/templates/lib/%namespaced_name%.rb.tt
-      - lib/rails/generators/rails/plugin/templates/gitignore.tt
-      - lib/rails/generators/rails/plugin/templates/config
-      - lib/rails/generators/rails/plugin/templates/config/routes.rb.tt
-      - lib/rails/generators/rails/plugin/templates/bin
-      - lib/rails/generators/rails/plugin/templates/bin/test.tt
-      - lib/rails/generators/rails/plugin/templates/bin/rails.tt
-      - lib/rails/generators/rails/plugin/templates/app
-      - lib/rails/generators/rails/plugin/templates/app/views
-      - lib/rails/generators/rails/plugin/templates/app/views/layouts
-      - lib/rails/generators/rails/plugin/templates/app/views/layouts/%namespaced_name%
-      - lib/rails/generators/rails/plugin/templates/app/views/layouts/%namespaced_name%/application.html.erb.tt
-      - lib/rails/generators/rails/plugin/templates/app/models
-      - lib/rails/generators/rails/plugin/templates/app/models/%namespaced_name%
-      - lib/rails/generators/rails/plugin/templates/app/models/%namespaced_name%/application_record.rb.tt
-      - lib/rails/generators/rails/plugin/templates/app/mailers
-      - lib/rails/generators/rails/plugin/templates/app/mailers/%namespaced_name%
-      - lib/rails/generators/rails/plugin/templates/app/mailers/%namespaced_name%/application_mailer.rb.tt
-      - lib/rails/generators/rails/plugin/templates/app/jobs
-      - lib/rails/generators/rails/plugin/templates/app/jobs/%namespaced_name%
-      - lib/rails/generators/rails/plugin/templates/app/jobs/%namespaced_name%/application_job.rb.tt
-      - lib/rails/generators/rails/plugin/templates/app/helpers
-      - lib/rails/generators/rails/plugin/templates/app/helpers/%namespaced_name%
-      - lib/rails/generators/rails/plugin/templates/app/helpers/%namespaced_name%/application_helper.rb.tt
-      - lib/rails/generators/rails/plugin/templates/app/controllers
-      - lib/rails/generators/rails/plugin/templates/app/controllers/%namespaced_name%
-      - lib/rails/generators/rails/plugin/templates/app/controllers/%namespaced_name%/application_controller.rb.tt
-      - lib/rails/generators/rails/plugin/templates/Rakefile.tt
-      - lib/rails/generators/rails/plugin/templates/README.md.tt
-      - lib/rails/generators/rails/plugin/templates/MIT-LICENSE.tt
-      - lib/rails/generators/rails/plugin/templates/Gemfile.tt
-      - lib/rails/generators/rails/plugin/templates/%name%.gemspec.tt
-      - lib/rails/generators/rails/plugin/plugin_generator.rb
-      - lib/rails/generators/rails/plugin/USAGE
-      - lib/rails/generators/rails/model
-      - lib/rails/generators/rails/model/model_generator.rb
-      - lib/rails/generators/rails/model/USAGE
-      - lib/rails/generators/rails/migration
-      - lib/rails/generators/rails/migration/migration_generator.rb
-      - lib/rails/generators/rails/migration/USAGE
-      - lib/rails/generators/rails/master_key
-      - lib/rails/generators/rails/master_key/master_key_generator.rb
-      - lib/rails/generators/rails/integration_test
-      - lib/rails/generators/rails/integration_test/integration_test_generator.rb
-      - lib/rails/generators/rails/integration_test/USAGE
-      - lib/rails/generators/rails/helper
-      - lib/rails/generators/rails/helper/templates
-      - lib/rails/generators/rails/helper/templates/helper.rb.tt
-      - lib/rails/generators/rails/helper/helper_generator.rb
-      - lib/rails/generators/rails/helper/USAGE
-      - lib/rails/generators/rails/generator
-      - lib/rails/generators/rails/generator/templates
-      - lib/rails/generators/rails/generator/templates/templates
-      - lib/rails/generators/rails/generator/templates/templates/.empty_directory
-      - lib/rails/generators/rails/generator/templates/USAGE.tt
-      - lib/rails/generators/rails/generator/templates/%file_name%_generator.rb.tt
-      - lib/rails/generators/rails/generator/generator_generator.rb
-      - lib/rails/generators/rails/generator/USAGE
-      - lib/rails/generators/rails/encryption_key_file
-      - lib/rails/generators/rails/encryption_key_file/encryption_key_file_generator.rb
-      - lib/rails/generators/rails/encrypted_file
-      - lib/rails/generators/rails/encrypted_file/encrypted_file_generator.rb
-      - lib/rails/generators/rails/credentials
-      - lib/rails/generators/rails/credentials/credentials_generator.rb
-      - lib/rails/generators/rails/controller
-      - lib/rails/generators/rails/controller/templates
-      - lib/rails/generators/rails/controller/templates/controller.rb.tt
-      - lib/rails/generators/rails/controller/controller_generator.rb
-      - lib/rails/generators/rails/controller/USAGE
-      - lib/rails/generators/rails/assets
-      - lib/rails/generators/rails/assets/templates
-      - lib/rails/generators/rails/assets/templates/stylesheet.css
-      - lib/rails/generators/rails/assets/templates/javascript.js
-      - lib/rails/generators/rails/assets/assets_generator.rb
-      - lib/rails/generators/rails/assets/USAGE
-      - lib/rails/generators/rails/application_record
-      - lib/rails/generators/rails/application_record/application_record_generator.rb
-      - lib/rails/generators/rails/app
-      - lib/rails/generators/rails/app/templates
-      - lib/rails/generators/rails/app/templates/test
-      - lib/rails/generators/rails/app/templates/test/test_helper.rb.tt
-      - lib/rails/generators/rails/app/templates/test/application_system_test_case.rb.tt
-      - lib/rails/generators/rails/app/templates/ruby-version.tt
-      - lib/rails/generators/rails/app/templates/public
-      - lib/rails/generators/rails/app/templates/public/robots.txt
-      - lib/rails/generators/rails/app/templates/public/favicon.ico
-      - lib/rails/generators/rails/app/templates/public/apple-touch-icon.png
-      - lib/rails/generators/rails/app/templates/public/apple-touch-icon-precomposed.png
-      - lib/rails/generators/rails/app/templates/public/500.html
-      - lib/rails/generators/rails/app/templates/public/422.html
-      - lib/rails/generators/rails/app/templates/public/404.html
-      - lib/rails/generators/rails/app/templates/package.json.tt
-      - lib/rails/generators/rails/app/templates/gitignore.tt
-      - lib/rails/generators/rails/app/templates/db
-      - lib/rails/generators/rails/app/templates/db/seeds.rb.tt
-      - lib/rails/generators/rails/app/templates/config
-      - lib/rails/generators/rails/app/templates/config/storage.yml.tt
-      - lib/rails/generators/rails/app/templates/config/spring.rb.tt
-      - lib/rails/generators/rails/app/templates/config/routes.rb.tt
-      - lib/rails/generators/rails/app/templates/config/puma.rb.tt
-      - lib/rails/generators/rails/app/templates/config/locales
-      - lib/rails/generators/rails/app/templates/config/locales/en.yml
-      - lib/rails/generators/rails/app/templates/config/initializers
-      - lib/rails/generators/rails/app/templates/config/initializers/wrap_parameters.rb.tt
-      - lib/rails/generators/rails/app/templates/config/initializers/new_framework_defaults_5_2.rb.tt
-      - lib/rails/generators/rails/app/templates/config/initializers/mime_types.rb.tt
-      - lib/rails/generators/rails/app/templates/config/initializers/inflections.rb.tt
-      - lib/rails/generators/rails/app/templates/config/initializers/filter_parameter_logging.rb.tt
-      - lib/rails/generators/rails/app/templates/config/initializers/cors.rb.tt
-      - lib/rails/generators/rails/app/templates/config/initializers/cookies_serializer.rb.tt
-      - lib/rails/generators/rails/app/templates/config/initializers/content_security_policy.rb.tt
-      - lib/rails/generators/rails/app/templates/config/initializers/backtrace_silencers.rb.tt
-      - lib/rails/generators/rails/app/templates/config/initializers/assets.rb.tt
-      - lib/rails/generators/rails/app/templates/config/initializers/application_controller_renderer.rb.tt
-      - lib/rails/generators/rails/app/templates/config/environments
-      - lib/rails/generators/rails/app/templates/config/environments/test.rb.tt
-      - lib/rails/generators/rails/app/templates/config/environments/production.rb.tt
-      - lib/rails/generators/rails/app/templates/config/environments/development.rb.tt
-      - lib/rails/generators/rails/app/templates/config/environment.rb.tt
-      - lib/rails/generators/rails/app/templates/config/databases
-      - lib/rails/generators/rails/app/templates/config/databases/sqlserver.yml.tt
-      - lib/rails/generators/rails/app/templates/config/databases/sqlite3.yml.tt
-      - lib/rails/generators/rails/app/templates/config/databases/postgresql.yml.tt
-      - lib/rails/generators/rails/app/templates/config/databases/oracle.yml.tt
-      - lib/rails/generators/rails/app/templates/config/databases/mysql.yml.tt
-      - lib/rails/generators/rails/app/templates/config/databases/jdbcsqlite3.yml.tt
-      - lib/rails/generators/rails/app/templates/config/databases/jdbcpostgresql.yml.tt
-      - lib/rails/generators/rails/app/templates/config/databases/jdbcmysql.yml.tt
-      - lib/rails/generators/rails/app/templates/config/databases/jdbc.yml.tt
-      - lib/rails/generators/rails/app/templates/config/databases/ibm_db.yml.tt
-      - lib/rails/generators/rails/app/templates/config/databases/frontbase.yml.tt
-      - lib/rails/generators/rails/app/templates/config/cable.yml.tt
-      - lib/rails/generators/rails/app/templates/config/boot.rb.tt
-      - lib/rails/generators/rails/app/templates/config/application.rb.tt
-      - lib/rails/generators/rails/app/templates/config.ru.tt
-      - lib/rails/generators/rails/app/templates/bin
-      - lib/rails/generators/rails/app/templates/bin/yarn.tt
-      - lib/rails/generators/rails/app/templates/bin/update.tt
-      - lib/rails/generators/rails/app/templates/bin/setup.tt
-      - lib/rails/generators/rails/app/templates/bin/rake.tt
-      - lib/rails/generators/rails/app/templates/bin/rails.tt
-      - lib/rails/generators/rails/app/templates/bin/bundle.tt
-      - lib/rails/generators/rails/app/templates/app
-      - lib/rails/generators/rails/app/templates/app/views
-      - lib/rails/generators/rails/app/templates/app/views/layouts
-      - lib/rails/generators/rails/app/templates/app/views/layouts/mailer.text.erb.tt
-      - lib/rails/generators/rails/app/templates/app/views/layouts/mailer.html.erb.tt
-      - lib/rails/generators/rails/app/templates/app/views/layouts/application.html.erb.tt
-      - lib/rails/generators/rails/app/templates/app/models
-      - lib/rails/generators/rails/app/templates/app/models/application_record.rb.tt
-      - lib/rails/generators/rails/app/templates/app/mailers
-      - lib/rails/generators/rails/app/templates/app/mailers/application_mailer.rb.tt
-      - lib/rails/generators/rails/app/templates/app/jobs
-      - lib/rails/generators/rails/app/templates/app/jobs/application_job.rb.tt
-      - lib/rails/generators/rails/app/templates/app/helpers
-      - lib/rails/generators/rails/app/templates/app/helpers/application_helper.rb.tt
-      - lib/rails/generators/rails/app/templates/app/controllers
-      - lib/rails/generators/rails/app/templates/app/controllers/application_controller.rb.tt
-      - lib/rails/generators/rails/app/templates/app/channels
-      - lib/rails/generators/rails/app/templates/app/channels/application_cable
-      - lib/rails/generators/rails/app/templates/app/channels/application_cable/connection.rb.tt
-      - lib/rails/generators/rails/app/templates/app/channels/application_cable/channel.rb.tt
-      - lib/rails/generators/rails/app/templates/app/assets
-      - lib/rails/generators/rails/app/templates/app/assets/stylesheets
-      - lib/rails/generators/rails/app/templates/app/assets/stylesheets/application.css.tt
-      - lib/rails/generators/rails/app/templates/app/assets/javascripts
-      - lib/rails/generators/rails/app/templates/app/assets/javascripts/cable.js.tt
-      - lib/rails/generators/rails/app/templates/app/assets/javascripts/application.js.tt
-      - lib/rails/generators/rails/app/templates/app/assets/config
-      - lib/rails/generators/rails/app/templates/app/assets/config/manifest.js.tt
-      - lib/rails/generators/rails/app/templates/Rakefile.tt
-      - lib/rails/generators/rails/app/templates/README.md.tt
-      - lib/rails/generators/rails/app/templates/Gemfile.tt
-      - lib/rails/generators/rails/app/app_generator.rb
-      - lib/rails/generators/rails/app/USAGE
-      - lib/rails/generators/named_base.rb
-      - lib/rails/generators/model_helpers.rb
-      - lib/rails/generators/migration.rb
-      - lib/rails/generators/js
-      - lib/rails/generators/js/assets
-      - lib/rails/generators/js/assets/templates
-      - lib/rails/generators/js/assets/templates/javascript.js
-      - lib/rails/generators/js/assets/assets_generator.rb
-      - lib/rails/generators/generated_attribute.rb
-      - lib/rails/generators/erb
-      - lib/rails/generators/erb/scaffold
-      - lib/rails/generators/erb/scaffold/templates
-      - lib/rails/generators/erb/scaffold/templates/show.html.erb.tt
-      - lib/rails/generators/erb/scaffold/templates/new.html.erb.tt
-      - lib/rails/generators/erb/scaffold/templates/index.html.erb.tt
-      - lib/rails/generators/erb/scaffold/templates/edit.html.erb.tt
-      - lib/rails/generators/erb/scaffold/templates/_form.html.erb.tt
-      - lib/rails/generators/erb/scaffold/scaffold_generator.rb
-      - lib/rails/generators/erb/mailer
-      - lib/rails/generators/erb/mailer/templates
-      - lib/rails/generators/erb/mailer/templates/view.text.erb.tt
-      - lib/rails/generators/erb/mailer/templates/view.html.erb.tt
-      - lib/rails/generators/erb/mailer/templates/layout.text.erb.tt
-      - lib/rails/generators/erb/mailer/templates/layout.html.erb.tt
-      - lib/rails/generators/erb/mailer/mailer_generator.rb
-      - lib/rails/generators/erb/controller
-      - lib/rails/generators/erb/controller/templates
-      - lib/rails/generators/erb/controller/templates/view.html.erb.tt
-      - lib/rails/generators/erb/controller/controller_generator.rb
-      - lib/rails/generators/erb.rb
-      - lib/rails/generators/css
-      - lib/rails/generators/css/scaffold
-      - lib/rails/generators/css/scaffold/scaffold_generator.rb
-      - lib/rails/generators/css/assets
-      - lib/rails/generators/css/assets/templates
-      - lib/rails/generators/css/assets/templates/stylesheet.css
-      - lib/rails/generators/css/assets/assets_generator.rb
-      - lib/rails/generators/base.rb
-      - lib/rails/generators/app_base.rb
-      - lib/rails/generators/active_model.rb
-      - lib/rails/generators/actions
-      - lib/rails/generators/actions/create_migration.rb
-      - lib/rails/generators/actions.rb
-      - lib/rails/generators.rb
-      - lib/rails/gem_version.rb
-      - lib/rails/engine
-      - lib/rails/engine/updater.rb
-      - lib/rails/engine/railties.rb
-      - lib/rails/engine/configuration.rb
-      - lib/rails/engine/commands.rb
-      - lib/rails/engine.rb
-      - lib/rails/dev_caching.rb
-      - lib/rails/console
-      - lib/rails/console/helpers.rb
-      - lib/rails/console/app.rb
-      - lib/rails/configuration.rb
-      - lib/rails/commands
-      - lib/rails/commands/version
-      - lib/rails/commands/version/version_command.rb
-      - lib/rails/commands/test
-      - lib/rails/commands/test/test_command.rb
-      - lib/rails/commands/server
-      - lib/rails/commands/server/server_command.rb
-      - lib/rails/commands/secrets
-      - lib/rails/commands/secrets/secrets_command.rb
-      - lib/rails/commands/secrets/USAGE
-      - lib/rails/commands/runner
-      - lib/rails/commands/runner/runner_command.rb
-      - lib/rails/commands/runner/USAGE
-      - lib/rails/commands/rake
-      - lib/rails/commands/rake/rake_command.rb
-      - lib/rails/commands/plugin
-      - lib/rails/commands/plugin/plugin_command.rb
-      - lib/rails/commands/new
-      - lib/rails/commands/new/new_command.rb
-      - lib/rails/commands/help
-      - lib/rails/commands/help/help_command.rb
-      - lib/rails/commands/help/USAGE
-      - lib/rails/commands/generate
-      - lib/rails/commands/generate/generate_command.rb
-      - lib/rails/commands/encrypted
-      - lib/rails/commands/encrypted/encrypted_command.rb
-      - lib/rails/commands/encrypted/USAGE
-      - lib/rails/commands/destroy
-      - lib/rails/commands/destroy/destroy_command.rb
-      - lib/rails/commands/dbconsole
-      - lib/rails/commands/dbconsole/dbconsole_command.rb
-      - lib/rails/commands/credentials
-      - lib/rails/commands/credentials/credentials_command.rb
-      - lib/rails/commands/credentials/USAGE
-      - lib/rails/commands/console
-      - lib/rails/commands/console/console_command.rb
-      - lib/rails/commands/application
-      - lib/rails/commands/application/application_command.rb
-      - lib/rails/commands.rb
-      - lib/rails/command
-      - lib/rails/command/helpers
-      - lib/rails/command/helpers/editor.rb
-      - lib/rails/command/environment_argument.rb
-      - lib/rails/command/behavior.rb
-      - lib/rails/command/base.rb
-      - lib/rails/command/actions.rb
-      - lib/rails/command.rb
-      - lib/rails/code_statistics_calculator.rb
-      - lib/rails/code_statistics.rb
-      - lib/rails/cli.rb
-      - lib/rails/backtrace_cleaner.rb
-      - lib/rails/application_controller.rb
-      - lib/rails/application
-      - lib/rails/application/routes_reloader.rb
-      - lib/rails/application/finisher.rb
-      - lib/rails/application/default_middleware_stack.rb
-      - lib/rails/application/configuration.rb
-      - lib/rails/application/bootstrap.rb
-      - lib/rails/application.rb
-      - lib/rails/app_updater.rb
-      - lib/rails/app_loader.rb
-      - lib/rails/api
-      - lib/rails/api/task.rb
-      - lib/rails/api/generator.rb
-      - lib/rails/all.rb
-      - lib/rails.rb
-      - lib/minitest
-      - lib/minitest/rails_plugin.rb
-      homepage: http://rubyonrails.org
+         version: "5.2"
+      release: rc1
+      epoch: 1
+      summaries: !ruby/object:OpenStruct
+         table:
+            :'': RPM sum
       licenses:
-      - MIT
-      metadata:
-         source_code_uri: https://github.com/rails/rails/tree/v5.2.4.4/railties
-         changelog_uri: https://github.com/rails/rails/blob/v5.2.4.4/railties/CHANGELOG.md
-      post_install_message:
-      rdoc_options:
-      - "--exclude"
-      - "."
-      require_paths:
-      - lib
-      required_ruby_version: !ruby/object:Gem::Requirement
-         requirements:
-          - - ">="
-            - !ruby/object:Gem::Version
-               version: 2.2.2
-      required_rubygems_version: !ruby/object:Gem::Requirement
-         requirements:
-          - - ">="
-            - !ruby/object:Gem::Version
-               version: '0'
-      requirements: []
-      rubygems_version: 3.1.4
-      signing_key:
-      specification_version: 4
-      summary: Tools for creating, working with, and running Rails applications.
-      test_files: []
-spec: !ruby/object:Setup::Spec::Rpm
-   name: rpm
-   version: 5.2
-   release: rc1
-   epoch: 1
-   summaaries: !ruby/object:OpenStruct
-      table:
-         ! '': RPM sum
-   licenses:
-    - MIT
-   group: Group
-   uri: https://uri.domain
-   vcs: https://vcs.domain
-   packager: Packager FIO <fio@example.com>
-   build_arch: arch64
-   source_files: !ruby/object:OpenStruct
-      table:
-         :0: source_file.tar
-         :1: source_file1.tar
-   patches: !ruby/object:OpenStruct
-      table:
-         :0: patch.patch
-         :1: patch1.patch
-   requires: !ruby/object:OpenStruct
-      table:
-         :0: req >= 1
-         :1: req_new < 0.1
-         :2: req_newline >= 2
-   build_requires: !ruby/object:OpenStruct
-      table:
-         :0: req >= 1
-         :1: req_new < 0.1
-         :2: req_newline >= 2
-   build_pre_requires: !ruby/object:OpenStruct
-      table:
-         :0: req >= 1
-         :1: req_new < 0.1
-         :2: req_newline >= 2
-   obsoletes: !ruby/object:OpenStruct
-      table:
-         :0: req >= 1
-         :1: req_new < 0.1
-         :2: req_newline >= 2
-   provides: !ruby/object:OpenStruct
-      table:
-         :0: req >= 1
-         :1: req_new < 0.1
-         :2: req_newline >= 2
-   conflicts: !ruby/object:OpenStruct
-      table:
-         :0: req >= 1
-         :1: req_new < 0.1
-         :2: req_newline >= 2
-   descriptions: !ruby/object:OpenStruct
-      table:
-         ! '': RPM desc
-         'ru_RU.UTF8': Заметка
-
+       - MIT
+      group: Group
+      uri: https://uri.domain
+      vcs: https://vcs.domain
+      packager: !ruby/object:OpenStruct
+         table:
+            :name: Packager FIO
+            :email: fio@example.com
+      build_arch: arch64
+      source_files: !ruby/object:OpenStruct
+         table:
+            :0: source_file.tar
+            :1: source_file1.tar
+      patches: !ruby/object:OpenStruct
+         table:
+            :0: patch.patch
+            :1: patch1.patch
+      requires:
+       - req >= 1
+       - gem(d) < 0.1
+       - gem(e) >= 2
+      build_requires:
+       - gem-a >= 1
+       - gem(b) < 0.1
+       - gem(c) >= 2
+      build_pre_requires:
+       - rpm-build-nonruby
+       - rpm-build-python
+      obsoletes:
+       - req >= 1
+       - gem(p) < 0.1
+      provides:
+       - req >= 1
+       - gem(p) < 0.1
+      conflicts:
+       - gem(g) >= 1
+      descriptions: !ruby/object:OpenStruct
+         table:
+            :'': RPM desc
+            :'ru_RU.UTF8': Заметка
+      secondaries: {}
+   
+      spec: !ruby/object:Gem::Specification
+         name: railties
+         version: !ruby/object:Gem::Version
+            version: 5.2.4.4
+         platform: ruby
+         authors:
+         - David Heinemeier Hansson
+         autorequire:
+         bindir: exe
+         cert_chain: []
+         date:
+         dependencies:
+         - !ruby/object:Gem::Dependency
+            name: activesupport
+            requirement: !ruby/object:Gem::Requirement
+               requirements:
+                - - '='
+                  - !ruby/object:Gem::Version
+                     version: 5.2.4.4
+            type: :runtime
+            prerelease: false
+            version_requirements: !ruby/object:Gem::Requirement
+               requirements:
+                - - '='
+                  - !ruby/object:Gem::Version
+                     version: 5.2.4.4
+         - !ruby/object:Gem::Dependency
+            name: actionpack
+            requirement: !ruby/object:Gem::Requirement
+               requirements:
+                - - '='
+                  - !ruby/object:Gem::Version
+                     version: 5.2.4.4
+            type: :runtime
+            prerelease: false
+            version_requirements: !ruby/object:Gem::Requirement
+               requirements:
+                - - '='
+                  - !ruby/object:Gem::Version
+                     version: 5.2.4.4
+         - !ruby/object:Gem::Dependency
+            name: rake
+            requirement: !ruby/object:Gem::Requirement
+               requirements:
+                - - ">="
+                  - !ruby/object:Gem::Version
+                     version: 0.8.7
+            type: :runtime
+            prerelease: false
+            version_requirements: !ruby/object:Gem::Requirement
+               requirements:
+                - - ">="
+                  - !ruby/object:Gem::Version
+                     version: 0.8.7
+         - !ruby/object:Gem::Dependency
+            name: thor
+            requirement: !ruby/object:Gem::Requirement
+               requirements:
+                - - ">="
+                  - !ruby/object:Gem::Version
+                     version: 0.19.0
+                - - "<"
+                  - !ruby/object:Gem::Version
+                     version: '2.0'
+            type: :runtime
+            prerelease: false
+            version_requirements: !ruby/object:Gem::Requirement
+               requirements:
+                - - ">="
+                  - !ruby/object:Gem::Version
+                     version: 0.19.0
+                - - "<"
+                  - !ruby/object:Gem::Version
+                     version: '2.0'
+         - !ruby/object:Gem::Dependency
+            name: method_source
+            requirement: !ruby/object:Gem::Requirement
+               requirements:
+                - - ">="
+                  - !ruby/object:Gem::Version
+                     version: '0'
+            type: :runtime
+            prerelease: false
+            version_requirements: !ruby/object:Gem::Requirement
+               requirements:
+                - - ">="
+                  - !ruby/object:Gem::Version
+                     version: '0'
+         - !ruby/object:Gem::Dependency
+            name: actionview
+            requirement: !ruby/object:Gem::Requirement
+               requirements:
+                - - '='
+                  - !ruby/object:Gem::Version
+                     version: 5.2.4.4
+            type: :development
+            prerelease: false
+            version_requirements: !ruby/object:Gem::Requirement
+               requirements:
+                - - '='
+                  - !ruby/object:Gem::Version
+                     version: 5.2.4.4
+         description: 'Rails internals: application bootup, plugins, generators, and rake tasks.'
+         email: david@loudthinking.com
+         executables:
+         - rails
+         extensions: []
+         extra_rdoc_files: []
+         files:
+         - CHANGELOG.md
+         - README.rdoc
+         - MIT-LICENSE
+         - RDOC_MAIN.rdoc
+         - exe/rails
+         - lib/rails
+         - lib/rails/welcome_controller.rb
+         - lib/rails/version.rb
+         - lib/rails/test_unit
+         - lib/rails/test_unit/testing.rake
+         - lib/rails/test_unit/runner.rb
+         - lib/rails/test_unit/reporter.rb
+         - lib/rails/test_unit/railtie.rb
+         - lib/rails/test_unit/line_filtering.rb
+         - lib/rails/test_help.rb
+         - lib/rails/templates
+         - lib/rails/templates/rails
+         - lib/rails/templates/rails/welcome
+         - lib/rails/templates/rails/welcome/index.html.erb
+         - lib/rails/templates/rails/mailers
+         - lib/rails/templates/rails/mailers/mailer.html.erb
+         - lib/rails/templates/rails/mailers/index.html.erb
+         - lib/rails/templates/rails/mailers/email.html.erb
+         - lib/rails/templates/rails/info
+         - lib/rails/templates/rails/info/routes.html.erb
+         - lib/rails/templates/rails/info/properties.html.erb
+         - lib/rails/templates/layouts
+         - lib/rails/templates/layouts/application.html.erb
+         - lib/rails/tasks
+         - lib/rails/tasks/yarn.rake
+         - lib/rails/tasks/tmp.rake
+         - lib/rails/tasks/statistics.rake
+         - lib/rails/tasks/routes.rake
+         - lib/rails/tasks/restart.rake
+         - lib/rails/tasks/misc.rake
+         - lib/rails/tasks/middleware.rake
+         - lib/rails/tasks/log.rake
+         - lib/rails/tasks/initializers.rake
+         - lib/rails/tasks/framework.rake
+         - lib/rails/tasks/engine.rake
+         - lib/rails/tasks/dev.rake
+         - lib/rails/tasks/annotations.rake
+         - lib/rails/tasks.rb
+         - lib/rails/source_annotation_extractor.rb
+         - lib/rails/secrets.rb
+         - lib/rails/ruby_version_check.rb
+         - lib/rails/railtie
+         - lib/rails/railtie/configuration.rb
+         - lib/rails/railtie/configurable.rb
+         - lib/rails/railtie.rb
+         - lib/rails/rack
+         - lib/rails/rack/logger.rb
+         - lib/rails/rack.rb
+         - lib/rails/plugin
+         - lib/rails/plugin/test.rb
+         - lib/rails/paths.rb
+         - lib/rails/mailers_controller.rb
+         - lib/rails/initializable.rb
+         - lib/rails/info_controller.rb
+         - lib/rails/info.rb
+         - lib/rails/generators
+         - lib/rails/generators/testing
+         - lib/rails/generators/testing/setup_and_teardown.rb
+         - lib/rails/generators/testing/behaviour.rb
+         - lib/rails/generators/testing/assertions.rb
+         - lib/rails/generators/test_unit
+         - lib/rails/generators/test_unit/system
+         - lib/rails/generators/test_unit/system/templates
+         - lib/rails/generators/test_unit/system/templates/system_test.rb.tt
+         - lib/rails/generators/test_unit/system/templates/application_system_test_case.rb.tt
+         - lib/rails/generators/test_unit/system/system_generator.rb
+         - lib/rails/generators/test_unit/scaffold
+         - lib/rails/generators/test_unit/scaffold/templates
+         - lib/rails/generators/test_unit/scaffold/templates/system_test.rb.tt
+         - lib/rails/generators/test_unit/scaffold/templates/functional_test.rb.tt
+         - lib/rails/generators/test_unit/scaffold/templates/api_functional_test.rb.tt
+         - lib/rails/generators/test_unit/scaffold/scaffold_generator.rb
+         - lib/rails/generators/test_unit/plugin
+         - lib/rails/generators/test_unit/plugin/templates
+         - lib/rails/generators/test_unit/plugin/templates/test_helper.rb
+         - lib/rails/generators/test_unit/plugin/templates/%file_name%_test.rb.tt
+         - lib/rails/generators/test_unit/plugin/plugin_generator.rb
+         - lib/rails/generators/test_unit/model
+         - lib/rails/generators/test_unit/model/templates
+         - lib/rails/generators/test_unit/model/templates/unit_test.rb.tt
+         - lib/rails/generators/test_unit/model/templates/fixtures.yml.tt
+         - lib/rails/generators/test_unit/model/model_generator.rb
+         - lib/rails/generators/test_unit/mailer
+         - lib/rails/generators/test_unit/mailer/templates
+         - lib/rails/generators/test_unit/mailer/templates/preview.rb.tt
+         - lib/rails/generators/test_unit/mailer/templates/functional_test.rb.tt
+         - lib/rails/generators/test_unit/mailer/mailer_generator.rb
+         - lib/rails/generators/test_unit/job
+         - lib/rails/generators/test_unit/job/templates
+         - lib/rails/generators/test_unit/job/templates/unit_test.rb.tt
+         - lib/rails/generators/test_unit/job/job_generator.rb
+         - lib/rails/generators/test_unit/integration
+         - lib/rails/generators/test_unit/integration/templates
+         - lib/rails/generators/test_unit/integration/templates/integration_test.rb.tt
+         - lib/rails/generators/test_unit/integration/integration_generator.rb
+         - lib/rails/generators/test_unit/helper
+         - lib/rails/generators/test_unit/helper/helper_generator.rb
+         - lib/rails/generators/test_unit/generator
+         - lib/rails/generators/test_unit/generator/templates
+         - lib/rails/generators/test_unit/generator/templates/generator_test.rb.tt
+         - lib/rails/generators/test_unit/generator/generator_generator.rb
+         - lib/rails/generators/test_unit/controller
+         - lib/rails/generators/test_unit/controller/templates
+         - lib/rails/generators/test_unit/controller/templates/functional_test.rb.tt
+         - lib/rails/generators/test_unit/controller/controller_generator.rb
+         - lib/rails/generators/test_unit.rb
+         - lib/rails/generators/test_case.rb
+         - lib/rails/generators/resource_helpers.rb
+         - lib/rails/generators/rails
+         - lib/rails/generators/rails/task
+         - lib/rails/generators/rails/task/templates
+         - lib/rails/generators/rails/task/templates/task.rb.tt
+         - lib/rails/generators/rails/task/task_generator.rb
+         - lib/rails/generators/rails/task/USAGE
+         - lib/rails/generators/rails/system_test
+         - lib/rails/generators/rails/system_test/system_test_generator.rb
+         - lib/rails/generators/rails/system_test/USAGE
+         - lib/rails/generators/rails/scaffold_controller
+         - lib/rails/generators/rails/scaffold_controller/templates
+         - lib/rails/generators/rails/scaffold_controller/templates/controller.rb.tt
+         - lib/rails/generators/rails/scaffold_controller/templates/api_controller.rb.tt
+         - lib/rails/generators/rails/scaffold_controller/scaffold_controller_generator.rb
+         - lib/rails/generators/rails/scaffold_controller/USAGE
+         - lib/rails/generators/rails/scaffold
+         - lib/rails/generators/rails/scaffold/templates
+         - lib/rails/generators/rails/scaffold/templates/scaffold.css
+         - lib/rails/generators/rails/scaffold/scaffold_generator.rb
+         - lib/rails/generators/rails/scaffold/USAGE
+         - lib/rails/generators/rails/resource_route
+         - lib/rails/generators/rails/resource_route/resource_route_generator.rb
+         - lib/rails/generators/rails/resource
+         - lib/rails/generators/rails/resource/resource_generator.rb
+         - lib/rails/generators/rails/resource/USAGE
+         - lib/rails/generators/rails/plugin
+         - lib/rails/generators/rails/plugin/templates
+         - lib/rails/generators/rails/plugin/templates/test
+         - lib/rails/generators/rails/plugin/templates/test/test_helper.rb.tt
+         - lib/rails/generators/rails/plugin/templates/test/integration
+         - lib/rails/generators/rails/plugin/templates/test/integration/navigation_test.rb.tt
+         - lib/rails/generators/rails/plugin/templates/test/application_system_test_case.rb.tt
+         - lib/rails/generators/rails/plugin/templates/test/%namespaced_name%_test.rb.tt
+         - lib/rails/generators/rails/plugin/templates/rails
+         - lib/rails/generators/rails/plugin/templates/rails/stylesheets.css
+         - lib/rails/generators/rails/plugin/templates/rails/routes.rb.tt
+         - lib/rails/generators/rails/plugin/templates/rails/javascripts.js.tt
+         - lib/rails/generators/rails/plugin/templates/rails/engine_manifest.js.tt
+         - lib/rails/generators/rails/plugin/templates/rails/dummy_manifest.js.tt
+         - lib/rails/generators/rails/plugin/templates/rails/boot.rb.tt
+         - lib/rails/generators/rails/plugin/templates/rails/application.rb.tt
+         - lib/rails/generators/rails/plugin/templates/lib
+         - lib/rails/generators/rails/plugin/templates/lib/tasks
+         - lib/rails/generators/rails/plugin/templates/lib/tasks/%namespaced_name%_tasks.rake.tt
+         - lib/rails/generators/rails/plugin/templates/lib/%namespaced_name%
+         - lib/rails/generators/rails/plugin/templates/lib/%namespaced_name%/version.rb.tt
+         - lib/rails/generators/rails/plugin/templates/lib/%namespaced_name%/railtie.rb.tt
+         - lib/rails/generators/rails/plugin/templates/lib/%namespaced_name%/engine.rb.tt
+         - lib/rails/generators/rails/plugin/templates/lib/%namespaced_name%.rb.tt
+         - lib/rails/generators/rails/plugin/templates/gitignore.tt
+         - lib/rails/generators/rails/plugin/templates/config
+         - lib/rails/generators/rails/plugin/templates/config/routes.rb.tt
+         - lib/rails/generators/rails/plugin/templates/bin
+         - lib/rails/generators/rails/plugin/templates/bin/test.tt
+         - lib/rails/generators/rails/plugin/templates/bin/rails.tt
+         - lib/rails/generators/rails/plugin/templates/app
+         - lib/rails/generators/rails/plugin/templates/app/views
+         - lib/rails/generators/rails/plugin/templates/app/views/layouts
+         - lib/rails/generators/rails/plugin/templates/app/views/layouts/%namespaced_name%
+         - lib/rails/generators/rails/plugin/templates/app/views/layouts/%namespaced_name%/application.html.erb.tt
+         - lib/rails/generators/rails/plugin/templates/app/models
+         - lib/rails/generators/rails/plugin/templates/app/models/%namespaced_name%
+         - lib/rails/generators/rails/plugin/templates/app/models/%namespaced_name%/application_record.rb.tt
+         - lib/rails/generators/rails/plugin/templates/app/mailers
+         - lib/rails/generators/rails/plugin/templates/app/mailers/%namespaced_name%
+         - lib/rails/generators/rails/plugin/templates/app/mailers/%namespaced_name%/application_mailer.rb.tt
+         - lib/rails/generators/rails/plugin/templates/app/jobs
+         - lib/rails/generators/rails/plugin/templates/app/jobs/%namespaced_name%
+         - lib/rails/generators/rails/plugin/templates/app/jobs/%namespaced_name%/application_job.rb.tt
+         - lib/rails/generators/rails/plugin/templates/app/helpers
+         - lib/rails/generators/rails/plugin/templates/app/helpers/%namespaced_name%
+         - lib/rails/generators/rails/plugin/templates/app/helpers/%namespaced_name%/application_helper.rb.tt
+         - lib/rails/generators/rails/plugin/templates/app/controllers
+         - lib/rails/generators/rails/plugin/templates/app/controllers/%namespaced_name%
+         - lib/rails/generators/rails/plugin/templates/app/controllers/%namespaced_name%/application_controller.rb.tt
+         - lib/rails/generators/rails/plugin/templates/Rakefile.tt
+         - lib/rails/generators/rails/plugin/templates/README.md.tt
+         - lib/rails/generators/rails/plugin/templates/MIT-LICENSE.tt
+         - lib/rails/generators/rails/plugin/templates/Gemfile.tt
+         - lib/rails/generators/rails/plugin/templates/%name%.gemspec.tt
+         - lib/rails/generators/rails/plugin/plugin_generator.rb
+         - lib/rails/generators/rails/plugin/USAGE
+         - lib/rails/generators/rails/model
+         - lib/rails/generators/rails/model/model_generator.rb
+         - lib/rails/generators/rails/model/USAGE
+         - lib/rails/generators/rails/migration
+         - lib/rails/generators/rails/migration/migration_generator.rb
+         - lib/rails/generators/rails/migration/USAGE
+         - lib/rails/generators/rails/master_key
+         - lib/rails/generators/rails/master_key/master_key_generator.rb
+         - lib/rails/generators/rails/integration_test
+         - lib/rails/generators/rails/integration_test/integration_test_generator.rb
+         - lib/rails/generators/rails/integration_test/USAGE
+         - lib/rails/generators/rails/helper
+         - lib/rails/generators/rails/helper/templates
+         - lib/rails/generators/rails/helper/templates/helper.rb.tt
+         - lib/rails/generators/rails/helper/helper_generator.rb
+         - lib/rails/generators/rails/helper/USAGE
+         - lib/rails/generators/rails/generator
+         - lib/rails/generators/rails/generator/templates
+         - lib/rails/generators/rails/generator/templates/templates
+         - lib/rails/generators/rails/generator/templates/templates/.empty_directory
+         - lib/rails/generators/rails/generator/templates/USAGE.tt
+         - lib/rails/generators/rails/generator/templates/%file_name%_generator.rb.tt
+         - lib/rails/generators/rails/generator/generator_generator.rb
+         - lib/rails/generators/rails/generator/USAGE
+         - lib/rails/generators/rails/encryption_key_file
+         - lib/rails/generators/rails/encryption_key_file/encryption_key_file_generator.rb
+         - lib/rails/generators/rails/encrypted_file
+         - lib/rails/generators/rails/encrypted_file/encrypted_file_generator.rb
+         - lib/rails/generators/rails/credentials
+         - lib/rails/generators/rails/credentials/credentials_generator.rb
+         - lib/rails/generators/rails/controller
+         - lib/rails/generators/rails/controller/templates
+         - lib/rails/generators/rails/controller/templates/controller.rb.tt
+         - lib/rails/generators/rails/controller/controller_generator.rb
+         - lib/rails/generators/rails/controller/USAGE
+         - lib/rails/generators/rails/assets
+         - lib/rails/generators/rails/assets/templates
+         - lib/rails/generators/rails/assets/templates/stylesheet.css
+         - lib/rails/generators/rails/assets/templates/javascript.js
+         - lib/rails/generators/rails/assets/assets_generator.rb
+         - lib/rails/generators/rails/assets/USAGE
+         - lib/rails/generators/rails/application_record
+         - lib/rails/generators/rails/application_record/application_record_generator.rb
+         - lib/rails/generators/rails/app
+         - lib/rails/generators/rails/app/templates
+         - lib/rails/generators/rails/app/templates/test
+         - lib/rails/generators/rails/app/templates/test/test_helper.rb.tt
+         - lib/rails/generators/rails/app/templates/test/application_system_test_case.rb.tt
+         - lib/rails/generators/rails/app/templates/ruby-version.tt
+         - lib/rails/generators/rails/app/templates/public
+         - lib/rails/generators/rails/app/templates/public/robots.txt
+         - lib/rails/generators/rails/app/templates/public/favicon.ico
+         - lib/rails/generators/rails/app/templates/public/apple-touch-icon.png
+         - lib/rails/generators/rails/app/templates/public/apple-touch-icon-precomposed.png
+         - lib/rails/generators/rails/app/templates/public/500.html
+         - lib/rails/generators/rails/app/templates/public/422.html
+         - lib/rails/generators/rails/app/templates/public/404.html
+         - lib/rails/generators/rails/app/templates/package.json.tt
+         - lib/rails/generators/rails/app/templates/gitignore.tt
+         - lib/rails/generators/rails/app/templates/db
+         - lib/rails/generators/rails/app/templates/db/seeds.rb.tt
+         - lib/rails/generators/rails/app/templates/config
+         - lib/rails/generators/rails/app/templates/config/storage.yml.tt
+         - lib/rails/generators/rails/app/templates/config/spring.rb.tt
+         - lib/rails/generators/rails/app/templates/config/routes.rb.tt
+         - lib/rails/generators/rails/app/templates/config/puma.rb.tt
+         - lib/rails/generators/rails/app/templates/config/locales
+         - lib/rails/generators/rails/app/templates/config/locales/en.yml
+         - lib/rails/generators/rails/app/templates/config/initializers
+         - lib/rails/generators/rails/app/templates/config/initializers/wrap_parameters.rb.tt
+         - lib/rails/generators/rails/app/templates/config/initializers/new_framework_defaults_5_2.rb.tt
+         - lib/rails/generators/rails/app/templates/config/initializers/mime_types.rb.tt
+         - lib/rails/generators/rails/app/templates/config/initializers/inflections.rb.tt
+         - lib/rails/generators/rails/app/templates/config/initializers/filter_parameter_logging.rb.tt
+         - lib/rails/generators/rails/app/templates/config/initializers/cors.rb.tt
+         - lib/rails/generators/rails/app/templates/config/initializers/cookies_serializer.rb.tt
+         - lib/rails/generators/rails/app/templates/config/initializers/content_security_policy.rb.tt
+         - lib/rails/generators/rails/app/templates/config/initializers/backtrace_silencers.rb.tt
+         - lib/rails/generators/rails/app/templates/config/initializers/assets.rb.tt
+         - lib/rails/generators/rails/app/templates/config/initializers/application_controller_renderer.rb.tt
+         - lib/rails/generators/rails/app/templates/config/environments
+         - lib/rails/generators/rails/app/templates/config/environments/test.rb.tt
+         - lib/rails/generators/rails/app/templates/config/environments/production.rb.tt
+         - lib/rails/generators/rails/app/templates/config/environments/development.rb.tt
+         - lib/rails/generators/rails/app/templates/config/environment.rb.tt
+         - lib/rails/generators/rails/app/templates/config/databases
+         - lib/rails/generators/rails/app/templates/config/databases/sqlserver.yml.tt
+         - lib/rails/generators/rails/app/templates/config/databases/sqlite3.yml.tt
+         - lib/rails/generators/rails/app/templates/config/databases/postgresql.yml.tt
+         - lib/rails/generators/rails/app/templates/config/databases/oracle.yml.tt
+         - lib/rails/generators/rails/app/templates/config/databases/mysql.yml.tt
+         - lib/rails/generators/rails/app/templates/config/databases/jdbcsqlite3.yml.tt
+         - lib/rails/generators/rails/app/templates/config/databases/jdbcpostgresql.yml.tt
+         - lib/rails/generators/rails/app/templates/config/databases/jdbcmysql.yml.tt
+         - lib/rails/generators/rails/app/templates/config/databases/jdbc.yml.tt
+         - lib/rails/generators/rails/app/templates/config/databases/ibm_db.yml.tt
+         - lib/rails/generators/rails/app/templates/config/databases/frontbase.yml.tt
+         - lib/rails/generators/rails/app/templates/config/cable.yml.tt
+         - lib/rails/generators/rails/app/templates/config/boot.rb.tt
+         - lib/rails/generators/rails/app/templates/config/application.rb.tt
+         - lib/rails/generators/rails/app/templates/config.ru.tt
+         - lib/rails/generators/rails/app/templates/bin
+         - lib/rails/generators/rails/app/templates/bin/yarn.tt
+         - lib/rails/generators/rails/app/templates/bin/update.tt
+         - lib/rails/generators/rails/app/templates/bin/setup.tt
+         - lib/rails/generators/rails/app/templates/bin/rake.tt
+         - lib/rails/generators/rails/app/templates/bin/rails.tt
+         - lib/rails/generators/rails/app/templates/bin/bundle.tt
+         - lib/rails/generators/rails/app/templates/app
+         - lib/rails/generators/rails/app/templates/app/views
+         - lib/rails/generators/rails/app/templates/app/views/layouts
+         - lib/rails/generators/rails/app/templates/app/views/layouts/mailer.text.erb.tt
+         - lib/rails/generators/rails/app/templates/app/views/layouts/mailer.html.erb.tt
+         - lib/rails/generators/rails/app/templates/app/views/layouts/application.html.erb.tt
+         - lib/rails/generators/rails/app/templates/app/models
+         - lib/rails/generators/rails/app/templates/app/models/application_record.rb.tt
+         - lib/rails/generators/rails/app/templates/app/mailers
+         - lib/rails/generators/rails/app/templates/app/mailers/application_mailer.rb.tt
+         - lib/rails/generators/rails/app/templates/app/jobs
+         - lib/rails/generators/rails/app/templates/app/jobs/application_job.rb.tt
+         - lib/rails/generators/rails/app/templates/app/helpers
+         - lib/rails/generators/rails/app/templates/app/helpers/application_helper.rb.tt
+         - lib/rails/generators/rails/app/templates/app/controllers
+         - lib/rails/generators/rails/app/templates/app/controllers/application_controller.rb.tt
+         - lib/rails/generators/rails/app/templates/app/channels
+         - lib/rails/generators/rails/app/templates/app/channels/application_cable
+         - lib/rails/generators/rails/app/templates/app/channels/application_cable/connection.rb.tt
+         - lib/rails/generators/rails/app/templates/app/channels/application_cable/channel.rb.tt
+         - lib/rails/generators/rails/app/templates/app/assets
+         - lib/rails/generators/rails/app/templates/app/assets/stylesheets
+         - lib/rails/generators/rails/app/templates/app/assets/stylesheets/application.css.tt
+         - lib/rails/generators/rails/app/templates/app/assets/javascripts
+         - lib/rails/generators/rails/app/templates/app/assets/javascripts/cable.js.tt
+         - lib/rails/generators/rails/app/templates/app/assets/javascripts/application.js.tt
+         - lib/rails/generators/rails/app/templates/app/assets/config
+         - lib/rails/generators/rails/app/templates/app/assets/config/manifest.js.tt
+         - lib/rails/generators/rails/app/templates/Rakefile.tt
+         - lib/rails/generators/rails/app/templates/README.md.tt
+         - lib/rails/generators/rails/app/templates/Gemfile.tt
+         - lib/rails/generators/rails/app/app_generator.rb
+         - lib/rails/generators/rails/app/USAGE
+         - lib/rails/generators/named_base.rb
+         - lib/rails/generators/model_helpers.rb
+         - lib/rails/generators/migration.rb
+         - lib/rails/generators/js
+         - lib/rails/generators/js/assets
+         - lib/rails/generators/js/assets/templates
+         - lib/rails/generators/js/assets/templates/javascript.js
+         - lib/rails/generators/js/assets/assets_generator.rb
+         - lib/rails/generators/generated_attribute.rb
+         - lib/rails/generators/erb
+         - lib/rails/generators/erb/scaffold
+         - lib/rails/generators/erb/scaffold/templates
+         - lib/rails/generators/erb/scaffold/templates/show.html.erb.tt
+         - lib/rails/generators/erb/scaffold/templates/new.html.erb.tt
+         - lib/rails/generators/erb/scaffold/templates/index.html.erb.tt
+         - lib/rails/generators/erb/scaffold/templates/edit.html.erb.tt
+         - lib/rails/generators/erb/scaffold/templates/_form.html.erb.tt
+         - lib/rails/generators/erb/scaffold/scaffold_generator.rb
+         - lib/rails/generators/erb/mailer
+         - lib/rails/generators/erb/mailer/templates
+         - lib/rails/generators/erb/mailer/templates/view.text.erb.tt
+         - lib/rails/generators/erb/mailer/templates/view.html.erb.tt
+         - lib/rails/generators/erb/mailer/templates/layout.text.erb.tt
+         - lib/rails/generators/erb/mailer/templates/layout.html.erb.tt
+         - lib/rails/generators/erb/mailer/mailer_generator.rb
+         - lib/rails/generators/erb/controller
+         - lib/rails/generators/erb/controller/templates
+         - lib/rails/generators/erb/controller/templates/view.html.erb.tt
+         - lib/rails/generators/erb/controller/controller_generator.rb
+         - lib/rails/generators/erb.rb
+         - lib/rails/generators/css
+         - lib/rails/generators/css/scaffold
+         - lib/rails/generators/css/scaffold/scaffold_generator.rb
+         - lib/rails/generators/css/assets
+         - lib/rails/generators/css/assets/templates
+         - lib/rails/generators/css/assets/templates/stylesheet.css
+         - lib/rails/generators/css/assets/assets_generator.rb
+         - lib/rails/generators/base.rb
+         - lib/rails/generators/app_base.rb
+         - lib/rails/generators/active_model.rb
+         - lib/rails/generators/actions
+         - lib/rails/generators/actions/create_migration.rb
+         - lib/rails/generators/actions.rb
+         - lib/rails/generators.rb
+         - lib/rails/gem_version.rb
+         - lib/rails/engine
+         - lib/rails/engine/updater.rb
+         - lib/rails/engine/railties.rb
+         - lib/rails/engine/configuration.rb
+         - lib/rails/engine/commands.rb
+         - lib/rails/engine.rb
+         - lib/rails/dev_caching.rb
+         - lib/rails/console
+         - lib/rails/console/helpers.rb
+         - lib/rails/console/app.rb
+         - lib/rails/configuration.rb
+         - lib/rails/commands
+         - lib/rails/commands/version
+         - lib/rails/commands/version/version_command.rb
+         - lib/rails/commands/test
+         - lib/rails/commands/test/test_command.rb
+         - lib/rails/commands/server
+         - lib/rails/commands/server/server_command.rb
+         - lib/rails/commands/secrets
+         - lib/rails/commands/secrets/secrets_command.rb
+         - lib/rails/commands/secrets/USAGE
+         - lib/rails/commands/runner
+         - lib/rails/commands/runner/runner_command.rb
+         - lib/rails/commands/runner/USAGE
+         - lib/rails/commands/rake
+         - lib/rails/commands/rake/rake_command.rb
+         - lib/rails/commands/plugin
+         - lib/rails/commands/plugin/plugin_command.rb
+         - lib/rails/commands/new
+         - lib/rails/commands/new/new_command.rb
+         - lib/rails/commands/help
+         - lib/rails/commands/help/help_command.rb
+         - lib/rails/commands/help/USAGE
+         - lib/rails/commands/generate
+         - lib/rails/commands/generate/generate_command.rb
+         - lib/rails/commands/encrypted
+         - lib/rails/commands/encrypted/encrypted_command.rb
+         - lib/rails/commands/encrypted/USAGE
+         - lib/rails/commands/destroy
+         - lib/rails/commands/destroy/destroy_command.rb
+         - lib/rails/commands/dbconsole
+         - lib/rails/commands/dbconsole/dbconsole_command.rb
+         - lib/rails/commands/credentials
+         - lib/rails/commands/credentials/credentials_command.rb
+         - lib/rails/commands/credentials/USAGE
+         - lib/rails/commands/console
+         - lib/rails/commands/console/console_command.rb
+         - lib/rails/commands/application
+         - lib/rails/commands/application/application_command.rb
+         - lib/rails/commands.rb
+         - lib/rails/command
+         - lib/rails/command/helpers
+         - lib/rails/command/helpers/editor.rb
+         - lib/rails/command/environment_argument.rb
+         - lib/rails/command/behavior.rb
+         - lib/rails/command/base.rb
+         - lib/rails/command/actions.rb
+         - lib/rails/command.rb
+         - lib/rails/code_statistics_calculator.rb
+         - lib/rails/code_statistics.rb
+         - lib/rails/cli.rb
+         - lib/rails/backtrace_cleaner.rb
+         - lib/rails/application_controller.rb
+         - lib/rails/application
+         - lib/rails/application/routes_reloader.rb
+         - lib/rails/application/finisher.rb
+         - lib/rails/application/default_middleware_stack.rb
+         - lib/rails/application/configuration.rb
+         - lib/rails/application/bootstrap.rb
+         - lib/rails/application.rb
+         - lib/rails/app_updater.rb
+         - lib/rails/app_loader.rb
+         - lib/rails/api
+         - lib/rails/api/task.rb
+         - lib/rails/api/generator.rb
+         - lib/rails/all.rb
+         - lib/rails.rb
+         - lib/minitest
+         - lib/minitest/rails_plugin.rb
+         homepage: http://rubyonrails.org
+         licenses:
+         - MIT
+         metadata:
+            source_code_uri: https://github.com/rails/rails/tree/v5.2.4.4/railties
+            changelog_uri: https://github.com/rails/rails/blob/v5.2.4.4/railties/CHANGELOG.md
+         post_install_message:
+         rdoc_options:
+         - "--exclude"
+         - "."
+         require_paths:
+         - lib
+         required_ruby_version: !ruby/object:Gem::Requirement
+            requirements:
+             - - ">="
+               - !ruby/object:Gem::Version
+                  version: 2.2.2
+         required_rubygems_version: !ruby/object:Gem::Requirement
+            requirements:
+             - - ">="
+               - !ruby/object:Gem::Version
+                  version: '0'
+         requirements: []
+         rubygems_version: 3.1.4
+         signing_key:
+         specification_version: 4
+         summary: Tools for creating, working with, and running Rails applications.
+         test_files: []
+   spec: !ruby/object:Setup::Spec::Rpm
+      name: rpm
+      version: 5.2
+      release: rc1
+      epoch: 1
+      summaaries: !ruby/object:OpenStruct
+         table:
+            ! '': RPM sum
+      licenses:
+       - MIT
+      group: Group
+      uri: https://uri.domain
+      vcs: https://vcs.domain
+      packager: Packager FIO <fio@example.com>
+      build_arch: arch64
+      source_files: !ruby/object:OpenStruct
+         table:
+            :0: source_file.tar
+            :1: source_file1.tar
+      patches: !ruby/object:OpenStruct
+         table:
+            :0: patch.patch
+            :1: patch1.patch
+      requires: !ruby/object:OpenStruct
+         table:
+            :0: req >= 1
+            :1: req_new < 0.1
+            :2: req_newline >= 2
+      build_requires: !ruby/object:OpenStruct
+         table:
+            :0: req >= 1
+            :1: req_new < 0.1
+            :2: req_newline >= 2
+      build_pre_requires: !ruby/object:OpenStruct
+         table:
+            :0: req >= 1
+            :1: req_new < 0.1
+            :2: req_newline >= 2
+      obsoletes: !ruby/object:OpenStruct
+         table:
+            :0: req >= 1
+            :1: req_new < 0.1
+            :2: req_newline >= 2
+      provides: !ruby/object:OpenStruct
+         table:
+            :0: req >= 1
+            :1: req_new < 0.1
+            :2: req_newline >= 2
+      conflicts: !ruby/object:OpenStruct
+         table:
+            :0: req >= 1
+            :1: req_new < 0.1
+            :2: req_newline >= 2
+      descriptions: !ruby/object:OpenStruct
+         table:
+            ! '': RPM desc
+            'ru_RU.UTF8': Заметка
+   
