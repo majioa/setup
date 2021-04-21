@@ -25,12 +25,22 @@ module Setup::Spec
       end
 
       def load_from source_in
-         spec = specs.values.find { |spec| spec.match?(source_in) }
+         source =
+            case source_in
+            when IO, StringIO
+               source_in.readlines.join("")
+            when String
+               source_in
+            else
+               source_in.to_s
+            end
+
+         spec = specs.values.find { |spec| spec.match?(source) }
 
          if spec
-            spec.parse(source_in)
+            spec.parse(source)
          else
-            raise(UndetectedSpecSourceError.new(source_in: source_in))
+            raise(UndetectedSpecSourceError.new(source: source))
          end
       end
    end

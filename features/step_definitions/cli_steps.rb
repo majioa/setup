@@ -1,5 +1,4 @@
 Given('options for Setup CLI:') do |text|
-   ARGV.replace(text.split(/\s+/))
    cli.option_parser.default_argv = text.split(/\s+/)
 end
 

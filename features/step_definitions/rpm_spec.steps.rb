@@ -4,11 +4,15 @@ Given('RPM spec file:') do |rpm_spec|
 end
 
 When('developer loads the spec') do
-   @space = Setup::Space::Spec.load_from(@spec_in)
+   @space ||= Setup::Space::Spec.load_from(@spec_in)
 end
 
 When('developer loads the spec into the space') do
    space.spec = Setup::Spec.load_from(@spec_in)
+end
+
+When('developer sets the space option {string} to {string}') do |option, value|
+   space.options[option] = value
 end
 
 Then('property {string} of space is {string}') do |property, value|
@@ -36,6 +40,7 @@ end
 
 Then('property {string} of space has {string} at position {string}') do |property, value, pos|
    list = space.send(property)
+
    real = list.is_a?(OpenStruct) && list[pos] || list[pos.to_i]
    expect(real).to eql(value)
 end
@@ -55,11 +60,11 @@ Then('space\'s property {string} with argument {string} has fields:') do |proper
    table.rows_hash.each { |key, value| expect(h[key]).to eql(value) }
 end
 
-Then('secondary spec with adopted name {string} has fields:') do |arg, table|
-   sec = space.secondaries.find {|sec| sec.adopted_name == arg }
+Then('secondary spec with full name {string} has fields:') do |arg, table|
+   sec = space.spec.secondaries.find {|sec| sec.name == arg }
 
    expect(sec).to_not be_nil
-   table.rows_hash.each { |key, value| expect(sec[key]).to eql(value) }
+   table.rows_hash.each { |key, value| expect(sec[key].to_s).to eql(value) }
 end
 
 Then('the subfield {string} with argument {string} of space\'s property {string} with argument {string} has data:') do |subprop, subarg, property, arg, text|
@@ -76,38 +81,38 @@ Then('the subfield {string} with no argument of space\'s property {string} with 
    expect(list[subprop][""]).to eql(text)
 end
 
-Then('the subfield {string} with argument {string} of secondary spec with adopted name {string} has data:') do |subprop, subarg, arg, text|
-   sec = space.secondaries.find {|sec| sec.adopted_name == arg }
+Then('the subfield {string} with argument {string} of secondary spec with full name {string} has data:') do |subprop, subarg, arg, text|
+   sec = space.spec.secondaries.find {|sec| sec.name == arg }
 
    expect(sec).to_not be_nil
-   expect(sec[subprop][subarg]).to eql(text)
+   expect(sec[subprop][subarg].to_s).to eql(text)
 end
 
-Then('the subfield {string} with no argument of secondary spec with adopted name {string} has data:') do |subprop, arg, text|
-   sec = space.secondaries.find {|sec| sec.adopted_name == arg }
+Then('the subfield {string} with no argument of secondary spec with full name {string} has data:') do |subprop, arg, text|
+   sec = space.spec.secondaries.find {|sec| sec.name == arg }
 
    expect(sec).to_not be_nil
-   expect(sec[subprop][""]).to eql(text)
+   expect(sec[subprop][""].to_s).to eql(text)
 end
 
-Then('the subfield {string} of secondary spec with adopted name {string} has data:') do |subprop, arg, text|
-   sec = space.secondaries.find {|sec| sec.adopted_name == arg }
+Then('the subfield {string} of secondary spec with full name {string} has data:') do |subprop, arg, text|
+   sec = space.spec.secondaries.find {|sec| sec.name == arg }
 
    expect(sec).to_not be_nil
-   expect(sec[subprop]).to eql(text)
+   expect(sec[subprop].to_s).to eql(text)
 end
 Then('the subfield {string} of space\'s property {string} at position {string} has data:') do |subprop, property, pos, text|
    value = space.send(property)[pos.to_i]
 
    expect(value).to_not be_nil
-   expect(value).to eql(text)
+   expect(value.to_s).to eql(text)
 end
 
 Then('the subfield {string} of space\'s property {string} with argument {string} has data:') do |subprop, property, arg, text|
    list = space.send(property)[arg]
 
    expect(list).to_not be_nil
-   expect(list[subprop]).to eql(text)
+   expect(list[subprop].to_s).to eql(text)
 end
 
 Then('space\'s property {string} has data:') do |property, text|
@@ -118,13 +123,16 @@ Then('space\'s property {string} at position {string} has fields:') do |property
    list = space.send(property)
    expect(list).to be_kind_of(Array)
 
-   ##binding.pry
    expect(list[pos.to_i]).to be_kind_of(OpenStruct)
-   table.rows_hash.each { |key, value| expect(list[pos.to_i][key.to_sym]).to eql(value != "" && value || nil) }
+   table.rows_hash.each { |key, value| expect(list[pos.to_i][key.to_sym].to_s).to eql(value) }
 end
 
 Then('property {string} of space\'s spec is {string}') do |property, value|
    expect(space.spec.send(property)).to eql(value)
+end
+
+Then('stringified property {string} of space\'s spec is {string}') do |property, value|
+   expect(space.spec.send(property).to_s).to eql(value)
 end
 
 Then('the subfield {string} at position {string} of space\'s property {string} with argument {string} has data:') do |subprop, pos, property, arg, text|

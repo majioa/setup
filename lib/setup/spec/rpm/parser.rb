@@ -4,7 +4,11 @@ class Setup::Spec::Rpm::Parser
    MATCHER = /^Name:\s+([^\s]+)/i
 
    SCHEME = {
-      adopted_name: /^Name:\s+([^\s]+)/i,
+      name: {
+         non_contexted: true,
+         regexp: /^Name:\s+([^\s]+)/i,
+         parse_func: :parse_name
+      },
       version: {
          non_contexted: true,
          regexp: /Version:\s+([^\s]+)/i,
@@ -26,7 +30,7 @@ class Setup::Spec::Rpm::Parser
       vcs: /Vcs:\s+([^\s]+)/i,
       packager: {
          non_contexted: true,
-         regexp: /Packager:\s+(?<author>.*)\s*(?:<(?<email>.*)>)$/i,
+         regexp: /Packager:\s+(?<name>.*)\s*(?:<(?<email>.*)>)$/i,
          parse_func: :parse_packager
       },
       build_arch: /BuildArch:\s+([^\s]+)/i,
@@ -125,7 +129,7 @@ class Setup::Spec::Rpm::Parser
       matched = {}
       match = nil
 
-      opts = source(source_in).reduce({}) do |opts, line|
+      state = source(source_in).reduce({}) do |state, line|
          SCHEME.find do |(key, rule)|
             match = rule.is_a?(Regexp) && rule.match(line) ||
                     rule.is_a?(Hash) && rule[:regexp].match(line)
@@ -134,27 +138,27 @@ class Setup::Spec::Rpm::Parser
             if match
                if matched[:name]
                   if matched[:name] != key
-                     store_value(opts, matched[:match], matched[:name], matched[:flow], context)
+                     store_value(state, matched[:match], matched[:name], matched[:flow], context)
                      matched = { name: key.to_s, flow: "", match: match }
                   end
                else
                   matched = { name: key.to_s, flow: "", match: match }
                end
+
             end
          end
 
          if matched
-            #require 'pry';binding.pry
-            matched[:flow] = [ matched[:flow], line ].map(&:strip).reject {|x| x.blank? }.join("\n")
+            matched[:flow] << line + "\n"
          end
 
-         opts
+         state
       end
 
       # binding.pry
-      store_value(opts, matched[:match], matched[:name], matched[:flow], context)
+      store_value(state, matched[:match], matched[:name], matched[:flow], context)
 
-      self.new(options: opts)
+      Setup::Spec::Rpm.new(state: state)
    end
 
    def store_value opts, match, key, flow, context
@@ -163,26 +167,35 @@ class Setup::Spec::Rpm::Parser
       parse_func = data.is_a?(Hash) && data[:parse_func] || :parse_default
       non_contexted = data.is_a?(Hash) && data[:non_contexted]
       value = method(parse_func)[match, flow, opts, context]
-      copts = !non_contexted && context[:name] && opts["secondaries"][context[:name]] || opts
-      # binding.pry
+      copts = !non_contexted && context[:name] && opts["secondaries"].find do |sec|
+         sec.name == Setup::Spec::Rpm::Name.parse(context[:name])
+      end || opts
+      #binding.pry
 
       copts[key] =
       case copts[key]
       when NilClass
          value
       when Array
-         copts[key].concat(value)
-      when Hash
+      #binding.pry
+         copts[key] | [ value.is_a?(Hash) && value.to_os || value ].flatten
+      when Hash, OpenStruct
+      #binding.pry
          copts[key].deep_merge(value)
       else
+      #binding.pry
          [ copts[key], value ]
       end
 
       opts
    end
 
+   def parse_name match, *_
+      Setup::Spec::Rpm::Name.parse(match[1])
+   end
+
    def parse_file match, *_
-      { match[1] || "0" => match[2] }
+      { match[1] || "0" => match[2] }.to_os
    end
 
    def parse_file_list match, flow, opts, context
@@ -203,7 +216,7 @@ class Setup::Spec::Rpm::Parser
             version: Gem::Version.new(version),
             release: release,
             description: row[1..-1].join("\n")
-         }
+         }.to_os
       end.reverse
    end
 
@@ -221,12 +234,12 @@ class Setup::Spec::Rpm::Parser
 
    def parse_secondary match, flow, opts, context
       context.replace(parse_context_line(match[1], opts))
-      { context[:name] => { "adopted_name" => context[:name] }}
+      [ { "name" => Setup::Spec::Rpm::Name.parse(context[:name]) }.to_os ]
    end
 
    def parse_description match, flow, opts, context
       context.replace(parse_context_line(match[1], opts))
-      { context[:cp] => flow.split("\n")[1..-1].join("\n") }
+      { context[:cp] || "" => flow.split("\n")[1..-1].join("\n") }.to_os
    end
 
    def parse_license match, *_
@@ -234,7 +247,7 @@ class Setup::Spec::Rpm::Parser
    end
 
    def parse_summary match, *_
-      { match[1] => match[2] }
+      { match[1] || "" => match[2] }.to_os
    end
 
    def parse_context match, *_
@@ -250,12 +263,13 @@ class Setup::Spec::Rpm::Parser
    end
 
    def parse_packager match, *_
-      OpenStruct.new(author: match["author"], email: match["email"])
+      OpenStruct.new(name: match["name"]&.strip, email: match["email"]&.strip)
    end
 
    def parse_context_line line, opts
       key = nil
       context = line.to_s.split(/\s+/).reduce({}) do |res, arg|
+      #binding.pry
          case arg
          when '-l'
             key = :cp
@@ -268,7 +282,7 @@ class Setup::Spec::Rpm::Parser
             when :fullname
                res[:name] = arg
             else
-               res[:name] = "#{opts["adopted_name"]}-#{arg}"
+               res[:name] = "#{opts["name"]}-#{arg}"
             end
          end
 
@@ -276,16 +290,21 @@ class Setup::Spec::Rpm::Parser
       end
 
       if context[:name]
-         opts["secondaries"] ||= {}
-         opts["secondaries"][context[:name]] ||= {}
+         opts["secondaries"] ||= []
+#         name = Setup::Spec::Rpm::Name.parse(context[:name])
+#      binding.pry
+#         sel = opts["secondaries"].select { |sec| sec.name == name }
+
+#            opts["secondaries"] << { "name" => name }.to_os if sel.blank?
       end
+#      binding.pry
 
       context
    end
 
    class << self
       def match? source_in
-         MATCHER =~ source(source_in).join("\n")
+         MATCHER =~ source_in
       end
    end
 end

@@ -31,7 +31,11 @@ class Setup::Spec::Rpm::Name
    end
 
    def match? other
-      match_by?("kind", other) && match_by?("name", other)
+      if other.is_a?(self.class)
+         self.match_by?("kind", other) && self.match_by?("name", other)
+      else
+         other.to_s == self.fullname
+      end
    end
 
    def == other

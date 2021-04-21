@@ -104,7 +104,7 @@ class Setup::Source::Base
                   nil
                end
 
-            value && [ name, value ] || nil
+            value
          end.compact.to_os
       end
 
@@ -146,7 +146,7 @@ class Setup::Source::Base
       if /^(?<name>.*)-([\d\.]+)$/ =~ fullname
          name
       else
-         fullname
+         fullname || rootdir.split("/").last || "root"
       end
    end
 

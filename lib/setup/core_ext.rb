@@ -166,7 +166,7 @@ class Hash
          new =
          if common_keys.include?(key)
             case value
-            when Hash
+            when Hash, OpenStruct
                value.deep_merge(other_hash[key])
             when Array
                value.concat([ other_hash[key] ].compact.flatten(1))
@@ -205,10 +205,73 @@ class OpenStruct
    end
 
    def map *args, &block
-      self.to_h.map(*args, &block)
+      res = self.class.new
+
+      self.each_pair do |key, value|
+         res[key] = block[key, value]
+      end
+
+      res
+   end
+
+   def select &block
+      res = self.class.new
+
+      self.each_pair do |key, value|
+         res[key] = value if block[key, value]
+      end
+
+      res
+   end
+
+   def compact
+      select { |_, value| value.present? }
    end
 
    def each *args, &block
       self.each_pair(*args, &block)
+   end
+
+   def reduce default = nil, &block
+      res = default
+
+      self.each_pair do |key, value|
+         res = block[res, key, value]
+      end
+
+      res
+   end
+
+   def deep_merge other_in
+      return self if other_in.nil? or other_in.blank?
+
+      other =
+         if other_in.is_a?(OpenStruct)
+            other_in.dup
+         elsif other_in.is_a?(Hash)
+            other_in.to_os
+         else
+            OpenStruct.new(nil => other_in)
+         end
+
+      self.reduce(other) do |res, key, value|
+         res[key] =
+            if res.table.keys.include?(key)
+               case value
+               when Hash, OpenStruct
+                  value.deep_merge(res[key])
+               when Array
+                  value.concat([ res[key] ].compact.flatten(1))
+               when NilClass
+                  res[key]
+               else
+                  [ value, res[key] ].compact.flatten(1)
+               end
+            else
+               value
+            end
+
+         res
+      end
    end
 end

@@ -33,7 +33,7 @@ class Setup::Space
    def name
       return @name if @name
 
-      @name = main_source&.name || spec && spec["name"] || rootdir.split("/").last || "root"
+      @name = main_source&.name || spec&.name
    end
 
    # +version+ returns a default version for the space. Returns version of a source when
@@ -45,7 +45,7 @@ class Setup::Space
    def version
       return @version if @version
 
-      @version ||= main_source&.version || spec && spec["version"] || time_stamp
+      @version ||= main_source&.version || spec&.version || time_stamp
    end
 
    attr_writer :rootdir
@@ -72,10 +72,7 @@ class Setup::Space
    # space.changes # => []
    #
    def changes
-      return @changes if @changes
-
-      changes = main_source&.respond_to?(:changes) && main_source.changes || nil
-      @changes = spec && spec["changes"] || changes || []
+      @changes ||= spec&.changes || main_source&.respond_to?(:changes) && main_source.changes || []
    end
 
    # +summaries+ returns an open-struct formatted summaries with locales as keys
@@ -84,9 +81,13 @@ class Setup::Space
    # space.summaries # => #<OpenStruct en_US.UTF-8: ...>
    #
    def summaries
-      retun @summaries if @summaries
+      return @summaries if @summaries
 
-      spec && spec["summaries"] || { Setup::I18n.default_locale => main_source&.summary }.to_os 
+      if summaries = spec&.summaries
+         summaries
+      elsif summary = main_source&.summary
+         { "" => summary }.to_os 
+      end
    end
 
    # +licenses+ returns license list defined in all the valid sources found in the space.
@@ -98,7 +99,7 @@ class Setup::Space
 
       licenses = valid_sources.map { |source| source.licenses rescue [] }.flatten.uniq
 
-      @licenses = !licenses.blank? && licenses || spec && spec["licenses"] || []
+      @licenses = !licenses.blank? && licenses || spec&.licenses || []
    end
 
    # +dependencies+ returns main source dependencies list as an array of Gem::Dependency
@@ -200,8 +201,18 @@ class Setup::Space
       end
    end
 
+   def context
+      @context ||= options[:context] || spec&.context || {}
+   end
+
    def method_missing method, *args
-      instance_variable_get(:"@#{method}") || (spec.send(method) rescue nil) || super
+      value =
+         instance_variable_get(:"@#{method}") ||
+         (spec.send(method) rescue nil) ||
+         options[method] ||
+         spec&.options[method.to_s] ||
+
+      instance_variable_set(:"@#{method}", value || super)
    end
 
    class << self

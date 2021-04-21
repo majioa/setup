@@ -19,11 +19,11 @@ class Setup::Spec::Rpm
 
    STATE = {
       name: {
-         seq: %w(of_options of_state of_source of_space of_default _name),
+         seq: %w(of_options of_state of_source of_default _name),
          default: "",
       },
       epoch: {
-         seq: %w(of_options of_space of_state),
+         seq: %w(of_options of_source of_state),
          default: nil,
       },
       version: {
@@ -315,7 +315,12 @@ class Setup::Spec::Rpm
    end
 
    def _licenses value_in
-      of_space(:licenses).blank? && value_in || of_space(:licenses)
+      sources = of_space(:valid_sources) || []
+      list = sources.map do |source|
+            source.licenses rescue nil
+         end.compact.flatten.uniq
+
+      list.blank? && value_in || list
    end
 
    def _changes value_in

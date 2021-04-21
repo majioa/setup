@@ -283,13 +283,11 @@ Feature: Spec actor
       When developer loads the space
       And he draws the template:
          """
-         Name:        <%= name %>
          Epoch:       <%= epoch %>
          """
 
       Then he gets the RPM spec
          """
-         Name:        rootname
          Epoch:       1
          """
 

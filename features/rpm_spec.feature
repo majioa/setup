@@ -7,7 +7,8 @@ Feature: RPM Spec
          Name:                rpm
          """
       When developer loads the spec
-      Then property "adopted_name" of space is "rpm"
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
+      Then stringified property "name" of space is "rpm"
 
    Scenario: Parse RPM Spec for Version
       Given RPM spec file:
@@ -16,7 +17,8 @@ Feature: RPM Spec
          Version:             1.1
          """
       When developer loads the spec
-      Then property "version" of space is "1.1"
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
+      Then stringified property "version" of space is "1.1"
 
    Scenario: Parse RPM Spec for epoch
       Given RPM spec file:
@@ -25,6 +27,7 @@ Feature: RPM Spec
          Epoch:               1
          """
       When developer loads the spec
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then property "epoch" of space is "1"
 
    Scenario: Parse RPM Spec for summary
@@ -34,6 +37,7 @@ Feature: RPM Spec
          Summary:             RPM Summary
          """
       When developer loads the spec
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then property "summaries" of space with no argument is "RPM Summary"
 
    Scenario: Parse RPM Spec for release
@@ -43,6 +47,7 @@ Feature: RPM Spec
          Release:             rc1
          """
       When developer loads the spec
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then property "release" of space is "rc1"
 
    Scenario: Parse RPM Spec for a license
@@ -53,6 +58,7 @@ Feature: RPM Spec
          License:             MIT or GPLv2 / Ruby
          """
       When developer loads the spec into the space
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then property "licenses" of space has "MIT"
       And property "licenses" of space has "GPLv2"
       And property "licenses" of space has "Ruby"
@@ -64,6 +70,7 @@ Feature: RPM Spec
          Group:               Group
          """
       When developer loads the spec
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then property "group" of space is "Group"
 
    Scenario: Parse RPM Spec for an URL
@@ -73,6 +80,7 @@ Feature: RPM Spec
          Url:                 https://path/to/soft/rpm
          """
       When developer loads the spec
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then property "uri" of space is "https://path/to/soft/rpm"
 
    Scenario: Parse RPM Spec for a VCS
@@ -82,6 +90,7 @@ Feature: RPM Spec
          Vcs:                 https://path/to/vcs/rpm
          """
       When developer loads the spec
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then property "vcs" of space is "https://path/to/vcs/rpm.git"
 
    Scenario: Parse RPM Spec for a packager
@@ -91,7 +100,15 @@ Feature: RPM Spec
          Packager:            Packer FIO <fio@example.com>
          """
       When developer loads the spec
-      Then property "packager" of space is "Packer FIO <fio@example.com>"
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
+      Then space's property "packager" with argument "name" has text:
+         """
+         Packer FIO
+         """
+      And space's property "packager" with argument "email" has text:
+         """
+         fio@example.com
+         """
 
    Scenario: Parse RPM Spec for a build architecture
       Given RPM spec file:
@@ -100,6 +117,7 @@ Feature: RPM Spec
          BuildArch:           arch64
          """
       When developer loads the spec
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then property "build_arch" of space is "arch64"
 
    Scenario: Parse RPM Spec for Source
@@ -109,17 +127,19 @@ Feature: RPM Spec
          Source:              source_file.tar
          """
       When developer loads the spec
-      Then property "source_files" of space has "source_file.tar"
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
+      Then property "source_files" of space has "%name-%version.tar"
 
    Scenario: Parse RPM Spec for many sources
       Given RPM spec file:
          """
          Name:                rpm
-         Source:              source_file.tar
+         Source0:             source_file.tar
          Source1:             source_file1.tar
          """
       When developer loads the spec
-      Then property "source_files" of space has "source_file.tar" at position "0"
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
+      Then property "source_files" of space has "%name-%version.tar" at position "0"
       And property "source_files" of space has "source_file1.tar" at position "1"
 
    Scenario: Parse RPM Spec for patch
@@ -129,6 +149,7 @@ Feature: RPM Spec
          Patch:               patch.patch
          """
       When developer loads the spec
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then property "patches" of space has "patch.patch"
 
    Scenario: Parse RPM Spec for many patches
@@ -139,6 +160,7 @@ Feature: RPM Spec
          Patch1:              patch1.patch
          """
       When developer loads the spec
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then property "patches" of space has "patch.patch" at position "0"
       And property "patches" of space has "patch1.patch" at position "1"
 
@@ -150,6 +172,7 @@ Feature: RPM Spec
          Requires:            req_newline >= 2
          """
       When developer loads the spec
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then property "requires" of space has "req >= 1" at position "0"
       And property "requires" of space has "req_new < 0.1" at position "1"
       And property "requires" of space has "req_newline >= 2" at position "2"
@@ -162,6 +185,7 @@ Feature: RPM Spec
          BuildRequires:       req_newline >= 2
          """
       When developer loads the spec
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then property "build_requires" of space has "req >= 1" at position "0"
       And property "build_requires" of space has "req_new < 0.1" at position "1"
       And property "build_requires" of space has "req_newline >= 2" at position "2"
@@ -174,6 +198,7 @@ Feature: RPM Spec
          BuildRequires(pre):  req_newline >= 2
          """
       When developer loads the spec
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then property "build_pre_requires" of space has "req >= 1" at position "0"
       And property "build_pre_requires" of space has "req_new < 0.1" at position "1"
       And property "build_pre_requires" of space has "req_newline >= 2" at position "2"
@@ -186,6 +211,7 @@ Feature: RPM Spec
          Obsoletes:           req_newline >= 2
          """
       When developer loads the spec
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then property "obsoletes" of space has "req >= 1" at position "0"
       And property "obsoletes" of space has "req_new < 0.1" at position "1"
       And property "obsoletes" of space has "req_newline >= 2" at position "2"
@@ -198,6 +224,7 @@ Feature: RPM Spec
          Provides:            req_newline >= 2
          """
       When developer loads the spec
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then property "provides" of space has "req >= 1" at position "0"
       And property "provides" of space has "req_new < 0.1" at position "1"
       And property "provides" of space has "req_newline >= 2" at position "2"
@@ -210,6 +237,7 @@ Feature: RPM Spec
          Conflicts:           req_newline >= 2
          """
       When developer loads the spec
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then property "conflicts" of space has "req >= 1" at position "0"
       And property "conflicts" of space has "req_new < 0.1" at position "1"
       And property "conflicts" of space has "req_newline >= 2" at position "2"
@@ -231,6 +259,7 @@ Feature: RPM Spec
          Spec
          """
       When developer loads the spec
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then property "descriptions" of space with no argument is:
          """
          Multiline Description
@@ -258,6 +287,7 @@ Feature: RPM Spec
          - текст2
          """
       When developer loads the spec
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then space's property "descriptions" with argument "ru_RU.UTF-8" has text:
          """
          Многострочная Заметка РПМ
@@ -271,6 +301,8 @@ Feature: RPM Spec
       Given RPM spec file:
          """
          Name:                rpm
+         Summary:             RPM Summary
+
          %package             doc
          Summary:             Doc Summary
          Summary(ru_RU.UTF-8): Итого Доки
@@ -284,23 +316,24 @@ Feature: RPM Spec
          Описание Доков
          """
       When developer loads the spec
-      Then secondary spec with adopted name "rpm-doc" has fields:
-         | adopted_name | rpm-doc   |
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
+      Then secondary spec with full name "rpm-doc" has fields:
+         | name         | rpm-doc   |
          | group        | Group1    |
          | build_arch   | arch64    |
-      And the subfield "descriptions" with argument "ru_RU.UTF-8" of secondary spec with adopted name "rpm-doc" has data:
+      And the subfield "descriptions" with argument "ru_RU.UTF-8" of secondary spec with full name "rpm-doc" has data:
          """
          Описание Доков
          """
-      And the subfield "descriptions" with no argument of secondary spec with adopted name "rpm-doc" has data:
+      And the subfield "descriptions" with no argument of secondary spec with full name "rpm-doc" has data:
          """
          Doc Desc.
          """
-      And the subfield "summaries" with argument "ru_RU.UTF-8" of secondary spec with adopted name "rpm-doc" has data:
+      And the subfield "summaries" with argument "ru_RU.UTF-8" of secondary spec with full name "rpm-doc" has data:
          """
          Итого Доки
          """
-      And the subfield "summaries" with no argument of secondary spec with adopted name "rpm-doc" has data:
+      And the subfield "summaries" with no argument of secondary spec with full name "rpm-doc" has data:
          """
          Doc Summary
          """
@@ -352,11 +385,12 @@ Feature: RPM Spec
          file2
          """
       When developer loads the spec
+      And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then property "file_list" of space has text:
          """
          file1
          """
-      And the subfield "file_list" of secondary spec with adopted name "rpm-doc" has data:
+      And the subfield "file_list" of secondary spec with full name "rpm-doc" has data:
          """
          file2
          """
@@ -403,9 +437,9 @@ Feature: RPM Spec
          """
          2
          """
-      Then property "_adopted_name" of space's spec is "%{var}%var1"
-      Then property "adopted_name" of space's spec is "rpm2"
-      And property "adopted_name" of space is "rpm2"
+      Then stringified property "name" of space's spec is "%{var}%var1"
+      #Then property "full_name" of space's spec is "rpm2"
+      #And property "full_name" of space is "rpm2"
 
    Scenario: Parse RPM Spec for macros support
       Given RPM spec file:

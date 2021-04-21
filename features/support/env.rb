@@ -12,5 +12,11 @@ Shoulda::Matchers.configure do |config|
 end
 
 After do
+   instance_variables.reject do |name|
+      name.to_s =~ /__/
+   end.each do |name|
+      instance_variable_set(name, nil)
+   end
+
    Timecop.return
 end

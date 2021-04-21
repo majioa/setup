@@ -134,7 +134,7 @@ module Setup::RpmSpecCore
          summary = value_in[locale] || value_in[locale_in]
 
          [ locale_in, t(:"spec.rpm.#{self.kind}.summary", locale: locale, binding: binding) ]
-      end.reject { |_, d| d.blank? }.to_os
+      end.to_os.compact
    end
 
    def _devel_requires value_in
@@ -172,12 +172,12 @@ module Setup::RpmSpecCore
          sum = t(:"spec.rpm.#{self.kind}.description", locale: locale, binding: binding)
 
          [ locale, sum ]
-      end.compact.map do |locale_in, summary_in|
+      end.to_os.map do |locale_in, summary_in|
          locale = locale_in.blank? && Setup::I18n.default_locale || locale_in
          summary = !%i(lib app).include?(self.kind) && summary_in || nil
 
-         [ locale_in, [ summary, value_in[locale] || value_in[locale_in] ].compact.join("\n\n") ]
-      end.reject { |_, d| d.blank? }.to_os
+         [ summary, value_in[locale] || value_in[locale_in] ].compact.join("\n\n")
+      end.compact
    end
 
    def _format_descriptions value_in
@@ -204,12 +204,12 @@ module Setup::RpmSpecCore
                res
             end.join("\n")
 
-         [ name, new_desc ]
-      end.to_os
+         new_desc
+      end
    end
 
    def _version value_in
-      Gem::Version.new(value_in.to_s)
+      value_in.is_a?(Gem::Version) && value_in || Gem::Version.new(value_in.to_s)
    end
 
    def _readme _in
