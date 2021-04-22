@@ -17,7 +17,7 @@ class Setup::Spec::Rpm::Secondary
          default: nil,
       },
       release: {
-         seq: %w(of_options of_state),
+         seq: %w(of_options of_state _release),
          default: "alt1",
       },
       build_arch: {
@@ -29,7 +29,7 @@ class Setup::Spec::Rpm::Secondary
          default: ""
       },
       group: {
-         seq: %w(of_options of_state),
+         seq: %w(of_options),
          default: ->(this) { t("spec.rpm.#{this.kind}.group") },
       },
       requires: {
@@ -58,7 +58,7 @@ class Setup::Spec::Rpm::Secondary
       },
       descriptions: {
          seq: %w(of_options of_state of_source of_default _descriptions _format_descriptions),
-         default: ""
+         default: {}.to_os
       },
       readme: {
          seq: %w(of_options of_source _readme of_state),
@@ -77,7 +77,7 @@ class Setup::Spec::Rpm::Secondary
          default: nil,
       },
       devel_requires: {
-         seq: %w(of_options _devel_requires of_state),
+         seq: %w(of_options of_state _devel_requires),
          default: nil,
       },
       devel_sources: {
@@ -113,6 +113,10 @@ class Setup::Spec::Rpm::Secondary
    end
 
    protected
+
+   def _release _value_in
+      spec.changes.last.release
+   end
 
    def initialize spec: raise, source: nil, kind: nil, options: {}
       @source = source

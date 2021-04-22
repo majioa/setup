@@ -194,17 +194,6 @@ class Setup::Source::Gem < Setup::Source::Base
       "Development/Ruby"
    end
 
-   # Default changes base on the gem info
-   def changes
-      [ OpenStruct.new(
-         date: Date.today.strftime("%a %b %d %Y"),
-         author: "Spec Author",
-         email: "author@example.org",
-         version: version,
-         release: "alt1",
-         description: "- + packaged gem") ]
-   end
-
    def descriptions
       OpenStruct.new(Setup::I18n.default_locale => spec.description)
    end
@@ -224,6 +213,14 @@ class Setup::Source::Gem < Setup::Source::Base
 
    def dependencies type = nil
       spec.dependencies.select { |dep| !type || dep.type == type }
+   end
+
+   def provide
+      Gem::Dependency.new(spec.name, Gem::Requirement.new(["= #{spec.version}"]), :runtime)
+   end
+
+   def licenses
+      spec.licenses
    end
 
    protected

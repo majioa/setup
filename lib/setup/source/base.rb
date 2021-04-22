@@ -309,6 +309,14 @@ class Setup::Source::Base
       end
    end
 
+   def dependencies *args
+      []
+   end
+
+   def licenses
+      []
+   end
+
    protected
 
    def exedir

@@ -4,6 +4,8 @@ end
 
 def cli
    @cli ||= Setup::CLI.new
+   @cli.option_parser.default_argv << "-v" # NOTE to avoid errors
+   @cli
 end
 
 def name_list

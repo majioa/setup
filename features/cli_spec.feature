@@ -70,3 +70,15 @@ Feature: Setup CLI
       Then space's options "spec_file" is "features/fixtures/default.spec"
       And property "spec" of space is of kind "Setup::Spec::Rpm"
 
+   Scenario: Setup CLI maintainer metadata validation
+      Given blank setup CLI
+      And options for Setup CLI:
+         """
+         --maintainer-name="Pavel Skrylev" --maintainer-email=majioa@altlinux.org
+         """
+      When developer loads setup.rb
+      Then space's options "maintainer_name" is "Pavel Skrylev"
+      And space's options "maintainer_email" is "majioa@altlinux.org"
+      And property "maintainer_name" of options is "Pavel Skrylev"
+      And property "maintainer_email" of options is "majioa@altlinux.org"
+

@@ -102,7 +102,7 @@ class Setup::Space
       @licenses = !licenses.blank? && licenses || spec&.licenses || []
    end
 
-   # +dependencies+ returns main source dependencies list as an array of Gem::Dependency
+   # +dependencies+ returns all the valid source dependencies list as an array of Gem::Dependency
    # objects, otherwise returning blank array.
    def dependencies
       @dependencies ||= valid_sources.map do |source|
@@ -163,7 +163,7 @@ class Setup::Space
    end
 
    def spec_type
-      @spec_type ||= options.spec_type
+      @spec_type ||= options.spec_type || spec.class.to_s.split("::").last.downcase
    end
 
    protected

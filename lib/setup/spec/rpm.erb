@@ -39,7 +39,6 @@ BuildRequires(pre): <%= dep %>
 BuildRequires: <%= dep %>
 <% end -%>
 
-
 %add_findreq_skiplist %ruby_gemslibdir/**/*
 %add_findprov_skiplist %ruby_gemslibdir/**/*
 <% requires.each do |dep| -%>
@@ -64,6 +63,7 @@ Conflicts:     <%= dep %>
 <% secondaries.each do |secondary| -%>
 %package       -n <%= secondary.name %>
 Version:       <%= secondary.version %>
+Release:       <%= secondary.release %>
 <% secondary.summaries.each_pair do |cp, summary| -%>
 Summary<%= !cp.blank? && "(#{cp})" || nil %>:<%= " " * (cp.blank? && 7 || 1 ) %><%= summary %>
 <% end -%>
@@ -72,8 +72,21 @@ Group:         <%= secondary.group %>
 BuildArch:     <%= secondary.build_arch %>
 <% end -%>
 
-<% descriptions.each_pair do |arg, description| -%>
-%description   -n <%= secondary.name %><%= !arg.blank? && " -l #{arg}" || nil %>
+<% secondary.requires.each do |dep| -%>
+Requires:      <%= dep %>
+<% end -%>
+<% secondary.obsoletes.each do |dep| -%>
+Obsoletes:     <%= dep %>
+<% end -%>
+<% secondary.provides.each do |dep| -%>
+Provides:      <%= dep %>
+<% end -%>
+<% secondary.conflicts.each do |dep| -%>
+Conflicts:     <%= dep %>
+<% end -%>
+
+<% secondary.descriptions.each_pair do |cp, description| -%>
+%description   -n <%= secondary.name %><%= !cp.blank? && " -l #{cp}" || nil %>
 <%= description %>
 
 <% end -%>

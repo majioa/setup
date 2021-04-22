@@ -891,6 +891,7 @@ Feature: Spec actor
          Provides:            req >= 1
          Provides:            req_new < 0.1
          Provides:            req_newline >= 2
+         Provides:            ruby-rpm
 
          """
 
@@ -1538,6 +1539,7 @@ Feature: Spec actor
 
          %add_findreq_skiplist %ruby_gemslibdir/**/*
          %add_findprov_skiplist %ruby_gemslibdir/**/*
+         Provides:      gem(foo_boo) = 5.2
 
          %description
          Foo Boo gem
@@ -1562,7 +1564,7 @@ Feature: Spec actor
 
          %changelog
          * Mon Jan 01 2001 Spec Author <author@example.org> 5.2-alt1
-         - + packaged gem
+         - + packaged gem with Ruby Policy 2.0
 
 
          """
@@ -1805,6 +1807,7 @@ Feature: Spec actor
          %add_findreq_skiplist %ruby_gemslibdir/**/*
          %add_findprov_skiplist %ruby_gemslibdir/**/*
          Requires:      gem(b_oofoo) = 5.2.4.4
+         Provides:      gem(foo_boo) = 5.2
 
          %description
          Foo Boo gem
@@ -1892,7 +1895,7 @@ Feature: Spec actor
 
          %changelog
          * Mon Jan 01 2001 Spec Author <author@example.org> 5.2-alt1
-         - + packaged gem
+         - + packaged gem with Ruby Policy 2.0
 
 
          """
@@ -2229,6 +2232,7 @@ Feature: Spec actor
          %add_findreq_skiplist %ruby_gemslibdir/**/*
          %add_findprov_skiplist %ruby_gemslibdir/**/*
          Requires:      gem(b_oofoo) = 5.2.4.4
+         Provides:      gem(foo_boo) = 5.2
 
          %description
          Foo Boo gem
@@ -2239,7 +2243,7 @@ Feature: Spec actor
          Group:         Development/Ruby
 
          Requires:      gem(foo_boo) = 5.2
-         Requires:      gem(b_oofoo_dev) >= 5.2.4
+         Provides:      gem(foo_boo_ext) = 1.1.7
 
          %description   -n gem-foo-boo-ext
          Foo boo Ext gem desc
@@ -2252,8 +2256,7 @@ Feature: Spec actor
          Group:         Development
          BuildArch:     noarch
 
-         Requires:      gem(foo_boo) = 5.2
-         Requires:      gem(b_oofoo_dev) >= 5.2.4
+         Requires:      gem(foo_boo_ext) = 1.1.7
 
          %description   -n foo-boo-ext
          Foo boo Ext gem executable(s).
@@ -2271,8 +2274,7 @@ Feature: Spec actor
          Group:         Development/Documentation
          BuildArch:     noarch
 
-         Requires:      gem(foo_boo) = 5.2
-         Requires:      gem(b_oofoo_dev) >= 5.2.4
+         Requires:      gem(foo_boo_ext) = 1.1.7
 
          %description   -n gem-foo-boo-ext-doc
          Foo boo Ext gem documentation files.
@@ -2290,7 +2292,7 @@ Feature: Spec actor
          Group:         Development/Ruby
          BuildArch:     noarch
 
-         Requires:      gem(foo_boo) = 5.2
+         Requires:      gem(foo_boo_ext) = 1.1.7
          Requires:      gem(b_oofoo_dev) >= 5.2.4
 
          %description   -n gem-foo-boo-ext-devel
@@ -2309,7 +2311,7 @@ Feature: Spec actor
          Group:         Development
          BuildArch:     noarch
 
-         Requires:      gem(b_oofoo) = 5.2.4.4
+         Requires:      gem(foo_boo) = 5.2
 
          %description   -n foo
          Foo Boo gem summary executable(s).
@@ -2327,7 +2329,7 @@ Feature: Spec actor
          Group:         Development/Documentation
          BuildArch:     noarch
 
-         Requires:      gem(b_oofoo) = 5.2.4.4
+         Requires:      gem(foo_boo) = 5.2
 
          %description   -n gem-foo-boo-doc
          Foo Boo gem summary documentation files.
@@ -2345,7 +2347,7 @@ Feature: Spec actor
          Group:         Development/Ruby
          BuildArch:     noarch
 
-         Requires:      gem(b_oofoo) = 5.2.4.4
+         Requires:      gem(foo_boo) = 5.2
 
          %description   -n gem-foo-boo-devel
          Foo Boo gem summary development package.
@@ -2405,7 +2407,7 @@ Feature: Spec actor
 
          %changelog
          * Mon Jan 01 2001 Spec Author <author@example.org> 5.2-alt1
-         - + packaged gem
+         - + packaged gem with Ruby Policy 2.0
 
 
          """
@@ -2747,14 +2749,15 @@ Feature: Spec actor
 
          %add_findreq_skiplist %ruby_gemslibdir/**/*
          %add_findprov_skiplist %ruby_gemslibdir/**/*
-         Requires:      req >= 1
          Requires:      gem(c) >= 2
+         Requires:      req >= 1
          Obsoletes:     ruby-foo_boo < %EVR
          Obsoletes:     req >= 1
          Obsoletes:     gem(p) < 0.1
          Provides:      ruby-foo_boo = %EVR
          Provides:      req >= 1
          Provides:      gem(p) < 0.1
+         Provides:      gem(foo_boo) = 5.2
          Conflicts:     gem(g) >= 1
 
          %description

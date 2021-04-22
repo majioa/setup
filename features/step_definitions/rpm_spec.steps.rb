@@ -11,7 +11,7 @@ When('developer loads the spec into the space') do
    space.spec = Setup::Spec.load_from(@spec_in)
 end
 
-When('developer sets the space option {string} to {string}') do |option, value|
+When(/(?:he|developer) sets the space option "([^"]*)" to "([^"]*)"/) do |option, value|
    space.options[option] = value
 end
 

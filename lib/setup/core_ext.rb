@@ -225,7 +225,7 @@ class OpenStruct
    end
 
    def compact
-      select { |_, value| value.present? }
+      select { |_, value| !value.blank? }
    end
 
    def each *args, &block

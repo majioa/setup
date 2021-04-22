@@ -4,7 +4,7 @@ Given('default setup') do
    @space = Setup::Space.load_from(space_in: "features/fixtures/default.setup")
 end
 
-When('developer applies {string} actor to the setup') do |actor_name|
+When(/(?:he|developer) applies "([^"]*)" actor to the setup/) do |actor_name|
    actor = Setup::Actor.for(actor_name, space)
    @spec = actor.apply_to(space)
 end

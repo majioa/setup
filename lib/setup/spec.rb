@@ -21,7 +21,7 @@ module Setup::Spec
       end
 
       def find spec_kind
-         specs[spec_kind] || raise(InvalidSpecKindError.new(spec_kind: spec_kind))
+         specs[spec_kind.to_s] || raise(InvalidSpecKindError.new(spec_kind: spec_kind))
       end
 
       def load_from source_in

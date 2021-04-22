@@ -437,9 +437,7 @@ Feature: RPM Spec
          """
          2
          """
-      Then stringified property "name" of space's spec is "%{var}%var1"
-      #Then property "full_name" of space's spec is "rpm2"
-      #And property "full_name" of space is "rpm2"
+      Then stringified property "name" of space's spec is "rpm2"
 
    Scenario: Parse RPM Spec for macros support
       Given RPM spec file:

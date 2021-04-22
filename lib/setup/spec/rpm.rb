@@ -6,9 +6,9 @@ class Setup::Spec::Rpm
    attr_reader :spec, :comment
    attr_accessor :space
 
-   autoload(:Name, 'setup/spec/rpm/name')
-   autoload(:Parser, 'setup/spec/rpm/parser')
-   autoload(:Secondary, 'setup/spec/rpm/secondary')
+   %w(Name Parser Secondary).reduce({}) do |types, name|
+      autoload(:"#{name}", File.dirname(__FILE__) + "/rpm/#{name.downcase}")
+   end
 
    PARTS = {
       lib: nil,
@@ -31,7 +31,7 @@ class Setup::Spec::Rpm
          default: nil,
       },
       release: {
-         seq: %w(of_options of_space of_state),
+         seq: %w(of_options of_state _release),
          default: "alt1",
       },
       build_arch: {
@@ -79,13 +79,11 @@ class Setup::Spec::Rpm
          default: nil,
       },
       packager: {
-         seq: %w(of_options of_space of_state),
+         seq: %w(of_options of_state),
          default: ->(this) do
-            changes = this.of_space(:changes)
-
             OpenStruct.new(
-               name: changes[0].author,
-               email: changes[0].email
+               name: this.space.options.maintainer_name || "Spec Author",
+               email: this.space.options.maintainer_email || "author@example.org"
             )
          end
       },
@@ -110,16 +108,17 @@ class Setup::Spec::Rpm
          default: ->(this) do
             version = this.version
             description = t("spec.rpm.change.new", binding: binding)
-            release = "alt1"
+            release = this.of_options(:release) || this.of_state(:release) || "alt1"
+               #author: this.space.options.maintainer_name || "Spec Author",
+               #email: this.space.options.maintainer_email || "author@example.org",
 
             [ OpenStruct.new(
                date: Date.today.strftime("%a %b %d %Y"),
                author: this.packager.name,
                email: this.packager.email,
                version: version,
-               release: this.release,
-               description: description
-            ) ]
+               release: release,
+               description: description) ]
          end,
       },
       prep: {
@@ -160,7 +159,7 @@ class Setup::Spec::Rpm
       },
       descriptions: {
          seq: %w(of_options of_state of_source of_default _descriptions _format_descriptions),
-         default: ""
+         default: {}.to_os
       },
       readme: {
          seq: %w(of_options of_source of_space _readme of_state),
@@ -230,6 +229,16 @@ class Setup::Spec::Rpm
       vars
    end
 
+   def is_same_source? source
+      source && self.source == source
+   end
+
+   def kind
+      @kind ||= source.is_a?(Setup::Source::Gem) && :lib || :app
+   end
+
+   protected
+
    def _secondaries value_in
       names = value_in.map { |x| x.name }
 
@@ -243,9 +252,16 @@ class Setup::Spec::Rpm
 
       secondaries = secondaries.map do |sec|
          if presec = names.delete(sec.name)
-            of_state(:secondaries).find do |osec|
+            sub_sec = of_state(:secondaries).find do |osec|
                osec.name == presec
-            end.resourced_from(sec)
+            end
+
+            if sub_sec.is_a?(Secondary)
+               sub_sec.resourced_from(sec)
+            elsif sub_sec.is_a?(OpenStruct)
+               sec.state = sub_sec
+               sec
+            end
          else
             sec
          end
@@ -259,29 +275,30 @@ class Setup::Spec::Rpm
       end
    end
 
-   def is_same_source? source
-      source && self.source == source
-   end
-
-   protected
-
    def _build_requires value_in
-      deps = value_in.map do |dep|
+      deps_pre = value_in.map do |dep|
          if !m = dep.match(/gem\((.*)\) ([>=<]+) ([\w\d\.\-]+)/)
             dep
             #Gem::Dependency.new(m[1], Gem::Requirement.new(["#{m[2]} #{m[3]}"]), :runtime)
          end
       end.compact | of_space(:dependencies)
 
-      #binding.pry
-      deps.reduce([]) do |deps, dep|
+      #TODO
+      deps_pre -= ["ruby-tool-setup"]
+
+      deps_pre.reduce([]) do |deps, dep|
          deps |
             if dep.is_a?(Gem::Dependency)
                deph = Setup::Deps.to_rpm(dep.requirement)
 
                deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }
             else
-               [ dep ]
+               name = Setup::Spec::Rpm::Name.parse(dep)
+               deps_pre.find do |dep_pre|
+                  if dep_pre.is_a?(Gem::Dependency)
+                     dep_pre.name == name.name
+                  end
+               end && [] || [ dep ]
             end
       end
    end
@@ -291,7 +308,7 @@ class Setup::Spec::Rpm
          res || uri && (match = uri.match(rule)) && e[match] || nil
       end
 
-      vcs && "#{vcs}#{/\.git/ !~ vcs && ".git" || ""}" || nil
+      vcs && "#{vcs}#{/\.git/ !~ vcs && ".git" || ""}".downcase || nil
    end
 
    def _source_files value_in
@@ -308,7 +325,9 @@ class Setup::Spec::Rpm
       stated_name = of_state(:name)
 
       if stated_name && stated_name.prefix != name.autoprefix
-         build_pre_requires.unshift(of_default(:build_pre_requires)[0])
+         default = of_default(:build_pre_requires)[0]
+
+         build_pre_requires.unshift(default) unless build_pre_requires.include?(default)
       end
 
       build_pre_requires
@@ -317,8 +336,8 @@ class Setup::Spec::Rpm
    def _licenses value_in
       sources = of_space(:valid_sources) || []
       list = sources.map do |source|
-            source.licenses rescue nil
-         end.compact.flatten.uniq
+            source.licenses
+         end.flatten.uniq
 
       list.blank? && value_in || list
    end
@@ -331,11 +350,13 @@ class Setup::Spec::Rpm
             version = self.version
             description = t("spec.rpm.change.upgrade", binding: binding)
             release = "alt1"
+            packager_name = space.options.maintainer_name || packager.name
+            packager_email = space.options.maintainer_email || packager.email
 
             OpenStruct.new(
                date: Date.today.strftime("%a %b %d %Y"),
-               author: packager.name,
-               email: packager.email,
+               author: packager_name,
+               email: packager_email,
                version: version,
                release: release,
                description: description
@@ -343,6 +364,10 @@ class Setup::Spec::Rpm
          end
 
       value_in | [ new_change ].compact
+   end
+
+   def _release value_in
+      changes.last.release
    end
 
    def secondary_parts_for object, source
@@ -357,10 +382,6 @@ class Setup::Spec::Rpm
 
    def source
       space.main_source
-   end
-
-   def kind
-      @kind ||= source.is_a?(Setup::Source::Gem) && :lib || :app
    end
 
    def initialize space: nil, state: {}, options: {}

@@ -11,7 +11,9 @@ class Setup::CLI
       spec_type: "rpm",
       ignored_names: [],
       regarded_names: [],
-      spec_file: nil
+      spec_file: nil,
+      maintainer_name: nil,
+      maintainer_email: nil
    }.to_os
 
    def option_parser
@@ -41,6 +43,14 @@ class Setup::CLI
 
             opts.on("-s", "--spec-file=FILE", String, "Spec file for covering the setup space") do |file|
                options.spec_file = file
+            end
+
+            opts.on("--maintainer-email=EMAIL", String, "Email of the maintainer to use on spec generation") do |email|
+               options.maintainer_email = email
+            end
+
+            opts.on("-s", "--maintainer-name=NAME", String, "Name of the maintainer to use on spec generation") do |name|
+               options.maintainer_name = name
             end
 
             opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
@@ -80,8 +90,8 @@ class Setup::CLI
          res[action_name] = Setup::Actor.for!(action_name, space)
 
          res
-      end.map do |(action_name, actor)|
-         [ action_name, actor.apply_to(space) ]
-      end.to_os
+      end.map do |action_name, actor|
+         actor.apply_to(space)
+      end
    end
 end

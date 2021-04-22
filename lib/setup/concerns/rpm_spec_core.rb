@@ -21,7 +21,7 @@ module Setup::RpmSpecCore
    end
 
    def of_state name
-      state.has_key?(name.to_s) && state[name.to_s] || nil
+      state[name.to_s] || state[name.to_sym]
    end
 
    def of_options name
@@ -62,6 +62,10 @@ module Setup::RpmSpecCore
 
    def state
       @state ||= {}
+   end
+
+   def state= value
+      @state = value
    end
 
 #   def context
@@ -128,17 +132,18 @@ module Setup::RpmSpecCore
 
    def _summaries value_in
       source_name = source&.name
+      summary_in = of_source(:summary)
 
       Setup::I18n.defaulted_locales.map do |locale_in|
          locale = locale_in.blank? && Setup::I18n.default_locale || locale_in
-         summary = value_in[locale] || value_in[locale_in]
+         summary = !%i(lib app).include?(self.kind) && summary_in || value_in[locale] || value_in[locale_in] || nil
 
          [ locale_in, t(:"spec.rpm.#{self.kind}.summary", locale: locale, binding: binding) ]
       end.to_os.compact
    end
 
    def _devel_requires value_in
-      value_in ||= source.dependencies
+      value_in ||= source&.dependencies(:development) || []
 
       value_in.reduce([]) do |deps, dep|
          deph = Setup::Deps.to_rpm(dep.requirement)
@@ -173,10 +178,17 @@ module Setup::RpmSpecCore
 
          [ locale, sum ]
       end.to_os.map do |locale_in, summary_in|
-         locale = locale_in.blank? && Setup::I18n.default_locale || locale_in
-         summary = !%i(lib app).include?(self.kind) && summary_in || nil
-
-         [ summary, value_in[locale] || value_in[locale_in] ].compact.join("\n\n")
+         if locale_in.blank?
+            if !%i(lib app).include?(self.kind)
+               description = of_source(:description)
+               [ summary_in, description ].compact.join("\n\n")
+            else
+               locale = Setup::I18n.default_locale
+               value_in[locale] || value_in[locale_in]
+            end
+         else
+            summary_in || value_in[locale_in]
+         end
       end.compact
    end
 
@@ -217,15 +229,26 @@ module Setup::RpmSpecCore
    end
 
    def _requires value_in
-      #binding.pry if !of_source(:dependencies)
-      deps = value_in.map do |dep|
+      deps_pre =
+         if %i(lib app).include?(self.kind)
+            source&.dependencies(:runtime) || []
+         else
+            reqs = self.kind == :devel && devel_requires || []
+            [ source&.provide ].compact | reqs
+         end
+
+      deps = deps_pre | value_in.map do |dep|
          if !m = dep.match(/gem\((.*)\) ([>=<]+) ([\w\d\.\-]+)/)
             dep
             # Gem::Dependency.new(m[1], Gem::Requirement.new(["#{m[2]} #{m[3]}"]), :runtime)
          end
-      end.compact | dependencies
+      end.compact
 
-      deps.reduce([]) do |deps, dep|
+      render_deps(deps)
+   end
+
+   def render_deps deps_in
+      deps_in.reduce([]) do |deps, dep|
          deps |
             if dep.is_a?(Gem::Dependency)
                deph = Setup::Deps.to_rpm(dep.requirement)
@@ -237,15 +260,25 @@ module Setup::RpmSpecCore
    end
 
    def _provides value_in
-      provides = value_in.dup
       stated_name = of_state(:name)
 
-      if stated_name && stated_name.prefix != name.autoprefix && %i(lib app).include?(self.kind)
-         # TODO optionalize defaults
-         provides.unshift([ stated_name.prefix, stated_name.name ].compact.join("-") + " = %EVR")
-      end
+      provides =
+         if stated_name && stated_name.prefix != name.autoprefix && %i(lib app).include?(self.kind)
+            # TODO optionalize defaults
+            [[ stated_name.prefix, stated_name.name ].compact.join("-") + " = %EVR"]
+         else
+            []
+         end | value_in
 
-      provides
+      provides |
+         case self.kind
+         when :lib
+            render_deps([source.provide])
+         when :app
+            [[ "ruby", name ].join("-")]
+         else
+            []
+         end
    end
 
    def _obsoletes value_in

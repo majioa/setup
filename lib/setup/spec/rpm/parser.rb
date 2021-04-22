@@ -30,7 +30,7 @@ class Setup::Spec::Rpm::Parser
       vcs: /Vcs:\s+([^\s]+)/i,
       packager: {
          non_contexted: true,
-         regexp: /Packager:\s+(?<name>.*)\s*(?:<(?<email>.*)>)$/i,
+         regexp: /Packager:\s+(.*)\s*(?:<(.*)>)$/i,
          parse_func: :parse_packager
       },
       build_arch: /BuildArch:\s+([^\s]+)/i,
@@ -46,28 +46,28 @@ class Setup::Spec::Rpm::Parser
       },
       build_pre_requires: {
          non_contexted: true,
-         regexp: /(?:BuildPreReq|BuildRequires\(pre\)):\s+([\w\s<=>\.]+)/i,
+         regexp: /(?:BuildPreReq|BuildRequires\(pre\)):\s+([\w\s<=>\.\-_]+)/i,
          parse_func: :parse_dep
       },
       build_requires: {
          non_contexted: true,
-         regexp: /BuildRequires:\s+([\w\s<=>\.]+)/i,
+         regexp: /BuildRequires:\s+([\w\s<=>\.\-_]+)/i,
          parse_func: :parse_dep
       },
       obsoletes: {
-         regexp: /Obsoletes:\s+([\w\s<=>\.]+)/i,
+         regexp: /Obsoletes:\s+([\w\s<=>\.\-_]+)/i,
          parse_func: :parse_dep
       },
       provides: {
-         regexp: /Provides:\s+([\w\s<=>\.]+)/i,
+         regexp: /Provides:\s+([\w\s<=>\.\-_]+)/i,
          parse_func: :parse_dep
       },
       requires: {
-         regexp: /Requires:\s+([\w\s<=>\.]+)/i,
+         regexp: /Requires:\s+([\w\s<=>\.\-_]+)/i,
          parse_func: :parse_dep
       },
       conflicts: {
-         regexp: /Conflicts:\s+([\w\s<=>\.]+)/i,
+         regexp: /Conflicts:\s+([\w\s<=>\.\-_]+)/i,
          parse_func: :parse_dep
       },
       descriptions: {
@@ -166,28 +166,34 @@ class Setup::Spec::Rpm::Parser
       rule = data.is_a?(Hash) && data[:rule] || data
       parse_func = data.is_a?(Hash) && data[:parse_func] || :parse_default
       non_contexted = data.is_a?(Hash) && data[:non_contexted]
-      value = method(parse_func)[match, flow, opts, context]
+      reflown = reeval(flow, opts)
+      rematched = match.to_a.map { |x| x.is_a?(String) && reeval(x, opts) || x }
+      value = method(parse_func)[rematched, reflown, opts, context]
       copts = !non_contexted && context[:name] && opts["secondaries"].find do |sec|
          sec.name == Setup::Spec::Rpm::Name.parse(context[:name])
       end || opts
-      #binding.pry
+      ##binding.pry
 
       copts[key] =
       case copts[key]
       when NilClass
          value
       when Array
-      #binding.pry
          copts[key] | [ value.is_a?(Hash) && value.to_os || value ].flatten
       when Hash, OpenStruct
-      #binding.pry
          copts[key].deep_merge(value)
       else
-      #binding.pry
          [ copts[key], value ]
       end
+      #binding.pry
 
       opts
+   end
+
+   def reeval flow, opts
+      opts.deep_merge(opts["context"]).reduce(flow) do |reflown, (name, value)|
+         reflown.gsub(/%({#{name}}|#{name})/, value.to_s)
+      end || flow
    end
 
    def parse_name match, *_
@@ -221,7 +227,7 @@ class Setup::Spec::Rpm::Parser
    end
 
    def parse_dep match, *_
-      match[1].scan(/\w+(?:\s+[<=>]+\s+[\d\.]+)?/)
+      match[1].scan(/[\w\.\-_]+(?:\s+[<=>]+\s+[\d\.]+)?/)
    end
 
    def parse_default match, *_
@@ -263,7 +269,7 @@ class Setup::Spec::Rpm::Parser
    end
 
    def parse_packager match, *_
-      OpenStruct.new(name: match["name"]&.strip, email: match["email"]&.strip)
+      OpenStruct.new(name: match[1]&.strip, email: match[2]&.strip)
    end
 
    def parse_context_line line, opts

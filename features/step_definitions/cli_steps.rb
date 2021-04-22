@@ -1,5 +1,19 @@
 Given('options for Setup CLI:') do |text|
-   cli.option_parser.default_argv = text.split(/\s+/)
+   subs = []
+   args =
+      text.gsub(/"[^"]*"/) do |m|
+         i = subs.size
+         /"([^"]*)"/ =~ m
+         subs << $1
+         "\x1#{i.chr}"
+      end.split(/\s+/).map do |token|
+         token.gsub(/\x1./) do |chr|
+            /\x1(.)/ =~ chr
+            subs[$1.ord]
+         end
+      end
+
+   cli.option_parser.default_argv = args
 end
 
 Given('blank setup CLI') do
