@@ -18,6 +18,7 @@ end
 
 Given('blank setup CLI') do
    @cli = nil
+   cli.option_parser.default_argv = []
 end
 
 Given('the default option for {string} is {string}') do |name, value|

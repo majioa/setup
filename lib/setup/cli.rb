@@ -45,12 +45,12 @@ class Setup::CLI
                options.spec_file = file
             end
 
-            opts.on("--maintainer-email=EMAIL", String, "Email of the maintainer to use on spec generation") do |email|
-               options.maintainer_email = email
+            opts.on("--maintainer-name=NAME", String, "Name of the maintainer to use on spec generation") do |name|
+               options.maintainer_name = name
             end
 
-            opts.on("-s", "--maintainer-name=NAME", String, "Name of the maintainer to use on spec generation") do |name|
-               options.maintainer_name = name
+            opts.on("--maintainer-email=EMAIL", String, "Email of the maintainer to use on spec generation") do |email|
+               options.maintainer_email = email
             end
 
             opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|

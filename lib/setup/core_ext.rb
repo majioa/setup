@@ -187,7 +187,16 @@ end
 
 class Object
    def blank?
-      self.nil? || self.to_s == ""
+      case self
+      when NilClass, FalseClass
+         true
+      when TrueClass
+         false
+      when Hash, Array
+         !self.any?
+      else
+         self.to_s == ""
+      end
    end
 
    def to_os
