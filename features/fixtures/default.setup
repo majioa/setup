@@ -3794,7 +3794,7 @@ spec: |
       epoch: 1
       summaaries: !ruby/object:OpenStruct
          table:
-            ! '': RPM sum
+            :'': RPM sum
       licenses:
        - MIT
       group: Group
@@ -3842,6 +3842,6 @@ spec: |
             :2: req_newline >= 2
       descriptions: !ruby/object:OpenStruct
          table:
-            ! '': RPM desc
+            :'': RPM desc
             'ru_RU.UTF8': Заметка
    
