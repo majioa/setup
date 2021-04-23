@@ -61,7 +61,7 @@ Then('space\'s property {string} with argument {string} has fields:') do |proper
 end
 
 Then('secondary spec with full name {string} has fields:') do |arg, table|
-   sec = space.spec.secondaries.find {|sec| sec.name == arg }
+   sec = space.spec.secondaries.find {|sec| sec.name == arg }&.state
 
    expect(sec).to_not be_nil
    table.rows_hash.each { |key, value| expect(sec[key].to_s).to eql(value) }
@@ -82,21 +82,21 @@ Then('the subfield {string} with no argument of space\'s property {string} with 
 end
 
 Then('the subfield {string} with argument {string} of secondary spec with full name {string} has data:') do |subprop, subarg, arg, text|
-   sec = space.spec.secondaries.find {|sec| sec.name == arg }
+   sec = space.spec.secondaries.find {|sec| sec.name == arg }&.state
 
    expect(sec).to_not be_nil
    expect(sec[subprop][subarg].to_s).to eql(text)
 end
 
 Then('the subfield {string} with no argument of secondary spec with full name {string} has data:') do |subprop, arg, text|
-   sec = space.spec.secondaries.find {|sec| sec.name == arg }
+   sec = space.spec.secondaries.find {|sec| sec.name == arg }&.state
 
    expect(sec).to_not be_nil
    expect(sec[subprop][""].to_s).to eql(text)
 end
 
 Then('the subfield {string} of secondary spec with full name {string} has data:') do |subprop, arg, text|
-   sec = space.spec.secondaries.find {|sec| sec.name == arg }
+   sec = space.spec.secondaries.find {|sec| sec.name == arg }&.state
 
    expect(sec).to_not be_nil
    expect(sec[subprop].to_s).to eql(text)

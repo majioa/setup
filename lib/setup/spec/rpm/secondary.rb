@@ -65,7 +65,7 @@ class Setup::Spec::Rpm::Secondary
          default: nil,
       },
       executables: {
-         seq: %w(of_options of_source of_space of_state),
+         seq: %w(of_options of_source of_state),
          default: [],
       },
       docs: {
@@ -118,11 +118,11 @@ class Setup::Spec::Rpm::Secondary
       spec.changes.last.release
    end
 
-   def initialize spec: raise, source: nil, kind: nil, options: {}
+   def initialize spec: raise, source: nil, kind: nil, state: {}, options: {}
       @source = source
       @spec = spec
       @kind = kind
+      @state = state
       @options = options
-      #parse_options(options)
    end
 end

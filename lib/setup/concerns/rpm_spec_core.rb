@@ -61,11 +61,11 @@ module Setup::RpmSpecCore
    end
 
    def state
-      @state ||= {}
+      @state ||= {}.to_os
    end
 
    def state= value
-      @state = value
+      @state = value.to_os
    end
 
 #   def context
@@ -157,18 +157,6 @@ module Setup::RpmSpecCore
       []
    end
 
-#   def executables
-#      @executables ||= (source&.executables rescue []) || []
-#   end
-#
-#   def docs
-#      @docs ||= (source&.docs rescue []) || []
-#   end
-#
-#   def compilables
-#      @compilables ||= (source&.extensions rescue []) || []
-#   end
-#
    def _descriptions value_in
       source_name = of_source(:name)
       summary = of_source(:summary)

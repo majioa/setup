@@ -85,6 +85,10 @@ class Setup::CLI
       @space ||= Setup::Space.load_from(options: parse.options)
    end
 
+   def space= value
+      @space = value
+   end
+
    def run
       actions.reduce({}.to_os) do |res, action_name|
          res[action_name] = Setup::Actor.for!(action_name, space)

@@ -43,7 +43,7 @@ class Setup::Spec::Rpm
          default: ""
       },
       group: {
-         seq: %w(of_options of_state of_space of_source),
+         seq: %w(of_options of_state of_source),
          default: ->(this) { t("spec.rpm.#{this.kind}.group") },
       },
       requires: {
@@ -268,10 +268,20 @@ class Setup::Spec::Rpm
       end
 
       secondaries | names.map do |an|
-         value_in.find {|sec| sec.name == an } ||
+         sec = value_in.find { |sec| sec.name == an }
+
+         if sec.is_a?(Secondary)
+            sec
+         else
+            source = space.sources.find { |s| s.name = an.autoname }
+            name = Setup::Spec::Rpm::Name.parse(an.fullname)
+
             Secondary.new(spec: self,
                           kind: an.kind,
-                          options: { name: an.fullname })
+                          state: sec,
+                          source: source,
+                          options: { name: name })
+         end
       end
    end
 
