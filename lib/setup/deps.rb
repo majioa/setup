@@ -72,7 +72,7 @@ class Setup::Deps
 
       dsl.deps.each do |dep|
          to_rpm(dep.requirement).map do |a, b|
-            list << "ruby-gem(#{dep.name}) #{a} #{b}"
+            list << "gem(#{dep.name}) #{a} #{b}"
          end
       end
 
