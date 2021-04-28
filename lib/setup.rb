@@ -1,3 +1,5 @@
+require 'pry' rescue nil
+
 require 'setup/version'
 # Load concerns
 Dir[File.join(File.dirname(__FILE__), 'setup', 'concerns', '*.rb')].each { |d| require(d) }

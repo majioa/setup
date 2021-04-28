@@ -139,8 +139,9 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def docs
-      # TODO make docs to docdir
-      (!spec.rdoc_options.blank? && [ default_ridir ] || []) | spec.extra_rdoc_files
+      # TODO make docs to docdir with lib/.rb replace to .ri
+      #require 'pry';binding.pry
+      (!spec.rdoc_options.blank? && [ default_ridir ] || files(:lib)) | spec.extra_rdoc_files
    end
 
    # custom

@@ -13,7 +13,7 @@ module Setup::Actor
 
    class << self
       def kinds
-         list.keys
+         @kinds ||= AUTOMAP.keys.map(&:to_s).map(&:downcase)
       end
 
       def actors

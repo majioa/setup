@@ -36,7 +36,7 @@ class Setup::Spec::Rpm
       },
       build_arch: {
          seq: %w(of_options of_state of_source),
-         default: nil,
+         default: "noarch",
       },
       summaries: {
          seq: %w(of_options of_state of_source of_default _summaries),
@@ -47,7 +47,7 @@ class Setup::Spec::Rpm
          default: ->(this) { t("spec.rpm.#{this.kind}.group") },
       },
       requires: {
-         seq: %w(of_options of_state of_default _requires),
+         seq: %w(of_options of_state of_default _requires_plain_only _requires),
          default: [],
       },
       provides: {
@@ -192,8 +192,22 @@ class Setup::Spec::Rpm
       dependencies: {
          seq: %w(of_options of_state of_source),
          default: []
+      },
+      ruby_alias_names: {
+         seq: %w(of_options of_state _ruby_alias_names _ruby_alias_names_local),
+         default: []
+      },
+      gem_versionings: {
+         seq: %w(of_options of_state _gem_versionings),
+         default: []
+      },
+      ignored_names: {
+         seq: %w(of_options of_state of_space),
+         default: []
       }
    }
+
+   include Setup::RpmSpecCore
 
    def draw spec = nil
       b = binding
@@ -202,31 +216,8 @@ class Setup::Spec::Rpm
       ERB.new(spec || spec_template, trim_mode: "<>-", eoutvar: "@spec").result(b)
    end
 
-   include Setup::RpmSpecCore
-
-#   def full_name
-#      return @full_name if @full_name
-#
-#      prefix = space.main_source&.respond_to?(:name_prefix) && space.main_source.name_prefix || nil
-#      pre_name = [ prefix, space.main_source&.name || space.name ].compact.join("-")
-#      @full_name = !pre_name.blank? && pre_name || self["adopted_name"]
-#   end
-
-#   def has_any_compilable?
-#      !space.compilables.empty?
-#   end
-#
-#   # properties
-#
    def macros name
       [ context.__macros[name] ].flatten(1).map { |x| "%#{name} #{x}" }.join("\n")
-   end
-
-   def variables
-      vars = context.dup
-      vars.__macros = nil
-      vars.delete_field("__macros")
-      vars
    end
 
    def is_same_source? source
@@ -239,13 +230,42 @@ class Setup::Spec::Rpm
 
    protected
 
+   def ruby_build
+      @ruby_build ||= variables.ruby_build&.split(/\s+/) || []
+   end
+
+   def _ruby_alias_names value_in
+      @ruby_alias_names ||= (value_in || []) | ruby_build.reduce([]) do |res, line|
+         case line
+         when /--use=(.*)/
+            res << [ $1 ]
+         when /--alias=(.*)/
+            res.last << $1
+         end
+
+         res
+      end
+   end
+
+   def _ruby_alias_names_local value_in
+      return @ruby_alias_names_local if @ruby_alias_names_local
+
+      names = [ source&.name, name&.name ].compact.uniq
+
+      @ruby_alias_names_local = value_in | (names.size > 1 && [ names ] || [])
+   end
+
    def _secondaries value_in
       names = value_in.map { |x| x.name }
 
       secondaries = space.sources.reject do |source|
-         source.name == space.main_source&.name
+         source.name == space.main_source&.name ||
+            ignored_names.include?(source.name)
       end.map do |source|
-         sec = Secondary.new(source: source, spec: self, options: { name_prefix: name.prefix })
+         sec = Secondary.new(source: source,
+                             spec: self,
+                             state: { context: context },
+                             options: { name_prefix: name.prefix })
 
          secondary_parts_for(sec, source)
       end.concat(secondary_parts_for(self, source)).flatten.compact
@@ -295,13 +315,13 @@ class Setup::Spec::Rpm
 
       #TODO
       deps_pre -= ["ruby-tool-setup"]
-
-      deps_pre.reduce([]) do |deps, dep|
+      #binding.pry
+      apply_versioning(deps_pre).reduce([]) do |deps, dep|
          deps |
             if dep.is_a?(Gem::Dependency)
                deph = Setup::Deps.to_rpm(dep.requirement)
 
-               deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }
+               [ deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }.join(" ") ]
             else
                name = Setup::Spec::Rpm::Name.parse(dep)
                deps_pre.find do |dep_pre|
@@ -385,7 +405,11 @@ class Setup::Spec::Rpm
          next object.is_a?(Secondary) && object || nil if !func
 
          if object.send(func)
-            Secondary.new(source: source, spec: self, kind: kind, options: { name_prefix: name.prefix })
+            Secondary.new(source: source,
+                          spec: self,
+                          kind: kind,
+                          state: { context: context },
+                          options: { name_prefix: name.prefix })
          end
       end
    end

@@ -88,7 +88,7 @@ module Setup::RpmSpecCore
       # TODO make smart selection of executable name
       @executable_name =
          if executables.size > 1
-            max = executables.max { |x| x.size }.size
+            max = executables.map { |x| x.size }.max
             exec_map = executables.map {|exec| (exec + " " * (max - exec.size)).unpack("U*") }
             filter = [45, 46, 95]
 
@@ -145,9 +145,10 @@ module Setup::RpmSpecCore
    def _devel_requires value_in
       value_in ||= source&.dependencies(:development) || []
 
-      value_in.reduce([]) do |deps, dep|
-         deph = Setup::Deps.to_rpm(dep.requirement)
-         deps | deph.map {|a, b| "#{name.autoprefix}(#{dep.name}) #{a} #{b}" }
+      apply_versioning(value_in).reduce([]) do |deps, dep|
+         depa = Setup::Deps.to_rpm(dep.requirement).map {|(rel, version)| "#{rel} #{version}"}
+
+         deps | [ Gem::Dependency.new(dep.name, Gem::Requirement.new(depa)) ]
       end
    end
 
@@ -216,6 +217,10 @@ module Setup::RpmSpecCore
       files.grep(/readme.*/i).join(" ")
    end
 
+   def _requires_plain_only value_in
+      @requires_plain_only ||= value_in&.reject {|dep| dep.match(/gem\((.*)\) ([>=<]+) ([\w\d\.\-]+)/) }
+   end
+
    def _requires value_in
       deps_pre =
          if %i(lib app).include?(self.kind)
@@ -225,14 +230,43 @@ module Setup::RpmSpecCore
             [ source&.provide ].compact | reqs
          end
 
-      deps = deps_pre | value_in.map do |dep|
-         if !m = dep.match(/gem\((.*)\) ([>=<]+) ([\w\d\.\-]+)/)
-            dep
-            # Gem::Dependency.new(m[1], Gem::Requirement.new(["#{m[2]} #{m[3]}"]), :runtime)
-         end
-      end.compact
+      deps = apply_versioning(deps_pre | value_in, false)
+         #.reduce([]) do |deps, dep|
+         #deps |
+         #   if dep.is_a?(Gem::Dependency)
+         #      deph = Setup::Deps.to_rpm(dep.requirement)
+
+         #      [ deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }.join(" ") ]
+         #   else
+         #      if !m = dep.match(/gem\((.*)\) ([>=<]+) ([\w\d\.\-]+)/)
+         #         dep
+               # Gem::Dependency.new(m[1], Gem::Requirement.new(["#{m[2]} #{m[3]}"]), :runtime)
+         #      else
+         #         []
+         #      end
+         #   end
+      #end.compact
 
       render_deps(deps)
+      #binding.pry
+   end
+
+   def apply_versioning deps_in, append_new = true
+      gem_versionings.reduce(deps_in) do |deps, name, dep|
+         index = deps.index { |dep_in| dep_in.name == name.to_s }
+
+         if index
+            deps[index] = Gem::Dependency.new(dep.name, deps[index].requirement.merge(dep.requirement))
+         elsif append_new
+            deps << dep
+         end
+
+         deps
+      end
+   end
+
+   def variables
+      @variables ||= context.dup.delete("__macros").to_os
    end
 
    def render_deps deps_in
@@ -240,7 +274,7 @@ module Setup::RpmSpecCore
          deps |
             if dep.is_a?(Gem::Dependency)
                deph = Setup::Deps.to_rpm(dep.requirement)
-               deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }
+               [ deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }.join(" ") ]
             else
                [ dep ]
             end
@@ -279,6 +313,20 @@ module Setup::RpmSpecCore
       end
 
       obsoletes
+   end
+
+   def _gem_versionings _value_in
+      @gem_versionings ||= [ variables.gem_replace_version ].flatten.compact.reduce({}.to_os) do |res, gemver|
+         /^(?<name>[^\s]+)(?:\s(?<rel>[<=>~]+)\s(?<version>[^\s]+))?/ =~ gemver
+
+         if res[name]
+            res[name].requirement.requirements << [rel, Gem::Version.new(version)]
+         else
+            res[name] = Gem::Dependency.new(name, Gem::Requirement.new(["#{rel} #{version}"]))
+         end
+
+         res
+      end
    end
 
 #   def parse_options options_in

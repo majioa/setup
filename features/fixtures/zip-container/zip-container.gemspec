@@ -35,7 +35,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'zip-container/version'
 
 Gem::Specification.new do |s|
-  s.name             = 'zip-container'
+  s.name             = 'zip_container'
   s.version          = ZipContainer::Version::STRING
   s.authors          = ['Robert Haines', 'Finn Bacall']
   s.email            = ['support@mygrid.org.uk']

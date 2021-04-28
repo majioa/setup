@@ -62,6 +62,14 @@ class Setup::CLI
                exit
             end
          end
+
+      if @argv
+         @option_parser.default_argv.replace(@argv)
+      elsif @option_parser.default_argv.empty?
+         @option_parser.default_argv << "-h"
+      end
+
+      @option_parser
    end
 
    def options
@@ -69,15 +77,20 @@ class Setup::CLI
    end
 
    def actions
-      @actions ||= parse.actions
+      @actions ||= parse.actions.select { |a| Setup::Actor.kinds.include?(a) }
+   end
+
+   def parse!
+      return @parse if @parse
+
+      option_parser.parse!
+
+      @parse = OpenStruct.new(options: options, actions: option_parser.default_argv)
    end
 
    def parse
-      return @parse if @parse
-
-      option_parser.default_argv << "-h" if option_parser.default_argv.empty?
-      option_parser.parse!
-
+      parse!
+   rescue OptionParser::InvalidOption
       @parse = OpenStruct.new(options: options, actions: option_parser.default_argv)
    end
 
@@ -97,5 +110,9 @@ class Setup::CLI
       end.map do |action_name, actor|
          actor.apply_to(space)
       end
+   end
+
+   def initialize argv = nil
+      @argv = argv&.split(/\s+/)
    end
 end

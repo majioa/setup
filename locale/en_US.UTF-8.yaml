@@ -15,7 +15,7 @@ spec:
       exec:
          summary: "%summary executable(s)"
          description: "%summary executable(s)."
-         group: Development
+         group: Other
       doc:
          summary: "%summary documentation files"
          description: "%summary documentation files."

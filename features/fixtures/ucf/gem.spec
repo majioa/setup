@@ -13,23 +13,17 @@ BuildArch:     noarch
 
 Source:        %name-%version.tar
 BuildRequires(pre): rpm-build-ruby
-BuildRequires: gem(rake) >= 10.4
-BuildRequires: gem(rake) < 11
+BuildRequires: gem(rake) >= 10.4 gem(rake) < 11
 BuildRequires: gem(bundler) >= 0
-BuildRequires: gem(rdoc) >= 4.1
-BuildRequires: gem(rdoc) < 5
-BuildRequires: gem(test-unit) >= 3.0
-BuildRequires: gem(test-unit) < 4
+BuildRequires: gem(rdoc) >= 4.1 gem(rdoc) < 5
+BuildRequires: gem(test-unit) >= 3.0 gem(test-unit) < 4
 BuildRequires: gem(coveralls) >= 0
-BuildRequires: gem(nokogiri) >= 1.6
-BuildRequires: gem(nokogiri) < 2
-BuildRequires: gem(zip-container) >= 4.0.1
-BuildRequires: gem(zip-container) < 4.1
+BuildRequires: gem(nokogiri) >= 1.6 gem(nokogiri) < 2
+BuildRequires: gem(zip-container) >= 4.0.1 gem(zip-container) < 4.1
 
 %add_findreq_skiplist %ruby_gemslibdir/**/*
 %add_findprov_skiplist %ruby_gemslibdir/**/*
-Requires:      gem(zip-container) >= 4.0.1
-Requires:      gem(zip-container) < 4.1
+Requires:      gem(zip-container) >= 4.0.1 gem(zip-container) < 4.1
 Obsoletes:     ruby-ucf < %EVR
 Provides:      ruby-ucf = %EVR
 Provides:      gem(ucf) = 2.0.2
@@ -73,16 +67,12 @@ Group:         Development/Ruby
 BuildArch:     noarch
 
 Requires:      gem(ucf) = 2.0.2
-Requires:      gem(rake) >= 10.4
-Requires:      gem(rake) < 11
+Requires:      gem(rake) >= 10.4 gem(rake) < 11
 Requires:      gem(bundler) >= 0
-Requires:      gem(rdoc) >= 4.1
-Requires:      gem(rdoc) < 5
-Requires:      gem(test-unit) >= 3.0
-Requires:      gem(test-unit) < 4
+Requires:      gem(rdoc) >= 4.1 gem(rdoc) < 5
+Requires:      gem(test-unit) >= 3.0 gem(test-unit) < 4
 Requires:      gem(coveralls) >= 0
-Requires:      gem(nokogiri) >= 1.6
-Requires:      gem(nokogiri) < 2
+Requires:      gem(nokogiri) >= 1.6 gem(nokogiri) < 2
 
 %description   -n gem-ucf-devel
 Universal Container Format (UCF) Ruby Library development package.

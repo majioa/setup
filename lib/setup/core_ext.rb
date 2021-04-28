@@ -284,3 +284,47 @@ class OpenStruct
       end
    end
 end
+
+class Gem::Requirement
+   RELAS = { #:nodoc:
+      "="  =>  :first,
+      "!=" =>  :dup,
+      ">"  =>  :max,
+      "<"  =>  :min,
+      ">=" =>  :max,
+      "<=" =>  :min,
+      "~>" =>  lambda do |a|
+         ranges = a.map { |v| [v, v.bump] }.transpose
+         ranges[0]&.max...ranges[1]&.min
+      end
+   }.freeze
+
+   def merge other_requirement
+      reqs_tmp = self.requirements | other_requirement.requirements
+
+      relas =
+         Gem::Requirement::RELAS.map do |(op, prc)|
+            selected = reqs_tmp.map { |(rel, version)| rel == op && version || nil }.compact
+
+            prc.is_a?(Proc) && prc[selected] || selected.send(prc)
+         end
+
+      reqs =
+         if relas[0]
+            [ relas[0] ]
+         else
+            e = [ relas[3], relas[5], relas[6].begin ].compact.max
+            b = [ relas[2], relas[4], relas[6].end ].compact.min
+
+            bounds =
+               [ b && Gem::Requirement.new(">#{b != relas[2] && "=" || ""} #{b}") || nil,
+                 e && Gem::Requirement.new("<#{e != relas[3] && "=" || ""} #{e}") || nil ].compact
+
+            nes = relas[1].select {|ver| bounds.all? {|b| b.satisfied_by?(ver) }}
+
+            bounds | nes
+         end
+
+      Gem::Requirement.new(reqs)
+   end
+end

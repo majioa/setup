@@ -10,3 +10,8 @@ end
 Then('he acquires an {string} fixture spec for the setup') do |name|
    expect(@spec).to eql(IO.read("features/fixtures/#{name}/gem.spec"))
 end
+
+When('he sets the space options as:') do |table|
+   # table is a Cucumber::MultilineArgument::DataTable
+   table.raw[1..-1].to_h.each {|name, value| space.options[name] = value }
+end

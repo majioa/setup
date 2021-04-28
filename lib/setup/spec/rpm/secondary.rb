@@ -1,5 +1,3 @@
-require 'setup/spec/rpm'
-
 class Setup::Spec::Rpm::Secondary
    attr_reader :source, :spec
 
@@ -29,11 +27,11 @@ class Setup::Spec::Rpm::Secondary
          default: ""
       },
       group: {
-         seq: %w(of_options),
+         seq: %w(of_options _group),
          default: ->(this) { t("spec.rpm.#{this.kind}.group") },
       },
       requires: {
-         seq: %w(of_options of_state of_default _requires),
+         seq: %w(of_options of_state of_default _requires_plain_only _requires),
          default: [],
       },
       provides: {
@@ -88,18 +86,22 @@ class Setup::Spec::Rpm::Secondary
          seq: %w(of_options _files of_state),
          default: []
       },
+      context: {
+         seq: %w(of_options of_state),
+         default: {},
+      },
       dependencies: {
          seq: %w(of_options of_state of_source),
+         default: []
+      },
+      gem_versionings: {
+         seq: %w(of_options of_state _gem_versionings),
          default: []
       }
    }
 
    include Setup::RpmSpecCore
 
-#   def options= value
-#      parse_options(value)
-#   end
-#
    def resourced_from secondary
       @kind = secondary.kind
       @spec = secondary.spec
@@ -113,6 +115,10 @@ class Setup::Spec::Rpm::Secondary
    end
 
    protected
+
+   def _group value_in
+      value_in || is_exec? && is_app? && of_state(:group)
+   end
 
    def _release _value_in
       spec.changes.last.release

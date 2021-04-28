@@ -1,9 +1,8 @@
-<% if source.is_a?(Setup::Source::Gem) -%>
-%define        gemname <%= source.name %>
-
-<% end -%>
 <% if has_comment? -%>
 <%= comment -%>
+<% end -%>
+<% if source.is_a?(Setup::Source::Gem) -%>
+%define        gemname <%= source.name %>
 
 <% end -%>
 Name:          <%= name %>
@@ -41,6 +40,15 @@ BuildRequires: <%= dep %>
 
 %add_findreq_skiplist %ruby_gemslibdir/**/*
 %add_findprov_skiplist %ruby_gemslibdir/**/*
+<% gem_versionings.each do |name, req| -%>
+%ruby_use_gem_dependency <%= req.requirement.requirements.map { |(rel, ver)| "#{name} #{rel} #{ver}" }.join(",") %>
+<% end -%>
+<% ruby_alias_names.each do |aliases| -%>
+%ruby_alias_names <%= aliases.join(",") %>
+<% end -%>
+<% if has_ignored_names? -%>
+%ruby_ignore_names <%= ignored_names.join(",") %>
+<% end -%>
 <% requires.each do |dep| -%>
 Requires:      <%= dep %>
 <% end -%>

@@ -1,5 +1,3 @@
-require 'setup/spec/rpm'
-
 class Setup::Spec::Rpm::Parser
    MATCHER = /^Name:\s+([^\s]+)/i
 
@@ -55,11 +53,11 @@ class Setup::Spec::Rpm::Parser
          parse_func: :parse_dep
       },
       obsoletes: {
-         regexp: /Obsoletes:\s+([\w\s<=>\.\-_]+)/i,
+         regexp: /Obsoletes:\s+([\w\s<=>\.\-_%]+)/i,
          parse_func: :parse_dep
       },
       provides: {
-         regexp: /Provides:\s+([\w\s<=>\.\-_]+)/i,
+         regexp: /Provides:\s+([\w\s<=>\.\-_%]+)/i,
          parse_func: :parse_dep
       },
       requires: {
@@ -112,6 +110,10 @@ class Setup::Spec::Rpm::Parser
          non_contexted: true,
          regexp: /^%(?:(?:define|global)|([^\s]+))\s+(?:([^\s]+)\s+([^\s].*)|(.*))/i,
          parse_func: :parse_context
+      },
+      comment: {
+         non_contexted: true,
+         parse_func: :parse_comment
       }
    }
 
@@ -132,7 +134,7 @@ class Setup::Spec::Rpm::Parser
       state = source(source_in).reduce({}) do |state, line|
          SCHEME.find do |(key, rule)|
             match = rule.is_a?(Regexp) && rule.match(line) ||
-                    rule.is_a?(Hash) && rule[:regexp].match(line)
+                    rule.is_a?(Hash) && rule[:regexp] && rule[:regexp].match(line)
 
             # binding.pry
             if match
@@ -144,20 +146,25 @@ class Setup::Spec::Rpm::Parser
                else
                   matched = { name: key.to_s, flow: "", match: match }
                end
-
             end
          end
 
          if matched
-            matched[:flow] << line + "\n"
+            if matched[:flow]
+               matched[:flow] << line + "\n"
+            else
+               matched[:flow] = line + "\n"
+            end
+         else
+            matched = { name: "comment", flow: line + "\n", match: [] }
          end
 
          state
       end
 
-      # binding.pry
       store_value(state, matched[:match], matched[:name], matched[:flow], context)
 
+      #binding.pry
       Setup::Spec::Rpm.new(state: state)
    end
 
@@ -170,7 +177,7 @@ class Setup::Spec::Rpm::Parser
       rematched = match.to_a.map { |x| x.is_a?(String) && reeval(x, opts) || x }
       value = method(parse_func)[rematched, reflown, opts, context]
       copts = !non_contexted && context[:name] && opts["secondaries"].find do |sec|
-         sec.name == Setup::Spec::Rpm::Name.parse(context[:name])
+         sec.name == Setup::Spec::Rpm::Name.parse(context[:name], support_name: opts["name"])
       end || opts
       ##binding.pry
 
@@ -200,6 +207,10 @@ class Setup::Spec::Rpm::Parser
       Setup::Spec::Rpm::Name.parse(match[1])
    end
 
+   def parse_comment match, flow, *_
+      flow
+   end
+
    def parse_file match, *_
       { match[1] || "0" => match[2] }.to_os
    end
@@ -210,7 +221,7 @@ class Setup::Spec::Rpm::Parser
    end
 
    def parse_changes _, flow, *_
-      rows = flow.split("* ").map { |p| p.strip }.compact.map { |p| p.split("\n") }
+      rows = flow.split("\n* ").map { |p| p.strip }.compact.map { |p| p.split("\n") }
 
       rows[1..-1].map do |row|
          /(?<date>^\w+\s+\w+\s+\w+\s+\w+)\s+(?<author>.*)\s*(?:<(?<email>.*)>)\s+(?<version>[\w\.]+)(?:-(?<release>[\w\._]+))?$/ =~ row[0]
@@ -227,7 +238,7 @@ class Setup::Spec::Rpm::Parser
    end
 
    def parse_dep match, *_
-      match[1].scan(/[\w\.\-_]+(?:\s+[<=>]+\s+[\d\.]+)?/)
+      match[1].scan(/[^\s]+(?:\s+[<=>]+\s+[^\s]+)?/)
    end
 
    def parse_default match, *_
@@ -238,9 +249,12 @@ class Setup::Spec::Rpm::Parser
       flow.split("\n")[1..-1].join("\n")
    end
 
+   # secondary without suffix by default has kind of lib
    def parse_secondary match, flow, opts, context
       context.replace(parse_context_line(match[1], opts))
-      [ { "name" => Setup::Spec::Rpm::Name.parse(context[:name]) }.to_os ]
+      name = Setup::Spec::Rpm::Name.parse(context[:name], support_name: opts["name"])
+
+      [ { "name" => name }.to_os ]
    end
 
    def parse_description match, flow, opts, context

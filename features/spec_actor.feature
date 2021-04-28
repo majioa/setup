@@ -1265,10 +1265,10 @@ Feature: Spec actor
                name: !ruby/object:Setup::Spec::Rpm::Name
                   name: "%{var}%var1"
                   kind: app
-               context: !ruby/object:OpenStruct
-                  table:
-                     :var: rpm
-                     :var1: '2'
+               context:
+                  __macros:
+                     var: rpm
+                     var1: '2'
          """
       When developer loads the space
       And he draws the template:
@@ -1818,7 +1818,7 @@ Feature: Spec actor
          Version:       5.2
          Summary:       Foo Boo gem summary executable(s)
          Summary(ru_RU.UTF-8): Исполнямка для самоцвета foo_boo
-         Group:         Development
+         Group:         Other
          BuildArch:     noarch
 
          %description   -n foo-ba
@@ -2254,7 +2254,7 @@ Feature: Spec actor
          Version:       1.1.7
          Summary:       Foo boo Ext gem executable(s)
          Summary(ru_RU.UTF-8): Исполнямка для самоцвета foo_boo_ext
-         Group:         Development
+         Group:         Other
          BuildArch:     noarch
 
          Requires:      gem(foo_boo_ext) = 1.1.7
@@ -2309,7 +2309,7 @@ Feature: Spec actor
          Version:       5.2
          Summary:       Foo Boo gem summary executable(s)
          Summary(ru_RU.UTF-8): Исполнямка для самоцвета foo_boo
-         Group:         Development
+         Group:         Other
          BuildArch:     noarch
 
          Requires:      gem(foo_boo) = 5.2
@@ -2536,6 +2536,20 @@ Feature: Spec actor
                       - - '>='
                         - !ruby/object:Gem::Version
                            version: "2"
+                - !ruby/object:Gem::Dependency
+                  name: f
+                  requirement: !ruby/object:Gem::Requirement
+                     requirements:
+                      - - '>='
+                        - !ruby/object:Gem::Version
+                           version: "2"
+                  type: :development
+                  prerelease: false
+                  version_requirements: !ruby/object:Gem::Requirement
+                     requirements:
+                      - - '>='
+                        - !ruby/object:Gem::Version
+                           version: "2"
                description: 'Foo Boo gem'
                email: boo@example.com
                extensions:
@@ -2747,6 +2761,7 @@ Feature: Spec actor
          BuildRequires(pre): rpm-build-python
          BuildRequires: gem-a >= 1
          BuildRequires: gem(c) >= 2
+         BuildRequires: gem(f) >= 2
 
          %add_findreq_skiplist %ruby_gemslibdir/**/*
          %add_findprov_skiplist %ruby_gemslibdir/**/*

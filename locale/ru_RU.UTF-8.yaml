@@ -11,7 +11,7 @@ spec:
       exec:
          summary: Исполнямка для самоцвета %source_name
          description: Исполнямка для самоцвета %source_name.
-         group: Development
+         group: Other
       doc:
          summary: Файлы сведений для самоцвета %source_name
          description: Файлы сведений для самоцвета %source_name.

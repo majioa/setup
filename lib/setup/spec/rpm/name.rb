@@ -1,5 +1,3 @@
-require 'setup/spec/rpm'
-
 class Setup::Spec::Rpm::Name
    class InvalidAdoptedNameError < StandardError; end
    class UnsupportedMatchError < StandardError; end
@@ -100,11 +98,11 @@ class Setup::Spec::Rpm::Name
       @prefix = options[:prefix]
       @suffix = options[:suffix]
       @name = options[:name]
-      @support_name = support_name
-      @kind = options[:kind] && options[:kind].to_s || @suffix ||
+      @support_name = options[:support_name]
+      @kind = options[:kind] && options[:kind].to_s ||
+         @suffix ||
          @prefix && "lib" ||
-         @support_name&.name == name && "exec" ||
-         "app"
+         @support_name && "exec" || "app"
    end
 
    class << self
