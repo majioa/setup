@@ -97,6 +97,10 @@ class Setup::Spec::Rpm::Secondary
       gem_versionings: {
          seq: %w(of_options of_state _gem_versionings),
          default: []
+      },
+      available_gem_list: {
+         seq: %w(of_options of_state _available_gem_list),
+         default: {}
       }
    }
 
@@ -128,7 +132,7 @@ class Setup::Spec::Rpm::Secondary
       @source = source
       @spec = spec
       @kind = kind
-      @state = state
-      @options = options
+      @state = state.to_os
+      @options = options.to_os
    end
 end

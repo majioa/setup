@@ -13,7 +13,8 @@ class Setup::CLI
       regarded_names: [],
       spec_file: nil,
       maintainer_name: nil,
-      maintainer_email: nil
+      maintainer_email: nil,
+      available_gem_list: {}
    }.to_os
 
    def option_parser
@@ -29,11 +30,11 @@ class Setup::CLI
                options[:source_lib_folders] = list.compact
             end
 
-            opts.on("-i", "--ignore-names=LIST", Array, "Source names comma-separated ignore list") do |list|
+            opts.on("-I", "--ignore-names=LIST", Array, "Source names comma-separated ignore list") do |list|
                options.ignored_names |= list.compact
             end
 
-            opts.on("-r", "--regard-names=LIST", Array, "Source names comma-separated regard list") do |list|
+            opts.on("-R", "--regard-names=LIST", Array, "Source names comma-separated regard list") do |list|
                options.regarded_names |= list.compact
             end
 
@@ -51,6 +52,10 @@ class Setup::CLI
 
             opts.on("--maintainer-email=EMAIL", String, "Email of the maintainer to use on spec generation") do |email|
                options.maintainer_email = email
+            end
+
+            opts.on("-g", "--available-gem-list-file=FILE", String, "Path to a YAML-formatted file with the list of available gems to replace in dependencies") do |file|
+               options.available_gem_list = YAML.load(IO.read(file))
             end
 
             opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
@@ -95,7 +100,7 @@ class Setup::CLI
    end
 
    def space
-      @space ||= Setup::Space.load_from(options: parse.options)
+      @space ||= Setup::Space.load_from(nil, parse.options)
    end
 
    def space= value

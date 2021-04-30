@@ -56,3 +56,11 @@ end
 Then('property {string} of space is of kind {string}') do |property, kind|
    expect(space.send(property)).to be_kind_of(kind.constantize)
 end
+
+Then('space\'s options {string} is:') do |option, text|
+   expect(space.options[option]).to eql(YAML.load(text))
+end
+
+Then('property {string} of options is:') do |property, text|
+   expect(space.options.send(property)).to eql(YAML.load(text))
+end

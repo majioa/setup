@@ -4,11 +4,15 @@ require 'setup/spec'
 
 class Setup::Spec::Rpm
    attr_reader :spec, :comment
-   attr_accessor :space
 
    %w(Name Parser Secondary).reduce({}) do |types, name|
       autoload(:"#{name}", File.dirname(__FILE__) + "/rpm/#{name.downcase}")
    end
+
+   OPTIONS = %w(source conflicts uri vcs maintainer_name maintainer_email
+                source_files patches build_pre_requires context comment
+                readme executables ignored_names main_source dependencies
+                valid_sources available_gem_list)
 
    PARTS = {
       lib: nil,
@@ -59,7 +63,7 @@ class Setup::Spec::Rpm
          default: [],
       },
       conflicts: {
-         seq: %w(of_options of_space of_state),
+         seq: %w(of_options of_state),
          default: [],
       },
       file_list: {
@@ -71,28 +75,28 @@ class Setup::Spec::Rpm
          default: [],
       },
       uri: {
-         seq: %w(of_options of_state of_source of_space),
+         seq: %w(of_options of_state of_source),
          default: nil,
       },
       vcs: {
-         seq: %w(of_options of_state of_source of_space _vcs),
+         seq: %w(of_options of_state of_source _vcs),
          default: nil,
       },
       packager: {
          seq: %w(of_options of_state),
          default: ->(this) do
             OpenStruct.new(
-               name: this.space.options.maintainer_name || "Spec Author",
-               email: this.space.options.maintainer_email || "author@example.org"
+               name: this.options.maintainer_name || "Spec Author",
+               email: this.options.maintainer_email || "author@example.org"
             )
          end
       },
       source_files: {
-         seq: %w(of_options of_space of_state of_default _source_files),
+         seq: %w(of_options of_state of_default _source_files),
          default: { "0": "%name-%version.tar" }.to_os,
       },
       patches: {
-         seq: %w(of_options of_space of_state),
+         seq: %w(of_options of_state),
          default: {}.to_os,
       },
       build_requires: {
@@ -100,7 +104,7 @@ class Setup::Spec::Rpm
          default: [],
       },
       build_pre_requires: {
-         seq: %w(of_options of_space of_state of_default _build_pre_requires),
+         seq: %w(of_options of_state of_default _build_pre_requires),
          default: [ "rpm-build-ruby" ],
       },
       changes: {
@@ -109,8 +113,6 @@ class Setup::Spec::Rpm
             version = this.version
             description = t("spec.rpm.change.new", binding: binding)
             release = this.of_options(:release) || this.of_state(:release) || "alt1"
-               #author: this.space.options.maintainer_name || "Spec Author",
-               #email: this.space.options.maintainer_email || "author@example.org",
 
             [ OpenStruct.new(
                date: Date.today.strftime("%a %b %d %Y"),
@@ -122,19 +124,19 @@ class Setup::Spec::Rpm
          end,
       },
       prep: {
-         seq: %w(of_options of_space of_state),
+         seq: %w(of_options of_state),
          default: "%setup",
       },
       build: {
-         seq: %w(of_options of_space of_state),
+         seq: %w(of_options of_state),
          default: "%ruby_build",
       },
       install: {
-         seq: %w(of_options of_space of_state),
+         seq: %w(of_options of_state),
          default: "%ruby_install",
       },
       check: {
-         seq: %w(of_options of_space of_state),
+         seq: %w(of_options of_state),
          default: "%ruby_test",
       },
       secondaries: {
@@ -142,11 +144,11 @@ class Setup::Spec::Rpm
          default: [],
       },
       context: {
-         seq: %w(of_options of_state of_space),
+         seq: %w(of_options of_state),
          default: {},
       },
       comment: {
-         seq: %w(of_options of_space of_state),
+         seq: %w(of_options of_state),
          default: nil,
       },
       spec_template: {
@@ -162,11 +164,11 @@ class Setup::Spec::Rpm
          default: {}.to_os
       },
       readme: {
-         seq: %w(of_options of_source of_space _readme of_state),
+         seq: %w(of_options of_source _readme of_state),
          default: nil,
       },
       executables: {
-         seq: %w(of_options of_source of_space of_state),
+         seq: %w(of_options of_source of_state),
          default: [],
       },
       docs: {
@@ -202,8 +204,16 @@ class Setup::Spec::Rpm
          default: []
       },
       ignored_names: {
-         seq: %w(of_options of_state of_space),
+         seq: %w(of_options of_state),
          default: []
+      },
+      available_gem_list: {
+         seq: %w(of_options of_state _available_gem_list),
+         default: {}
+      },
+      versioned_gem_list: {
+         seq: %w(of_options of_state _versioned_gem_list),
+         default: {}
       }
    }
 
@@ -234,6 +244,10 @@ class Setup::Spec::Rpm
       @ruby_build ||= variables.ruby_build&.split(/\s+/) || []
    end
 
+   def _versioned_gem_list value_in
+      value_in.to_os.merge(available_gem_list.merge(gem_versionings))
+   end
+
    def _ruby_alias_names value_in
       @ruby_alias_names ||= (value_in || []) | ruby_build.reduce([]) do |res, line|
          case line
@@ -258,14 +272,15 @@ class Setup::Spec::Rpm
    def _secondaries value_in
       names = value_in.map { |x| x.name }
 
-      secondaries = space.sources.reject do |source|
-         source.name == space.main_source&.name ||
+      secondaries = sources.reject do |source|
+         source.name == options.main_source&.name ||
             ignored_names.include?(source.name)
       end.map do |source|
          sec = Secondary.new(source: source,
                              spec: self,
                              state: { context: context },
-                             options: { name_prefix: name.prefix })
+                             options: { name_prefix: name.prefix,
+                                        available_gem_list: available_gem_list })
 
          secondary_parts_for(sec, source)
       end.concat(secondary_parts_for(self, source)).flatten.compact
@@ -293,14 +308,15 @@ class Setup::Spec::Rpm
          if sec.is_a?(Secondary)
             sec
          else
-            source = space.sources.find { |s| s.name = an.autoname }
+            source = sources.find { |s| s.name = an.autoname }
             name = Setup::Spec::Rpm::Name.parse(an.fullname)
 
             Secondary.new(spec: self,
                           kind: an.kind,
                           state: sec,
                           source: source,
-                          options: { name: name })
+                          options: { name: name,
+                                     available_gem_list: available_gem_list })
          end
       end
    end
@@ -311,12 +327,12 @@ class Setup::Spec::Rpm
             dep
             #Gem::Dependency.new(m[1], Gem::Requirement.new(["#{m[2]} #{m[3]}"]), :runtime)
          end
-      end.compact | of_space(:dependencies)
+      end.compact | dependencies
 
-      #TODO
+      #TODO move fo filter options
       deps_pre -= ["ruby-tool-setup"]
-      #binding.pry
-      apply_versioning(deps_pre).reduce([]) do |deps, dep|
+      deps_versioned = replace_versioning(deps_pre)
+      append_versioning(deps_versioned).reduce([]) do |deps, dep|
          deps |
             if dep.is_a?(Gem::Dependency)
                deph = Setup::Deps.to_rpm(dep.requirement)
@@ -364,7 +380,6 @@ class Setup::Spec::Rpm
    end
 
    def _licenses value_in
-      sources = of_space(:valid_sources) || []
       list = sources.map do |source|
             source.licenses
          end.flatten.uniq
@@ -380,8 +395,8 @@ class Setup::Spec::Rpm
             version = self.version
             description = t("spec.rpm.change.upgrade", binding: binding)
             release = "alt1"
-            packager_name = space.options.maintainer_name || packager.name
-            packager_email = space.options.maintainer_email || packager.email
+            packager_name = options.maintainer_name || packager.name
+            packager_email = options.maintainer_email || packager.email
 
             OpenStruct.new(
                date: Date.today.strftime("%a %b %d %Y"),
@@ -409,19 +424,23 @@ class Setup::Spec::Rpm
                           spec: self,
                           kind: kind,
                           state: { context: context },
-                          options: { name_prefix: name.prefix })
+                          options: { name_prefix: name.prefix,
+                                     available_gem_list: available_gem_list })
          end
       end
    end
 
    def source
-      space.main_source
+      options.main_source
    end
 
-   def initialize space: nil, state: {}, options: {}
-      @space = space
+   def sources
+      options.valid_sources || []
+   end
+
+   def initialize state: {}, options: {}
       @state = state
-      @options = options
+      @options = options.to_os
    end
 
    class << self
@@ -429,12 +448,14 @@ class Setup::Spec::Rpm
          Parser.match?(source_in)
       end
 
-      def parse source_in
-         Parser.new.parse(source_in)
+      def parse source_in, options = {}
+         state = Parser.new.parse(source_in)
+
+         Setup::Spec::Rpm.new(state: state, options: options)
       end
 
       def draw space, spec_in = nil
-         spec = space.spec || self.new(space: space)
+         spec = space.spec || self.new(options: space.options_for(self))
          spec.draw(spec_in)
       end
    end

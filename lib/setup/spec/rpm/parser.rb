@@ -165,7 +165,7 @@ class Setup::Spec::Rpm::Parser
       store_value(state, matched[:match], matched[:name], matched[:flow], context)
 
       #binding.pry
-      Setup::Spec::Rpm.new(state: state)
+      state
    end
 
    def store_value opts, match, key, flow, context

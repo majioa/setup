@@ -24,7 +24,7 @@ module Setup::Spec
          specs[spec_kind.to_s] || raise(InvalidSpecKindError.new(spec_kind: spec_kind))
       end
 
-      def load_from source_in
+      def load_from source_in, options = {}
          source =
             case source_in
             when IO, StringIO
@@ -38,7 +38,7 @@ module Setup::Spec
          spec = specs.values.find { |spec| spec.match?(source) }
 
          if spec
-            spec.parse(source)
+            spec.parse(source, options)
          else
             raise(UndetectedSpecSourceError.new(source: source))
          end

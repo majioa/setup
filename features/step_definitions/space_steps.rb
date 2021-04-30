@@ -4,7 +4,7 @@ Given('space file:') do |text|
 end
 
 When('developer loads the space') do
-   @space = Setup::Space.load_from(space_in: @space_in)
+   @space = Setup::Space.load_from(@space_in)
 end
 
 Then('he sees that space\'s {string} is a {string}') do |prop, value|
@@ -13,4 +13,8 @@ end
 
 When('developer locks the time to {string}') do |time|
    Timecop.freeze(Time.parse(time))
+end
+
+When(/(?:he|developer) sets the space option "([^"]+)" to:/) do |option, text|
+   space.options[option] = YAML.load(text)
 end

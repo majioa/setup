@@ -10,10 +10,6 @@ module Setup::RpmSpecCore
       end
    }
 
-   def of_space name
-      space.respond_to?(name) && space.send(name) || nil
-   end
-
    def of_source name
       source.send(name) || nil
    rescue NameError
@@ -48,16 +44,22 @@ module Setup::RpmSpecCore
        #binding.pry if name == :summaries
          if func[0] == "_"
             send(func, value_in)
+         elsif value_in.blank?
+            send(func, name)
          else
-            value_in || send(func, name)
+            value_in
          end
       end
       # binding.pry if name == :summaries
       aa
    end
 
+   def options= options
+      @options = options.to_os
+   end
+
    def options
-      @options ||= {}
+      @options ||= {}.to_os
    end
 
    def state
@@ -145,7 +147,8 @@ module Setup::RpmSpecCore
    def _devel_requires value_in
       value_in ||= source&.dependencies(:development) || []
 
-      apply_versioning(value_in).reduce([]) do |deps, dep|
+      deps_versioned = replace_versioning(value_in)
+      append_versioning(deps_versioned).reduce([]) do |deps, dep|
          depa = Setup::Deps.to_rpm(dep.requirement).map {|(rel, version)| "#{rel} #{version}"}
 
          deps | [ Gem::Dependency.new(dep.name, Gem::Requirement.new(depa)) ]
@@ -214,7 +217,7 @@ module Setup::RpmSpecCore
    end
 
    def _readme _in
-      files.grep(/readme.*/i).join(" ")
+      files.grep(/(readme|чтимя).*/i).join(" ")
    end
 
    def _requires_plain_only value_in
@@ -230,38 +233,37 @@ module Setup::RpmSpecCore
             [ source&.provide ].compact | reqs
          end
 
-      deps = apply_versioning(deps_pre | value_in, false)
-         #.reduce([]) do |deps, dep|
-         #deps |
-         #   if dep.is_a?(Gem::Dependency)
-         #      deph = Setup::Deps.to_rpm(dep.requirement)
+      deps = replace_versioning(deps_pre | value_in)
 
-         #      [ deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }.join(" ") ]
-         #   else
-         #      if !m = dep.match(/gem\((.*)\) ([>=<]+) ([\w\d\.\-]+)/)
-         #         dep
-               # Gem::Dependency.new(m[1], Gem::Requirement.new(["#{m[2]} #{m[3]}"]), :runtime)
-         #      else
-         #         []
-         #      end
-         #   end
-      #end.compact
-
-      render_deps(deps)
       #binding.pry
+      render_deps(deps)
    end
 
-   def apply_versioning deps_in, append_new = true
+   def replace_versioning deps_in
+      versioning_list = available_gem_list.merge(gem_versionings)
+
+      deps_in.map do |dep_in|
+         if dep_in.is_a?(Gem::Dependency)
+            dep = versioning_list[dep_in.name]
+
+            if dep
+               Gem::Dependency.new(dep_in.name, dep_in.requirement | dep.requirement)
+            else
+               dep_in
+            end
+         else
+            dep_in
+         end
+      end
+      #   binding.pry
+   end
+
+   def append_versioning deps_in
       gem_versionings.reduce(deps_in) do |deps, name, dep|
          index = deps.index { |dep_in| dep_in.name == name.to_s }
 
-         if index
-            deps[index] = Gem::Dependency.new(dep.name, deps[index].requirement.merge(dep.requirement))
-         elsif append_new
-            deps << dep
-         end
-
-         deps
+         #binding.pry
+         index && deps || deps | [ dep ]
       end
    end
 
@@ -315,8 +317,21 @@ module Setup::RpmSpecCore
       obsoletes
    end
 
+   def _available_gem_list value_in
+      (value_in || options.available_gem_list || of_default(:available_gem_list)).reduce({}.to_os) do |res, (name, version_in)|
+         low = [ version_in ].flatten.map {|v| Gem::Version.new(v) }.min
+         bottom = [ version_in ].flatten.map {|v| Gem::Version.new(v.split(".")[0..1].join(".")).bump }.max
+         reqs = [ ">= #{low}", "< #{bottom}" ]
+
+         res[name] = Gem::Dependency.new(name, Gem::Requirement.new(reqs))
+
+         res
+      end || []
+   end
+
    def _gem_versionings _value_in
-      @gem_versionings ||= [ variables.gem_replace_version ].flatten.compact.reduce({}.to_os) do |res, gemver|
+      #binding.pry
+      [ variables.gem_replace_version ].flatten.compact.reduce({}.to_os) do |res, gemver|
          /^(?<name>[^\s]+)(?:\s(?<rel>[<=>~]+)\s(?<version>[^\s]+))?/ =~ gemver
 
          if res[name]

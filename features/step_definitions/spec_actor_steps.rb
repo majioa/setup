@@ -1,7 +1,7 @@
 # vim:setl sw=3 sts=3 ts=3 et:
 Given('default setup') do
    # load setup from a file
-   cli.space = Setup::Space.load_from(space_in: "features/fixtures/default.setup")
+   cli.space = Setup::Space.load_from("features/fixtures/default.setup")
 end
 
 When(/(?:he|developer) applies "([^"]*)" actor to the setup/) do |actor_name|

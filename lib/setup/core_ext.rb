@@ -286,7 +286,7 @@ class OpenStruct
 end
 
 class Gem::Requirement
-   RELAS = { #:nodoc:
+   MERGE_RELAS = { #:nodoc:
       "="  =>  :first,
       "!=" =>  :dup,
       ">"  =>  :max,
@@ -299,11 +299,48 @@ class Gem::Requirement
       end
    }.freeze
 
+   OR_RELAS = { #:nodoc:
+      "="  =>  :min,
+      "!=" =>  :dup,
+      ">"  =>  :min,
+      "<"  =>  :max,
+      ">=" =>  :min,
+      "<=" =>  :max,
+      "~>" =>  lambda do |a|
+         ranges = a.map { |v| [v, v.bump] }.transpose
+         ranges[0]&.min...ranges[1]&.max
+      end
+   }.freeze
+
+   def | other_requirement
+      reqs_tmp = self.requirements | other_requirement.requirements
+
+      relas =
+         Gem::Requirement::OR_RELAS.map do |(op, prc)|
+            selected = reqs_tmp.map { |(rel, version)| rel == op && version || nil }.compact
+
+            prc.is_a?(Proc) && prc[selected] || selected.send(prc)
+         end
+
+      b = [ relas[0], relas[2], relas[4], relas[6].begin ].compact.min
+      e = [ relas[3], relas[5], relas[6].end ].compact.max
+
+      bounds =
+         [ b && Gem::Requirement.new(">#{b != relas[2] && "=" || ""} #{b}") || nil,
+           e && Gem::Requirement.new("<#{e != relas[3] && "=" || ""} #{e}") || nil ].compact
+
+      nes = relas[1].select {|ver| bounds.all? {|b| b.satisfied_by?(ver) }}
+
+      reqs = bounds | nes
+
+      Gem::Requirement.new(reqs)
+   end
+
    def merge other_requirement
       reqs_tmp = self.requirements | other_requirement.requirements
 
       relas =
-         Gem::Requirement::RELAS.map do |(op, prc)|
+         Gem::Requirement::MERGE_RELAS.map do |(op, prc)|
             selected = reqs_tmp.map { |(rel, version)| rel == op && version || nil }.compact
 
             prc.is_a?(Proc) && prc[selected] || selected.send(prc)

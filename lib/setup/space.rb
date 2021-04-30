@@ -10,13 +10,7 @@ class Setup::Space
    }
 
    @@space = {}
-
-   # +spec+ property returns the hash of the loaded spec if any, it can be freely
-   # reassigned.
-   #
-   # spec #=> {...}
-   #
-   attr_accessor :spec
+   @@options = {}
 
    # +options+ property returns the hash of the loaded options if any
    #
@@ -50,12 +44,13 @@ class Setup::Space
 
    attr_writer :rootdir
 
-   # +rootdir+ returns the root dir for the space got from the options.
+   # +rootdir+ returns the root dir for the space got from the options,
+   # defaulting to the current folder.
    #
    # rootdir #=> /root/dir/for/the/space
    #
    def rootdir
-      @rootdir ||= options.rootdir || '/'
+      @rootdir ||= read_attribute(:rootdir) || Dir.pwd
    end
 
    def main_source
@@ -86,7 +81,7 @@ class Setup::Space
       if summaries = spec&.summaries
          summaries
       elsif summary = main_source&.summary
-         { "" => summary }.to_os 
+         { "" => summary }.to_os
       end
    end
 
@@ -137,7 +132,7 @@ class Setup::Space
    # space.sources => # [#<Setup::Source:...>, #<...>]
    #
    def sources
-      @sources ||= Setup::Source.search_in(rootdir || Dir.pwd, options)
+      @sources ||= read_attribute(:sources) || Setup::Source.search_in(rootdir, options)
    end
 
    # +valid_sources+ returns all the valid sources based on the current source list.
@@ -155,50 +150,68 @@ class Setup::Space
    end
 
    def ignored_names
-      @ignored_names ||= (options.ignored_names || []) - regarded_names
+      @ignored_names ||= (read_attribute(:ignored_names) || []) - regarded_names
    end
 
    def regarded_names
-      @regarded_names ||= options.regarded_names || []
+      @regarded_names ||= read_attribute(:regarded_names) || []
    end
 
    def spec_type
-      @spec_type ||= options.spec_type || spec.class.to_s.split("::").last.downcase
+      @spec_type ||= read_attribute(:spec_type) || spec && spec.class.to_s.split("::").last.downcase
+   end
+
+   def read_attribute attr
+      options.send(attr) || state.send(attr)
+   end
+
+   def options_for type
+      @@options[type] = type::OPTIONS.map do |option|
+         value = self.options[option] || self.respond_to?(option) && self.send(option) || nil
+
+         [ option, value ]
+      end.compact.to_os
+   end
+
+   # +spec+ property returns the hash of the loaded spec if any, it can be freely
+   # reassigned.
+   #
+   # spec #=> {...}
+   #
+   def spec
+      @spec ||= _spec
+   end
+
+   def spec= value
+      _spec(value)
    end
 
    protected
 
-   def initialize space: nil, options: nil, spec: nil
-      @options = options || {}.to_os
-      parse(space || {}.to_os)
+   def _spec spec_in = nil
+      _spec = spec_in || state.spec
 
-      if @spec ||= spec
-         @spec.space = self
-      elsif spec
-         spec_model = Setup::Spec.find(self.spec_type)
-         @spec = spec_model.new(options: spec, space: self)
-      elsif options.spec_file
-         @spec = Setup::Spec.load_from(IO.read(options.spec_file))
-         @spec.space = self
+      @spec =
+         if _spec.is_a?(Setup::Spec::Rpm)
+            _spec
+         elsif _spec.is_a?(String)
+            YAML.load(_spec)
+         elsif spec_type
+            Setup::Spec.find(spec_type).new
+         elsif options.spec_file
+            Setup::Spec.load_from(IO.read(options.spec_file))
+         end
+
+      if @spec
+         @spec.options = options_for(@spec.class)
       end
+
+      @spec
    end
 
-   def parse space_in
-      space_in.each do |name, value_in|
-         value = case value_in
-            when Array
-               #value_in.map {|x| YAML.load(x) }
-               value_in
-            when Hash
-               value_in.to_os
-            when String
-               YAML.load(value_in)
-            else
-               value_in
-            end
-
-         instance_variable_set(:"@#{name}", value)
-      end
+   def initialize state_in = {}, options = {}
+      @options = (options || {}).to_os
+      @state = (state_in || {}).to_os
    end
 
    def context
@@ -216,26 +229,26 @@ class Setup::Space
    end
 
    class << self
-      def load_from! space_in: Dir[".space"].first, options: nil
-         space = case space_in
+      def load_from! state_in = Dir[".space"].first, options = {}
+         state = case state_in
          when IO, StringIO
-            YAML.load(space_in.readlines.join(""))
+            YAML.load(state_in.readlines.join(""))
          when String
-            raise InvalidSpaceFileError.new(space_in: space_in) if !File.file?(space_in)
+            raise InvalidSpaceFileError.new(state_in: state_in) if !File.file?(state_in)
 
-            YAML.load(IO.read(space_in))
+            YAML.load(IO.read(state_in))
          when NilClass
          else
             raise InvalidSpaceFileError
          end.to_os
 
-         @@space[space.name] = self.new(space: space, options: options || {}.to_os)
+         @@space[state.name] = self.new(state, options)
       end
 
-      def load_from space_in: Dir[".space"].first, options: nil
-         load_from!(space_in: space_in, options: options)
+      def load_from state_in = Dir[".space"].first, options = {}
+         load_from!(state_in, options)
       rescue InvalidSpaceFileError
-         @@space[nil] = new(options: options)
+         @@space[nil] = new(nil, options)
       end
    end
 end

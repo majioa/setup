@@ -82,3 +82,26 @@ Feature: Setup CLI
       And property "maintainer_name" of options is "Pavel Skrylev"
       And property "maintainer_email" of options is "majioa@altlinux.org"
 
+   Scenario: Setup CLI maintainer metadata validation
+      Given blank setup CLI
+      And options for Setup CLI:
+         """
+         --available-gem-list="features/fixtures/sample.available-gem-list.yaml"
+         """
+      When developer loads setup.rb
+      Then space's options "available_gem_list" is:
+         """
+         ---
+         rake: 13.0.1
+         json:
+          - 2.3.0
+          - 2.3.1
+         """
+      And property "available_gem_list" of options is:
+         """
+         ---
+         rake: 13.0.1
+         json:
+          - 2.3.0
+          - 2.3.1
+         """

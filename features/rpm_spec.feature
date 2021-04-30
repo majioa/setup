@@ -2,21 +2,23 @@
 Feature: RPM Spec
 
    Scenario: Parse RPM Spec for Name
-      Given RPM spec file:
+      Given blank space with empty sources
+      And RPM spec file:
          """
          Name:                rpm
          """
-      When developer loads the spec
+      When developer loads the spec into the space
       And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then stringified property "name" of space is "rpm"
 
    Scenario: Parse RPM Spec for Version
-      Given RPM spec file:
+      Given blank space with empty sources
+      And RPM spec file:
          """
          Name:                rpm
          Version:             1.1
          """
-      When developer loads the spec
+      When developer loads the spec into the space
       And developer sets the space option "rootdir" to "features/fixtures/blank"
       Then stringified property "version" of space is "1.1"
 
@@ -460,4 +462,3 @@ Feature: RPM Spec
          """
          rpmn < 11
          """
-

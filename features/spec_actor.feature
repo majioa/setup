@@ -1040,6 +1040,8 @@ Feature: Spec actor
                   kind: app
                secondaries: !ruby/object:OpenStruct
                 - !ruby/object:Setup::Spec::Rpm::Secondary
+                  options: !ruby/object:OpenStruct
+                     table: {}
                   name: !ruby/object:Setup::Spec::Rpm::Name
                      name: rpm
                      kind: doc
@@ -1218,13 +1220,15 @@ Feature: Spec actor
                   file2
                secondaries:
                 - !ruby/object:Setup::Spec::Rpm::Secondary
-                     state:
-                        name: !ruby/object:Setup::Spec::Rpm::Name
-                           name: rpm
-                           kind: doc
-                        file_list: |-
-                           file3
-                           file4
+                  options: !ruby/object:OpenStruct
+                     table: {}
+                  state:
+                     name: !ruby/object:Setup::Spec::Rpm::Name
+                        name: rpm
+                        kind: doc
+                     file_list: |-
+                        file3
+                        file4
          """
       When developer loads the space
       And he draws the template:
@@ -2482,6 +2486,8 @@ Feature: Spec actor
                check: check
                secondaries:
                 - !ruby/object:Setup::Spec::Rpm::Secondary
+                  options: !ruby/object:OpenStruct
+                     table: {}
                   name: !ruby/object:Setup::Spec::Rpm::Name
                      aliases: foo-boo
                      prefix: ruby
@@ -2845,4 +2851,73 @@ Feature: Spec actor
 
          """
 
+   Scenario: Space option available gem list validation
+      Given space file:
+         """
+         ---
+         spec_type: rpm
+         rootdir: /path/to/dot/space/root_name
+         sources:
+          - !ruby/object:Setup::Source::Gem
+            rootdir: /path/to/dot/space/root_name
+            spec: !ruby/object:Gem::Specification
+               name: foo_boo
+               dependencies:
+                - !ruby/object:Gem::Dependency
+                  name: rake
+                  requirement: !ruby/object:Gem::Requirement
+                     requirements:
+                      - - '~>'
+                        - !ruby/object:Gem::Version
+                           version: "2.0.1"
+                  type: :development
+                  prerelease: false
+                  version_requirements: !ruby/object:Gem::Requirement
+                     requirements:
+                      - - '>='
+                        - !ruby/object:Gem::Version
+                           version: "2"
+                - !ruby/object:Gem::Dependency
+                  name: json
+                  requirement: !ruby/object:Gem::Requirement
+                     requirements:
+                      - - '='
+                        - !ruby/object:Gem::Version
+                           version: "1.3.0"
+                  type: :development
+                  prerelease: false
+                  version_requirements: !ruby/object:Gem::Requirement
+                     requirements:
+                      - - '>='
+                        - !ruby/object:Gem::Version
+                           version: "2"
+         """
+      When developer loads the space
+      And developer sets the space option "available_gem_list" to:
+         """
+         ---
+         rake:
+          - 12.0.1
+          - 13.0.1
+         json: 2.3.1
+         """
+      And developer draws the template:
+         """
+         Name:          <%= name %>
+         <% build_requires.each do |dep| -%>
+         BuildRequires: <%= dep %>
+         <% end -%>
+         <% versioned_gem_list.each do |name, req| -%>
+         %ruby_use_gem_dependency <%= req.requirement.requirements.map { |(rel, ver)| "#{name} #{rel} #{ver}" }.join(",") %>
+         <% end -%>
+         """
 
+      Then he gets the RPM spec
+         """
+         Name:          gem-foo-boo
+         BuildRequires: gem(rake) >= 2.0.1 gem(rake) < 14
+         BuildRequires: gem(json) >= 1.3.0 gem(json) < 3
+         %ruby_use_gem_dependency rake >= 12.0.1,rake < 14
+         %ruby_use_gem_dependency json >= 2.3.1,json < 3
+
+         """

@@ -7,7 +7,7 @@ When('developer loads the spec') do
    @space ||= Setup::Space::Spec.load_from(@spec_in)
 end
 
-When('developer loads the spec into the space') do
+When(/(?:he|developer) loads the spec into the space/) do
    space.spec = Setup::Spec.load_from(@spec_in)
 end
 
@@ -142,7 +142,11 @@ Then('the subfield {string} at position {string} of space\'s property {string} w
    expect(list[subprop][pos.to_i]).to eql(text)
 end
 
+Given('blank space') do
+   @space = Setup::Space.new
+end
+
 Given('blank space with empty sources') do
-   @space = Setup::Space.load_from(space_in: StringIO.new({sources: []}.to_yaml))
+   @space = Setup::Space.load_from(StringIO.new({sources: []}.to_yaml))
 end
 

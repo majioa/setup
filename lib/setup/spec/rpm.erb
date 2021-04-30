@@ -40,7 +40,7 @@ BuildRequires: <%= dep %>
 
 %add_findreq_skiplist %ruby_gemslibdir/**/*
 %add_findprov_skiplist %ruby_gemslibdir/**/*
-<% gem_versionings.each do |name, req| -%>
+<% versioned_gem_list.each do |name, req| -%>
 %ruby_use_gem_dependency <%= req.requirement.requirements.map { |(rel, ver)| "#{name} #{rel} #{ver}" }.join(",") %>
 <% end -%>
 <% ruby_alias_names.each do |aliases| -%>
