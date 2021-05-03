@@ -13,7 +13,7 @@ Then('he acquires a present spec for the setup') do
    expect(@spec).to_not be_nil
 end
 
-When(/(?:developer|he) draws the template:/) do |text|
+When(/(?:developer|he) renders the template:/) do |text|
    @spec = Setup::Actor.for('spec', space).apply_to(space, text)
 end
 

@@ -219,11 +219,11 @@ class Setup::Spec::Rpm
 
    include Setup::RpmSpecCore
 
-   def draw spec = nil
+   def render spec = nil
       b = binding
 
       #binding.pry
-      ERB.new(spec || spec_template, trim_mode: "<>-", eoutvar: "@spec").result(b)
+      ERB.new(spec || spec_template, trim_mode: "<>-", eoutvar: "@spec").result(b).strip
    end
 
    def macros name
@@ -454,9 +454,9 @@ class Setup::Spec::Rpm
          Setup::Spec::Rpm.new(state: state, options: options)
       end
 
-      def draw space, spec_in = nil
+      def render space, spec_in = nil
          spec = space.spec || self.new(options: space.options_for(self))
-         spec.draw(spec_in)
+         spec.render(spec_in)
       end
    end
 end

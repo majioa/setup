@@ -11,7 +11,7 @@ module Setup::Actor::Spec
       def apply_to space, template = nil
          spec = Setup::Spec.find(space.spec_type)
 
-         rendered = spec.draw(space, template)
+         rendered = spec.render(space, template)
 
          if space.options.output_file
             File.open(space.options.output_file, "w") { |f| f.puts(rendered) }

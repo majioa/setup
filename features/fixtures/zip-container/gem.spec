@@ -123,4 +123,3 @@ UCF specification.
 
 * Tue Feb 17 2015 Andrey Cherepanov <cas@altlinux.org> 3.0.1-alt1
 - Initial build for ALT Linux (without tests)
-

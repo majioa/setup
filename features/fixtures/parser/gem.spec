@@ -157,4 +157,3 @@ Requires:      gem(gauntlet) >= 0
 
 * Wed Feb 27 2019 Pavel Skrylev <majioa@altlinux.org> 2.6.0.0-alt1
 - added (+) package as a gem with usage Ruby Policy 2.0
-

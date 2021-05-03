@@ -21,7 +21,7 @@ Feature: Spec actor
       And he sets the space option "rootdir" to fixture "zip-container"
       And he sets the space option "maintainer_name" to "Pavel Skrylev"
       And he sets the space option "maintainer_email" to "majioa@altlinux.org"
-      And developer loads the spec into the space
+      And he loads the spec into the space
       And he applies "spec" actor to the setup
       Then he acquires an "zip-container" fixture spec for the setup
 
@@ -35,7 +35,7 @@ Feature: Spec actor
          | rootdir            | features/fixtures/rbvmomi   |
          | maintainer_name    | Pavel Skrylev               |
          | maintainer_email   | majioa@altlinux.org         |
-      And developer loads the spec into the space
+      And he loads the spec into the space
       And he applies "spec" actor to the setup
       Then he acquires an "rbvmomi" fixture spec for the setup
 

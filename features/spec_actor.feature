@@ -20,7 +20,7 @@ Feature: Spec actor
             rootdir: /path/to/dot/space/root_name
          """
       When developer loads the space
-      And developer draws the template:
+      And developer renders the template:
          """
          Name:          <%= name %>
          <% secondaries.each do |secondary| -%>
@@ -32,7 +32,6 @@ Feature: Spec actor
          """
          Name:          root-name
          %package       -n sub
-
          """
 
    Scenario: Space default version and part version validation
@@ -49,7 +48,7 @@ Feature: Spec actor
          """
       When developer loads the space
       And developer locks the time to "01.01.2001"
-      And developer draws the template:
+      And developer renders the template:
          """
          Version:       <%= version %>
          <% secondaries.each do |secondary| -%>
@@ -63,7 +62,6 @@ Feature: Spec actor
          Version:       20010101
          %package       -n sub
          Version:       20010101
-
          """
 
    Scenario: Space version and part version validation of two gems
@@ -223,7 +221,7 @@ Feature: Spec actor
                test_files: []
          """
       When developer loads the space
-      And developer draws the template:
+      And developer renders the template:
          """
          Name:          <%= name %>
          Version:       <%= version %>
@@ -249,7 +247,6 @@ Feature: Spec actor
          Version:       5.2
          %package       -n gem-foo-boo-devel
          Version:       5.2
-
          """
 
    Scenario: Validation to no spec epoch with default value
@@ -260,7 +257,7 @@ Feature: Spec actor
          rootdir: /path/to/dot/space/rootname
          """
       When developer loads the space
-      And developer draws the template:
+      And developer renders the template:
          """
          <% if has_epoch? -%>
          Epoch:       <%= epoch %>
@@ -282,7 +279,7 @@ Feature: Spec actor
                epoch: 1
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Epoch:       <%= epoch %>
          """
@@ -308,7 +305,7 @@ Feature: Spec actor
                   version: "1.1"
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          Version:             <%= version %>
@@ -336,7 +333,7 @@ Feature: Spec actor
                release: rc1
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          Release:             <%= release %>
@@ -365,7 +362,7 @@ Feature: Spec actor
                      !ruby/symbol '': RPM Summary
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          Summary:             <%= summary %>
@@ -395,7 +392,7 @@ Feature: Spec actor
                 - GPLv2
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          License:             <%= licenses.join(" or ") %>
@@ -423,7 +420,7 @@ Feature: Spec actor
                group: Group
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          Group:               <%= group %>
@@ -451,7 +448,7 @@ Feature: Spec actor
                uri: https://path/to/soft/rpm
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          Url:                 <%= uri %>
@@ -479,7 +476,7 @@ Feature: Spec actor
                vcs: https://path/to/vcs/rpm
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          Vcs:                 <%= vcs %>
@@ -506,7 +503,7 @@ Feature: Spec actor
                   kind: app
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          <% if has_vcs? -%>
@@ -517,7 +514,6 @@ Feature: Spec actor
       Then he gets the RPM spec
          """
          Name:                rpm
-
          """
 
    Scenario: Space URL to VCS trial github conversion validation
@@ -537,7 +533,7 @@ Feature: Spec actor
                uri: https://github.com/mygrid/ruby-ucf/
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          <% if has_vcs? -%>
@@ -549,7 +545,6 @@ Feature: Spec actor
          """
          Name:                rpm
          Vcs:                 https://github.com/mygrid/ruby-ucf.git
-
          """
 
    Scenario: Space URL to VCS github io trial conversion validation
@@ -569,7 +564,7 @@ Feature: Spec actor
                uri: https://mygrid.github.io/ruby-ucf/
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          <% if has_vcs? -%>
@@ -581,7 +576,6 @@ Feature: Spec actor
          """
          Name:                rpm
          Vcs:                 https://github.com/mygrid/ruby-ucf.git
-
          """
 
    Scenario: Space packager validation for loaded spec
@@ -602,7 +596,7 @@ Feature: Spec actor
                      :email: fio@example.com
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          Packager:            <%= packager.name %> <<%= packager.email %>>
@@ -630,7 +624,7 @@ Feature: Spec actor
                build_arch: arch64
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          <% unless is_lib? and has_compilables? -%>
@@ -642,7 +636,6 @@ Feature: Spec actor
          """
          Name:                rpm
          BuildArch:           arch64
-
          """
 
    Scenario: Space sources validation for loaded spec
@@ -663,7 +656,7 @@ Feature: Spec actor
                      :1: source_file1.tar
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          <% source_files.each_pair do |i, source_file| -%>
@@ -676,7 +669,6 @@ Feature: Spec actor
          Name:                rpm
          Source:              %name-%version.tar
          Source1:             source_file1.tar
-
          """
 
    Scenario: Space patches validation for loaded spec
@@ -698,7 +690,7 @@ Feature: Spec actor
                      :1: patch1.patch
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          <% patches.each_pair do |i, patch| -%>
@@ -711,7 +703,6 @@ Feature: Spec actor
          Name:                rpm
          Patch:               patch.patch
          Patch1:              patch1.patch
-
          """
 
    Scenario: Space requires validation for loaded spec
@@ -733,7 +724,7 @@ Feature: Spec actor
                 - req_newline >= 2
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          <% requires.each do |dep| -%>
@@ -747,7 +738,6 @@ Feature: Spec actor
          Requires:            req >= 1
          Requires:            req_new < 0.1
          Requires:            req_newline >= 2
-
          """
 
    Scenario: Space build requires validation for loaded spec
@@ -768,7 +758,7 @@ Feature: Spec actor
                 - req_newline >= 2
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          <% build_requires.each do |dep| -%>
@@ -782,7 +772,6 @@ Feature: Spec actor
          BuildRequires:       req >= 1
          BuildRequires:       req_new < 0.1
          BuildRequires:       req_newline >= 2
-
          """
 
    Scenario: Space build pre requires validation for loaded spec
@@ -802,10 +791,9 @@ Feature: Spec actor
                 - req >= 1
                 - req_new < 0.1
                 - req_newline >= 2
-
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          <% build_pre_requires.each do |dep| -%>
@@ -819,7 +807,6 @@ Feature: Spec actor
          BuildRequires(pre):  req >= 1
          BuildRequires(pre):  req_new < 0.1
          BuildRequires(pre):  req_newline >= 2
-
          """
 
    Scenario: Space obsoletes validation for loaded spec
@@ -839,10 +826,9 @@ Feature: Spec actor
                 - req >= 1
                 - req_new < 0.1
                 - req_newline >= 2
-
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          <% obsoletes.each do |dep| -%>
@@ -856,7 +842,6 @@ Feature: Spec actor
          Obsoletes:           req >= 1
          Obsoletes:           req_new < 0.1
          Obsoletes:           req_newline >= 2
-
          """
 
    Scenario: Space provides validation for loaded spec
@@ -875,10 +860,9 @@ Feature: Spec actor
                 - req >= 1
                 - req_new < 0.1
                 - req_newline >= 2
-
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          <% provides.each do |dep| -%>
@@ -893,7 +877,6 @@ Feature: Spec actor
          Provides:            req_new < 0.1
          Provides:            req_newline >= 2
          Provides:            ruby-rpm
-
          """
 
    Scenario: Space conflicts validation for loaded spec
@@ -915,7 +898,7 @@ Feature: Spec actor
                 - req_newline >= 2
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:                <%= name %>
          <% conflicts.each do |dep| -%>
@@ -929,7 +912,6 @@ Feature: Spec actor
          Conflicts:           req >= 1
          Conflicts:           req_new < 0.1
          Conflicts:           req_newline >= 2
-
          """
 
    Scenario: Space description validation for loaded spec
@@ -951,7 +933,7 @@ Feature: Spec actor
                      :'ru_RU.UTF-8': Заметка
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:        <%= name %>
          <% descriptions.each_pair do |cp, description| -%>
@@ -967,7 +949,6 @@ Feature: Spec actor
          Description Defaults
          %description         -l ru_RU.UTF-8
          Заметка
-
          """
 
    Scenario: Space multiline description with more than 80 chars in line
@@ -998,7 +979,7 @@ Feature: Spec actor
                         Ok
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:        <%= name %>
          <% descriptions.each_pair do |cp, description| -%>
@@ -1022,7 +1003,6 @@ Feature: Spec actor
          - list2
 
          Ok
-
          """
 
    Scenario: Space additional package validation for loaded spec
@@ -1057,7 +1037,7 @@ Feature: Spec actor
                         :'ru_RU.UTF-8': Заметка
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:          <%= name %>
          <% secondaries.each do |secondary| -%>
@@ -1090,7 +1070,6 @@ Feature: Spec actor
          Description Defaults
          %description   -n rpm-doc -l ru_RU.UTF-8
          Заметка
-
          """
 
    Scenario: Space stages validation for loaded spec
@@ -1114,7 +1093,7 @@ Feature: Spec actor
                check: check
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:        <%= name %>
          %prep
@@ -1178,7 +1157,7 @@ Feature: Spec actor
                      :description: "- ^ new version"
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:        <%= name %>
          %changelog
@@ -1198,8 +1177,6 @@ Feature: Spec actor
 
          * Mon Jan 01 2001 FIO Packer <fio@example.com> 1.0-rc1
          - ! of important bug
-
-
          """
 
    Scenario: Space files validation for loaded spec
@@ -1231,7 +1208,7 @@ Feature: Spec actor
                         file4
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:          <%= name %>
          %files
@@ -1253,7 +1230,6 @@ Feature: Spec actor
          %files         -n rpm-doc
          file3
          file4
-
          """
 
    Scenario: Space variables validation for loaded spec
@@ -1275,7 +1251,7 @@ Feature: Spec actor
                      var1: '2'
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          <% variables.each do |name, value| -%>
          %define <%= name %> <%= value %>
@@ -1314,7 +1290,7 @@ Feature: Spec actor
                         macro1: "rpmn < 11"
          """
       When developer loads the space
-      And he draws the template:
+      And he renders the template:
          """
          Name:          <%= name %>
          <%= macros("macro") %>
@@ -1388,7 +1364,7 @@ Feature: Spec actor
          """
       When developer loads the space
       And developer locks the time to "01.01.2001"
-      And developer draws the template:
+      And developer renders the template:
          """
          <% if has_comment? -%>
          <%= comment -%>
@@ -1570,8 +1546,6 @@ Feature: Spec actor
          %changelog
          * Mon Jan 01 2001 Spec Author <author@example.org> 5.2-alt1
          - + packaged gem with Ruby Policy 2.0
-
-
          """
 
    Scenario: Space gem source with executable, docs, and devel rendering validation
@@ -1655,7 +1629,7 @@ Feature: Spec actor
          """
       When developer loads the space
       And developer locks the time to "01.01.2001"
-      And developer draws the template:
+      And developer renders the template:
          """
          <% if has_comment? -%>
          <%= comment -%>
@@ -1901,8 +1875,6 @@ Feature: Spec actor
          %changelog
          * Mon Jan 01 2001 Spec Author <author@example.org> 5.2-alt1
          - + packaged gem with Ruby Policy 2.0
-
-
          """
 
    Scenario: Space many gem sources render validation
@@ -2068,7 +2040,7 @@ Feature: Spec actor
          """
       When developer loads the space
       And developer locks the time to "01.01.2001"
-      And developer draws the template:
+      And developer renders the template:
          """
          <% if has_comment? -%>
          <%= comment -%>
@@ -2413,8 +2385,6 @@ Feature: Spec actor
          %changelog
          * Mon Jan 01 2001 Spec Author <author@example.org> 5.2-alt1
          - + packaged gem with Ruby Policy 2.0
-
-
          """
 
    Scenario: Space gem pure source render validation with predefined spec to
@@ -2600,7 +2570,7 @@ Feature: Spec actor
          """
       When developer loads the space
       And developer locks the time to "02.01.2001"
-      And developer draws the template:
+      And developer renders the template:
          """
          <% if source.is_a?(Setup::Source::Gem) -%>
          %define        gemname <%= source.name %>
@@ -2847,8 +2817,6 @@ Feature: Spec actor
 
          * Mon Jan 01 2001 FIO Packer <fio@example.com> 1.0-rc1
          - ! of important bug
-
-
          """
 
    Scenario: Space option available gem list validation
@@ -2901,7 +2869,7 @@ Feature: Spec actor
           - 13.0.1
          json: 2.3.1
          """
-      And developer draws the template:
+      And developer renders the template:
          """
          Name:          <%= name %>
          <% build_requires.each do |dep| -%>
@@ -2919,5 +2887,4 @@ Feature: Spec actor
          BuildRequires: gem(json) >= 1.3.0 gem(json) < 3
          %ruby_use_gem_dependency rake >= 12.0.1,rake < 14
          %ruby_use_gem_dependency json >= 2.3.1,json < 3
-
          """

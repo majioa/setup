@@ -121,4 +121,3 @@ Container Format (OCF) (http://www.idpf.org/epub/30/spec/epub30-ocf.html).
 
 * Tue Feb 17 2015 Andrey Cherepanov <cas@altlinux.org> 2.0.0-alt1
 - Initial build for ALT Linux (without tests)
-

@@ -146,4 +146,3 @@ Ruby interface to the VMware vSphere API development package.
 
 * Thu Aug 30 2018 Pavel Skrylev <majioa@altlinux.org> 1.13.0-alt1
 - Initial build for Sisyphus
-
