@@ -21,6 +21,8 @@ module Lib
       case value
       when ""
          nil
+      when /\[/
+         value.gsub(/[\]\[]/,"").split(",")
       else
          value
       end

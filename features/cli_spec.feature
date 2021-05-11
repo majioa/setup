@@ -68,6 +68,7 @@ Feature: Setup CLI
          """
       When developer loads setup.rb
       Then space's options "spec_file" is "features/fixtures/default.spec"
+      And space's property "spec" is not blank
       And property "spec" of space is of kind "Setup::Spec::Rpm"
 
    Scenario: Setup CLI maintainer metadata validation

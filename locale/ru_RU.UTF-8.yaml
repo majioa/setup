@@ -3,6 +3,7 @@ spec:
    rpm:
       change:
          upgrade: "- ^ %previous_version -> %version"
+         fix: "- ! спек"
          new: "- + самоцвет упакован на основе политик Ruby 2.0"
       app:
          group: Other

@@ -9,7 +9,6 @@ end
 Then('he get name parsed as:') do |table|
    attrs = table.raw.to_h
    attrs.each { |attr, value| expect(names.first.send(attr)).to eql(adopt_value(value)) }
-   #names.first.each { |n| expect(n1.match(n2)).to be_truthy }
 end
 
 When('the name has support name object:') do |table|

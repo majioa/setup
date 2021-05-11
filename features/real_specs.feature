@@ -1,7 +1,7 @@
 @actor @spec @gem
 Feature: Spec actor
 
-   @policy1_0
+   @policy1_0 @gem_change
    Scenario: Apply the Spec actor to setup for ucf gem and old Ruby Policy 1.0 setup
       Given blank space
       And a spec from fixture "ucf"
@@ -13,7 +13,7 @@ Feature: Spec actor
       And he applies "spec" actor to the setup
       Then he acquires an "ucf" fixture spec for the setup
 
-   @policy1_0
+   @policy1_0 @gem_change
    Scenario: Apply the Spec actor to setup for zip-container gem and old Ruby Policy 1.0 setup
       Given blank space
       And a spec from fixture "zip-container"
@@ -25,7 +25,7 @@ Feature: Spec actor
       And he applies "spec" actor to the setup
       Then he acquires an "zip-container" fixture spec for the setup
 
-   @policy2_0
+   @policy2_0 @gem_change
    Scenario: Apply the Spec actor to setup for rbvmomi gem and manual Ruby Policy 2.0 setup
       Given blank space
       And a spec from fixture "rbvmomi"
@@ -39,3 +39,17 @@ Feature: Spec actor
       And he applies "spec" actor to the setup
       Then he acquires an "rbvmomi" fixture spec for the setup
 
+   @policy2_0 @release_change
+   Scenario: Apply the Spec actor to setup for rspec-support gem and manual Ruby Policy 2.0 setup
+         with no gem version upgrade
+      Given blank space
+      And a spec from fixture "rspec-support"
+      When developer locks the time to "21.04.2021"
+      And he sets the space options as:
+         | options            | value                             |
+         | rootdir            | features/fixtures/rspec-support   |
+         | maintainer_name    | Pavel Skrylev                     |
+         | maintainer_email   | majioa@altlinux.org               |
+      And he loads the spec into the space
+      And he applies "spec" actor to the setup
+      Then he acquires an "rspec-support" fixture spec for the setup

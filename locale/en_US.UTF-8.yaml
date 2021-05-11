@@ -3,6 +3,7 @@ spec:
    rpm:
       change:
          upgrade: "- ^ %previous_version -> %version"
+         fix: "- ! spec"
          new: "- + packaged gem with Ruby Policy 2.0"
       app:
          summary: "%summary"

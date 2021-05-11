@@ -3188,7 +3188,7 @@ spec: |
          table:
             :'': RPM desc
             :'ru_RU.UTF8': Заметка
-      secondaries: {}
+      secondaries: []
    
       spec: !ruby/object:Gem::Specification
          name: railties

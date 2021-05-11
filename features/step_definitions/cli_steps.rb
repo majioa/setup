@@ -64,3 +64,7 @@ end
 Then('property {string} of options is:') do |property, text|
    expect(space.options.send(property)).to eql(YAML.load(text))
 end
+
+Then('space\'s property {string} is not blank') do |property|
+   expect(space.send(property)).to_not be_blank
+end

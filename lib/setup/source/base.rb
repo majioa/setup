@@ -40,6 +40,8 @@ class Setup::Source::Base
       version_replaces: true,
       gem_version_replace: true,
       rootdir: :rootdir_or_default,
+      name: true,
+      version: true,
       "source-ri-folder-lists": :name_or_default,
       "source-inc-folder-lists": :name_or_default,
       "source-ext-folder-lists": :name_or_default,
@@ -294,6 +296,10 @@ class Setup::Source::Base
    def compilables
       # TODO make compilables from ext
       extfiles
+   end
+
+   def provide
+      nil
    end
 
    # +summaries+ returns an open-struct formatted summaries with a default locale as a key

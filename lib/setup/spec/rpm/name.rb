@@ -31,6 +31,8 @@ class Setup::Spec::Rpm::Name
    def match? other
       if other.is_a?(self.class)
          self.match_by?("kind", other) && self.match_by?("name", other)
+      elsif other.is_a?(String)
+         ([ autoname ] | aliases).include?(name)
       else
          other.to_s == self.fullname
       end
@@ -94,7 +96,7 @@ class Setup::Spec::Rpm::Name
    protected
 
    def initialize options = {}
-      @aliases = options[:name]&.gsub(/[\.\_]+/, "-")
+      @aliases = options[:name]&.gsub(/[\.\_]+/, "-").split(",")
       @prefix = options[:prefix]
       @suffix = options[:suffix]
       @name = options[:name]

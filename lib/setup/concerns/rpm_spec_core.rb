@@ -224,6 +224,22 @@ module Setup::RpmSpecCore
       @requires_plain_only ||= value_in&.reject {|dep| dep.match(/gem\((.*)\) ([>=<]+) ([\w\d\.\-]+)/) }
    end
 
+   def _pre_name value_in
+      return value_in if value_in.is_a?(Setup::Spec::Rpm::Name)
+
+      name = @name ||
+         of_options(:name) ||
+         of_state(:name) ||
+         rootdir && rootdir.split("/").last ||
+         value_in
+
+      if name.is_a?(Setup::Spec::Rpm::Name)
+         name
+      else
+         Setup::Spec::Rpm::Name.parse(name, prefix: options[:name_prefix])
+      end
+   end
+
    def _requires value_in
       deps_pre =
          if %i(lib app).include?(self.kind)
@@ -285,6 +301,7 @@ module Setup::RpmSpecCore
 
    def _provides value_in
       stated_name = of_state(:name)
+      #binding.pry
 
       provides =
          if stated_name && stated_name.prefix != name.autoprefix && %i(lib app).include?(self.kind)

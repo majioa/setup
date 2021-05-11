@@ -8,11 +8,11 @@ Feature: RPM Name module for Spec actor testing
          """
       When developer applies to parse the names with Name class
       Then he get name parsed as:
-         | kind      | lib          |
-         | name      | foo_bar.baz  |
-         | aliases   | foo-bar-baz  |
-         | suffix    |              |
-         | prefix    | ruby         |
+         | kind      | lib             |
+         | name      | foo_bar.baz     |
+         | aliases   | [foo-bar-baz]   |
+         | suffix    |                 |
+         | prefix    | ruby            |
 
    Scenario: PRM Name for doc package validation
       Given an full name:
@@ -21,11 +21,11 @@ Feature: RPM Name module for Spec actor testing
          """
       When developer applies to parse the names with Name class
       Then he get name parsed as:
-         | kind      | doc          |
-         | name      | foo_bar.baz  |
-         | aliases   | foo-bar-baz  |
-         | suffix    | doc          |
-         | prefix    | ruby         |
+         | kind      | doc             |
+         | name      | foo_bar.baz     |
+         | aliases   | [foo-bar-baz]   |
+         | suffix    | doc             |
+         | prefix    | ruby            |
 
    Scenario: PRM Name for devel package validation
       Given an full name:
@@ -34,11 +34,11 @@ Feature: RPM Name module for Spec actor testing
          """
       When developer applies to parse the names with Name class
       Then he get name parsed as:
-         | kind      | devel        |
-         | name      | foo_bar.baz  |
-         | aliases   | foo-bar-baz  |
-         | suffix    | devel        |
-         | prefix    | gem          |
+         | kind      | devel           |
+         | name      | foo_bar.baz     |
+         | aliases   | [foo-bar-baz]   |
+         | suffix    | devel           |
+         | prefix    | gem             |
 
    Scenario: PRM Name for executable package validation
       Given an full name:
@@ -51,11 +51,11 @@ Feature: RPM Name module for Spec actor testing
          | suffix    |              |
          | prefix    | gem          |
       Then he get name parsed as:
-         | kind      | exec         |
-         | name      | foo_bar.baz  |
-         | aliases   | foo-bar-baz  |
-         | suffix    |              |
-         | prefix    |              |
+         | kind      | exec            |
+         | name      | foo_bar.baz     |
+         | aliases   | [foo-bar-baz]   |
+         | suffix    |                 |
+         | prefix    |                 |
 
    Scenario: PRM Name for application package validation
       Given an full name:
@@ -64,11 +64,11 @@ Feature: RPM Name module for Spec actor testing
          """
       When developer applies to parse the names with Name class
       Then he get name parsed as:
-         | kind      | app          |
-         | name      | foo_bar.baz  |
-         | aliases   | foo-bar-baz  |
-         | suffix    |              |
-         | prefix    |              |
+         | kind      | app             |
+         | name      | foo_bar.baz     |
+         | aliases   | [foo-bar-baz]   |
+         | suffix    |                 |
+         | prefix    |                 |
 
    Scenario: PRM Name object succeed match validation
       Given an full name:

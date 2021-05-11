@@ -196,10 +196,10 @@ class Setup::Space
             _spec
          elsif _spec.is_a?(String)
             YAML.load(_spec)
-         elsif spec_type
-            Setup::Spec.find(spec_type).new
          elsif options.spec_file
             Setup::Spec.load_from(IO.read(options.spec_file))
+         elsif spec_type
+            Setup::Spec.find(spec_type).new
          end
 
       if @spec

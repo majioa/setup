@@ -6,6 +6,10 @@ class Setup::Spec::Rpm::Secondary
          seq: %w(of_options of_source of_state of_default _name),
          default: "",
       },
+      pre_name: {
+         seq: %w(of_options of_state of_default _pre_name),
+         default: "",
+      },
       epoch: {
          seq: %w(of_options of_state),
          default: nil,
@@ -101,6 +105,10 @@ class Setup::Spec::Rpm::Secondary
       available_gem_list: {
          seq: %w(of_options of_state _available_gem_list),
          default: {}
+      },
+      rootdir: {
+         seq: %w(of_options of_state),
+         default: nil
       }
    }
 
@@ -112,6 +120,12 @@ class Setup::Spec::Rpm::Secondary
       @source = secondary.source
 
       self
+   end
+
+   def state_kind
+      return @state_kind if @state_kind
+
+      @state_kind ||= options.source.is_a?(Setup::Source::Gem) && :lib || :app
    end
 
    def kind

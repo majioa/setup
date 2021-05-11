@@ -12,7 +12,7 @@ class Setup::Spec::Rpm
    OPTIONS = %w(source conflicts uri vcs maintainer_name maintainer_email
                 source_files patches build_pre_requires context comment
                 readme executables ignored_names main_source dependencies
-                valid_sources available_gem_list)
+                valid_sources available_gem_list rootdir)
 
    PARTS = {
       lib: nil,
@@ -21,9 +21,17 @@ class Setup::Spec::Rpm
       devel: :has_devel?,
    }
 
+   STATE_CHANGE_NAMES = %w(name version summaries licenses group uri vcs
+      packager build_arch source_files build_pre_requires descriptions secondaries
+      prep build install check file_list)
+
    STATE = {
       name: {
          seq: %w(of_options of_state of_source of_default _name),
+         default: "",
+      },
+      pre_name: {
+         seq: %w(of_options of_state of_default _pre_name),
          default: "",
       },
       epoch: {
@@ -214,6 +222,10 @@ class Setup::Spec::Rpm
       versioned_gem_list: {
          seq: %w(of_options of_state _versioned_gem_list),
          default: {}
+      },
+      rootdir: {
+         seq: %w(of_options of_state),
+         default: nil
       }
    }
 
@@ -230,12 +242,46 @@ class Setup::Spec::Rpm
       [ context.__macros[name] ].flatten(1).map { |x| "%#{name} #{x}" }.join("\n")
    end
 
-   def is_same_source? source
-      source && self.source == source
+   def is_same_source? source_in
+      source_in && source == source_in
    end
 
    def kind
       @kind ||= source.is_a?(Setup::Source::Gem) && :lib || :app
+   end
+
+   def state_kind
+      @state_kind ||= options.main_source.is_a?(Setup::Source::Gem) && :lib || :app
+   end
+
+   def state_sources
+      packages = [ self ] | (of_state(:secondaries) || of_default(:secondaries))
+
+      packages.map do |package|
+         package.options&.main_source ||
+            #case package.of_state(:name)&.kind || package.state_kind.to_s
+            case package.pre_name&.kind || package.state_kind.to_s
+            when "lib"
+               spec = Gem::Specification.new do |s|
+                  s.name = package.name.autoname
+                  s.version = package.state["version"] || package.source.version
+                  s.summary = package.state["summaries"]&.[]("") || package.source.summary
+               end
+
+               Setup::Source::Gem.new({"spec" => spec})
+            when "app"
+               #name = package.of_options(:name) ||
+               #   package.of_state(:name) ||
+               #   rootdir && rootdir.split("/").last
+               name = package.pre_name
+               #binding.pry
+
+               Setup::Source::Gemfile.new({
+                  "name" => name.to_s,
+                  "version" => of_options(:version) || of_state(:version)
+               })
+            end
+      end.compact
    end
 
    protected
@@ -272,9 +318,10 @@ class Setup::Spec::Rpm
    def _secondaries value_in
       names = value_in.map { |x| x.name }
 
-      secondaries = sources.reject do |source|
-         source.name == options.main_source&.name ||
-            ignored_names.include?(source.name)
+      #binding.pry
+      secondaries = sources.reject do |source_in|
+         source_in.name == source&.name ||
+            ignored_names.include?(source_in.name)
       end.map do |source|
          sec = Secondary.new(source: source,
                              spec: self,
@@ -302,13 +349,14 @@ class Setup::Spec::Rpm
          end
       end
 
+      #binding.pry
       secondaries | names.map do |an|
          sec = value_in.find { |sec| sec.name == an }
 
          if sec.is_a?(Secondary)
             sec
          else
-            source = sources.find { |s| s.name = an.autoname }
+            source = sources.find { |s| s.name == an.autoname }
             name = Setup::Spec::Rpm::Name.parse(an.fullname)
 
             Secondary.new(spec: self,
@@ -387,17 +435,58 @@ class Setup::Spec::Rpm
       list.blank? && value_in || list
    end
 
+   def state_changed?
+      @state_changed = STATE_CHANGE_NAMES.any? do |property|
+         if property == "secondary"
+            [ of_state(property), self.send(property) ].transpose.any? do |(first, second)|
+               first.name != second.name
+            end
+         else
+            of_state(property) != self.send(property)
+         end
+#
+#         when String, Name, Gem::Version, NilClass,
+#         binding.prya
+#         when Array
+#         binding.pry
+#            of_state(property) == self.send(property)
+#         when OpenStruct
+#         binding.pry
+#            of_state(property) == self.send(property)
+#         else
+#         binding.pry
+#         end
+#
+#         true
+      end
+   end
+
    def _changes value_in
       new_change =
-         if of_state(:version) && version != of_state(:version)
-            # TODO move to i18n and settings file
-            previous_version = of_state(:version)
-            version = self.version
-            description = t("spec.rpm.change.upgrade", binding: binding)
-            release = "alt1"
+         if of_state(:version)
+            if self.version != of_state(:version)
+               # TODO move to i18n and settings file
+               previous_version = of_state(:version)
+               version = self.version
+               description = t("spec.rpm.change.upgrade", binding: binding)
+               release = "alt1"
+            elsif state_changed?
+               version = self.version
+               description = t("spec.rpm.change.fix", binding: binding)
+               release_version_bump =
+               # TODO suffix
+               /alt(?<release_version>.*)/ =~ of_state(:release)
+               release_version_bump =
+                  if release_version.split(".").size > 1
+                     Gem::Version.new(release_version).bump.to_s
+                  else
+                     release_version + '.1'
+                  end
+               release = "alt" + release_version_bump
+            end
+
             packager_name = options.maintainer_name || packager.name
             packager_email = options.maintainer_email || packager.email
-
             OpenStruct.new(
                date: Date.today.strftime("%a %b %d %Y"),
                author: packager_name,
@@ -431,11 +520,14 @@ class Setup::Spec::Rpm
    end
 
    def source
-      options.main_source
+      @source ||= options.main_source || sources.find {|source_in| pre_name == source_in.name }
    end
 
    def sources
-      options.valid_sources || []
+      @sources ||=
+         state_sources.reduce(options.valid_sources || []) do |res, source_in|
+            res.find { |x| Name.parse(x.name) == Name.parse(source_in.name) } && res || res | [ source_in ]
+         end
    end
 
    def initialize state: {}, options: {}
