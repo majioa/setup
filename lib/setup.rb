@@ -1,4 +1,7 @@
-require 'pry' rescue nil
+begin
+   require 'pry'
+rescue LoadError
+end
 
 require 'setup/version'
 # Load concerns
