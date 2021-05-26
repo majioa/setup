@@ -13,8 +13,6 @@ BuildArch:     noarch
 
 Source:        %name-%version.tar
 BuildRequires(pre): rpm-build-ruby
-BuildRequires: gem(rake) > 10.0.0
-BuildRequires: gem(thread_order) >= 1.1.0 gem(thread_order) < 1.2
 
 %add_findreq_skiplist %ruby_gemslibdir/**/*
 %add_findprov_skiplist %ruby_gemslibdir/**/*

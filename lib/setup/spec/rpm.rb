@@ -396,8 +396,10 @@ class Setup::Spec::Rpm
 
       #TODO move fo filter options
       deps_pre -= ["ruby-tool-setup"]
-      deps_versioned = replace_versioning(deps_pre)
-      append_versioning(deps_versioned).reduce([]) do |deps, dep|
+      filtered = replace_versioning(deps_pre).reject do |dep|
+         dep.is_a?(Gem::Dependency) && dep.type == :development && options.devel_dep_setup == "skip"
+      end
+      append_versioning(filtered).reduce([]) do |deps, dep|
          deps |
             if dep.is_a?(Gem::Dependency)
                deph = Setup::Deps.to_rpm(dep.requirement)
