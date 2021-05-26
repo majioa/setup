@@ -4,7 +4,7 @@ module ::Setup::Source
    attr_reader :rootdir
 
    TYPES =
-      %w(Gem Gemfile Rakefile Fake).reduce({}) do |types, name|
+      %w(Gem Gemfile Rakefile Fake Base).reduce({}) do |types, name|
          autoload(:"#{name}", File.dirname(__FILE__) + "/source/#{name.downcase}")
          types.merge(name.downcase.to_sym => "Setup::Source::#{name}")
       end
@@ -13,7 +13,6 @@ module ::Setup::Source
       def search_in dir, options = {}
          sources_pre =
             TYPES.map do |(name, const)|
-               require("setup/source/#{name}")
                kls = self.const_get(const)
                kls.respond_to?(:search) && kls.search(dir, options) || []
             end.flatten | [ self::Fake.new({ rootdir: dir }.to_os) ]

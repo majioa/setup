@@ -1,5 +1,3 @@
-require 'setup/source/base'
-
 require 'tempfile'
 require 'yaml'
 require 'date'

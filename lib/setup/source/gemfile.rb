@@ -1,6 +1,3 @@
-require 'setup/dsl'
-require 'setup/source/base'
-
 class Setup::Source::Gemfile < Setup::Source::Base
    class << self
       def search dir, options_in = {}

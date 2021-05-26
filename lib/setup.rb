@@ -10,6 +10,7 @@ Dir[File.join(File.dirname(__FILE__), 'setup', 'concerns', '*.rb')].each { |d| r
 #require 'setup/session'
 require 'setup/core_ext'
 require 'setup/deps'
+require 'setup/dsl'
 require 'setup/i18n'
 require 'setup/source'
 require 'setup/target'

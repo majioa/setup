@@ -399,6 +399,7 @@ class Setup::Spec::Rpm
       filtered = replace_versioning(deps_pre).reject do |dep|
          dep.is_a?(Gem::Dependency) && dep.type == :development && options.devel_dep_setup == "skip"
       end
+
       append_versioning(filtered).reduce([]) do |deps, dep|
          deps |
             if dep.is_a?(Gem::Dependency)

@@ -1,5 +1,3 @@
-require 'setup/source/base'
-
 class Setup::Source::Rakefile < Setup::Source::Base
    class << self
       def search dir, options_in = {}
