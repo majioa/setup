@@ -62,6 +62,10 @@ Provides:      <%= dep %>
 Conflicts:     <%= dep %>
 <% end -%>
 
+<% if has_rake_build_tasks? -%>
+%ruby_on_build_rake_task_list <%= rake_build_tasks.join(",") %>
+
+<% end -%>
 <% descriptions.each_pair do |cp, description| -%>
 %description<%= !cp.blank? && "         -l #{cp}" || nil %>
 <%= description %>

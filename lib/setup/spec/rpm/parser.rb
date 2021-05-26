@@ -49,23 +49,23 @@ class Setup::Spec::Rpm::Parser
       },
       build_requires: {
          non_contexted: true,
-         regexp: /BuildRequires:\s+([\w\s<=>\.\-_]+)/i,
+         regexp: /BuildRequires:\s*([^#]+)/i,
          parse_func: :parse_dep
       },
       obsoletes: {
-         regexp: /Obsoletes:\s+([\w\s<=>\.\-_%]+)/i,
+         regexp: /Obsoletes:\s*([^#]+)/i,
          parse_func: :parse_dep
       },
       provides: {
-         regexp: /Provides:\s+([\w\s<=>\.\-_%]+)/i,
+         regexp: /Provides:\s*([^#]+)/i,
          parse_func: :parse_dep
       },
       requires: {
-         regexp: /Requires:\s+([\w\s<=>\.\-_]+)/i,
+         regexp: /Requires:\s*([^#]+)/i,
          parse_func: :parse_dep
       },
       conflicts: {
-         regexp: /Conflicts:\s+([\w\s<=>\.\-_]+)/i,
+         regexp: /Conflicts:\s*([^#]+)/i,
          parse_func: :parse_dep
       },
       descriptions: {
@@ -126,12 +126,13 @@ class Setup::Spec::Rpm::Parser
       end
    end
 
-   def parse source_in
+   def parse source_in, options = {}
       context = {}
+      state_in = { "context" => { "__options" => options.to_os } }
       matched = {}
       match = nil
 
-      state = source(source_in).reduce({}) do |state, line|
+      state = source(source_in).reduce(state_in) do |state, line|
          SCHEME.find do |(key, rule)|
             match = rule.is_a?(Regexp) && rule.match(line) ||
                     rule.is_a?(Hash) && rule[:regexp] && rule[:regexp].match(line)
@@ -177,7 +178,10 @@ class Setup::Spec::Rpm::Parser
       rematched = match.to_a.map { |x| x.is_a?(String) && reeval(x, opts) || x }
       value = method(parse_func)[rematched, reflown, opts, context]
       copts = !non_contexted && context[:name] && opts["secondaries"].find do |sec|
-         sec.name == Setup::Spec::Rpm::Name.parse(context[:name], support_name: opts["name"])
+         sec.name == Setup::Spec::Rpm::Name.parse(
+            context[:name],
+            support_name: opts["name"],
+            aliases: aliased_names(opts))
       end || opts
       ##binding.pry
 
@@ -238,7 +242,8 @@ class Setup::Spec::Rpm::Parser
    end
 
    def parse_dep match, *_
-      match[1].scan(/[^\s]+(?:\s+[<=>]+\s+[^\s]+)?/)
+      deps = match[1].scan(/[^\s]+(?:\s+[<=>]+\s+[^\s]+)?/)
+      deps.reject {|d| /^(gem|rubygem|ruby-gem)\(/ =~ d }
    end
 
    def parse_default match, *_
@@ -252,7 +257,7 @@ class Setup::Spec::Rpm::Parser
    # secondary without suffix by default has kind of lib
    def parse_secondary match, flow, opts, context
       context.replace(parse_context_line(match[1], opts))
-      name = Setup::Spec::Rpm::Name.parse(context[:name], support_name: opts["name"])
+      name = Setup::Spec::Rpm::Name.parse(context[:name], support_name: opts["name"], aliases: aliased_names(opts))
 
       [ { "name" => name }.to_os ]
    end
@@ -320,6 +325,10 @@ class Setup::Spec::Rpm::Parser
 #      binding.pry
 
       context
+   end
+
+   def aliased_names opts
+      opts["context"]["__options"]&.aliased_names
    end
 
    class << self

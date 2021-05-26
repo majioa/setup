@@ -39,7 +39,7 @@ UCF specification.
 %package       -n gem-zip-container-doc
 Version:       4.0.2
 Release:       alt1
-Summary:       A ZIP Container for use by OCF and UCF implementations documentation files
+Summary:       A Ruby library for working with ZIP Container Format files documentation files
 Summary(ru_RU.UTF-8): Файлы сведений для самоцвета zip_container
 Group:         Development/Documentation
 BuildArch:     noarch
@@ -47,7 +47,8 @@ BuildArch:     noarch
 Requires:      gem(zip_container) = 4.0.2
 
 %description   -n gem-zip-container-doc
-A ZIP Container for use by OCF and UCF implementations documentation files.
+A Ruby library for working with ZIP Container Format files documentation
+files.
 
 A Ruby library for working with ZIP Container Format files. See
 http://www.idpf.org/epub/30/spec/epub30-ocf.html for the OCF specification and
@@ -61,7 +62,7 @@ UCF specification.
 %package       -n gem-zip-container-devel
 Version:       4.0.2
 Release:       alt1
-Summary:       A ZIP Container for use by OCF and UCF implementations development package
+Summary:       A Ruby library for working with ZIP Container Format files development package
 Summary(ru_RU.UTF-8): Файлы для разработки самоцвета zip_container
 Group:         Development/Ruby
 BuildArch:     noarch
@@ -75,7 +76,8 @@ Requires:      gem(rubocop) >= 0.59 gem(rubocop) < 1
 Requires:      gem(test-unit) >= 3.0 gem(test-unit) < 4
 
 %description   -n gem-zip-container-devel
-A ZIP Container for use by OCF and UCF implementations development package.
+A Ruby library for working with ZIP Container Format files development
+package.
 
 A Ruby library for working with ZIP Container Format files. See
 http://www.idpf.org/epub/30/spec/epub30-ocf.html for the OCF specification and

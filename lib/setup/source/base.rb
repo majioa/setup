@@ -163,8 +163,6 @@ class Setup::Source::Base
 
       if /-(?<version>[\d\.]+)$/ =~ fullname
          version
-      else
-         Time.now.strftime("%Y%m%d")
       end
    end
 

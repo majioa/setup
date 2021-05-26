@@ -4,22 +4,30 @@ module ::Setup::Source
    attr_reader :rootdir
 
    TYPES =
-      %w(Fake Rakefile Gemfile Gem).reduce({}) do |types, name|
+      %w(Gem Gemfile Rakefile Fake).reduce({}) do |types, name|
          autoload(:"#{name}", File.dirname(__FILE__) + "/source/#{name.downcase}")
          types.merge(name.downcase.to_sym => "Setup::Source::#{name}")
       end
 
    class << self
       def search_in dir, options = {}
-         TYPES.map do |(name, const)|
-            require("setup/source/#{name}")
-            kls = self.const_get(const)
-            kls.respond_to?(:search) && kls.search(dir, options) || []
-         end.flatten.group_by do |source|
+         sources_pre =
+            TYPES.map do |(name, const)|
+               require("setup/source/#{name}")
+               kls = self.const_get(const)
+               kls.respond_to?(:search) && kls.search(dir, options) || []
+            end.flatten | [ self::Fake.new({ rootdir: dir }.to_os) ]
+
+         sources_pre.group_by do |source|
             source.rootdir
-         end.map do |_, sources_in|
-            gem_sources = sources_in.select { |source| source.is_a?(Setup::Source::Gem) }
-            gem_sources.empty? && sources_in.first || gem_sources
+         end.map do |_a, sources_in|
+            #gem_sources = sources_in.select { |source| source.is_a?(Setup::Source::Gem) }
+            #gem_sources.empty? && sources_in.first || gem_sources
+            sources_pre = sources_in.sort_by do |source_in|
+               TYPES.values.index(source_in.class.to_s)
+            end
+
+            sources_pre.select {|source_pre| source_pre.class == sources_pre.first.class }
          end.flatten
       end
 

@@ -10,3 +10,8 @@
   bones - loquacious/bones
 
 - validate spec for gem rdoc (rdoc/ri) - muliple executables
+
++ generate spec for:
+ - gem:multi_test,parser 2x -> 3x
+ - app:cucumber_common - blank root (Fake Source) / Url, Vsc, summary, description, filters for blank packages, dedup packages by name
+

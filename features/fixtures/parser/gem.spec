@@ -27,10 +27,11 @@ BuildRequires: gem(gauntlet) >= 0
 
 %add_findreq_skiplist %ruby_gemslibdir/**/*
 %add_findprov_skiplist %ruby_gemslibdir/**/*
+%ruby_alias_names parser,ruby-parse,parse
 Requires:      gem(ast) >= 2.4.1 gem(ast) < 2.5
 Provides:      gem(parser) = 3.0.1.0
-%ruby_alias_names parser parse
-%ruby_on_build_rake_task build
+
+%ruby_on_build_rake_task_list build
 
 %description
 Parser is a production-ready Ruby parser written in pure Ruby. It recognizes as
@@ -43,22 +44,21 @@ You can also use unparser to produce equivalent source code from Parser's ASTs.
 %package       -n ruby-parse
 Version:       3.0.1.0
 Release:       alt1
-Summary:       A Ruby parser written in pure Ruby executable(s)
+Summary:       A Ruby parser executable(s)
 Summary(ru_RU.UTF-8): Исполнямка для самоцвета parser
-Group:         Development
+Group:         Development/Ruby
 BuildArch:     noarch
 
 Requires:      gem(parser) = 3.0.1.0
 
 %description   -n ruby-parse
-A Ruby parser written in pure Ruby executable(s).
+A Ruby parser executable(s).
 
 Parser is a production-ready Ruby parser written in pure Ruby. It recognizes as
 much or more code than Ripper, Melbourne, JRubyParser or ruby_parser, and is
 vastly more convenient to use.
 
 You can also use unparser to produce equivalent source code from Parser's ASTs.
-
 
 %description   -n ruby-parse -l ru_RU.UTF-8
 Исполнямка для самоцвета parser.
@@ -67,7 +67,7 @@ You can also use unparser to produce equivalent source code from Parser's ASTs.
 %package       -n gem-parser-doc
 Version:       3.0.1.0
 Release:       alt1
-Summary:       A Ruby parser written in pure Ruby documentation files
+Summary:       A Ruby parser documentation files
 Summary(ru_RU.UTF-8): Файлы сведений для самоцвета parser
 Group:         Development/Documentation
 BuildArch:     noarch
@@ -75,14 +75,13 @@ BuildArch:     noarch
 Requires:      gem(parser) = 3.0.1.0
 
 %description   -n gem-parser-doc
-A Ruby parser written in pure Ruby documentation files.
+A Ruby parser documentation files.
 
 Parser is a production-ready Ruby parser written in pure Ruby. It recognizes as
 much or more code than Ripper, Melbourne, JRubyParser or ruby_parser, and is
 vastly more convenient to use.
 
 You can also use unparser to produce equivalent source code from Parser's ASTs.
-
 
 %description   -n gem-parser-doc -l ru_RU.UTF-8
 Файлы сведений для самоцвета parser.
@@ -91,12 +90,12 @@ You can also use unparser to produce equivalent source code from Parser's ASTs.
 %package       -n gem-parser-devel
 Version:       3.0.1.0
 Release:       alt1
-Summary:       A Ruby parser written in pure Ruby. development package
-Summary(ru_RU.UTF-8): Файлы для разработки самоцвета parse
+Summary:       A Ruby parser development package
+Summary(ru_RU.UTF-8): Файлы для разработки самоцвета parser
 Group:         Development/Ruby
 BuildArch:     noarch
 
-Requires:      gem(parse) = 3.0.1.0
+Requires:      gem(parser) = 3.0.1.0
 Requires:      gem(bundler) >= 1.15 gem(bundler) < 3.0.0
 Requires:      gem(rake) >= 13.0.1 gem(rake) < 13.1
 Requires:      gem(racc) = 1.4.15
@@ -106,6 +105,18 @@ Requires:      gem(kramdown) >= 0
 Requires:      gem(minitest) >= 5.10 gem(minitest) < 6
 Requires:      gem(simplecov) >= 0.15.1 gem(simplecov) < 0.16
 Requires:      gem(gauntlet) >= 0
+
+%description   -n gem-parser-devel
+A Ruby parser development package.
+
+Parser is a production-ready Ruby parser written in pure Ruby. It recognizes as
+much or more code than Ripper, Melbourne, JRubyParser or ruby_parser, and is
+vastly more convenient to use.
+
+You can also use unparser to produce equivalent source code from Parser's ASTs.
+
+%description   -n gem-parser-devel -l ru_RU.UTF-8
+Файлы для разработки самоцвета parser.
 
 
 %prep
@@ -130,6 +141,8 @@ Requires:      gem(gauntlet) >= 0
 
 %files         -n gem-parser-doc
 %ruby_gemdocdir
+
+%files         -n gem-parser-devel
 
 
 %changelog

@@ -3,7 +3,7 @@
 Name:          gem-rbvmomi
 Version:       2.4.1
 Release:       alt1
-Summary:       Ruby interface to the VMware vSphere API.
+Summary:       Ruby interface to the VMware vSphere API
 License:       MIT
 Group:         Development/Ruby
 Url:           https://github.com/vmware/rbvmomi
@@ -46,13 +46,18 @@ Version:       2.4.1
 Release:       alt1
 Summary:       Ruby interface to the VMware vSphere API executable(s)
 Summary(ru_RU.UTF-8): Исполнямка для самоцвета rbvmomi
-Group:         Other
+Group:         Development/Ruby
 BuildArch:     noarch
 
 Requires:      gem(rbvmomi) = 2.4.1
 
 %description   -n rbvmomish
 Ruby interface to the VMware vSphere API executable(s).
+
+RbVmomi is a Ruby interface to the vSphere API. Like the Perl and Java SDKs, you
+can use it to manage ESX and vCenter servers. The current release supports the
+vSphere 6.5 API. RbVmomi specific documentation is online and is meant to be
+used alongside the official documentation.
 
 %description   -n rbvmomish -l ru_RU.UTF-8
 Исполнямка для самоцвета rbvmomi.
@@ -70,6 +75,11 @@ Requires:      gem(rbvmomi) = 2.4.1
 
 %description   -n gem-rbvmomi-doc
 Ruby interface to the VMware vSphere API documentation files.
+
+RbVmomi is a Ruby interface to the vSphere API. Like the Perl and Java SDKs, you
+can use it to manage ESX and vCenter servers. The current release supports the
+vSphere 6.5 API. RbVmomi specific documentation is online and is meant to be
+used alongside the official documentation.
 
 %description   -n gem-rbvmomi-doc -l ru_RU.UTF-8
 Файлы сведений для самоцвета rbvmomi.
@@ -91,6 +101,11 @@ Requires:      gem(test-unit) >= 2.5
 
 %description   -n gem-rbvmomi-devel
 Ruby interface to the VMware vSphere API development package.
+
+RbVmomi is a Ruby interface to the vSphere API. Like the Perl and Java SDKs, you
+can use it to manage ESX and vCenter servers. The current release supports the
+vSphere 6.5 API. RbVmomi specific documentation is online and is meant to be
+used alongside the official documentation.
 
 %description   -n gem-rbvmomi-devel -l ru_RU.UTF-8
 Файлы для разработки самоцвета rbvmomi.

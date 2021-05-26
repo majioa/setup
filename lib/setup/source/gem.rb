@@ -63,11 +63,11 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def gemfile
-      @gemfile ||= Setup::Source::Gemfile.new(
+      @gemfile ||= Setup::Source::Gemfile.new({
          rootdir: rootdir,
          gem_version_replace: gem_version_replace,
          gem_skip_list: dsl.deps.map(&:name),
-         gem_append_list: [ self.dep ])
+         gem_append_list: [ self.dep ]}.to_os)
    end
 
    def dep

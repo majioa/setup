@@ -38,7 +38,7 @@ Format (OCF).
 %package       -n gem-ucf-doc
 Version:       2.0.2
 Release:       alt1
-Summary:       Universal Container Format (UCF) Ruby Library documentation files
+Summary:       This is a Ruby library for working with UCF documents documentation files
 Summary(ru_RU.UTF-8): Файлы сведений для самоцвета ucf
 Group:         Development/Documentation
 BuildArch:     noarch
@@ -46,13 +46,12 @@ BuildArch:     noarch
 Requires:      gem(ucf) = 2.0.2
 
 %description   -n gem-ucf-doc
-Universal Container Format (UCF) Ruby Library documentation files.
+This is a Ruby library for working with UCF documents documentation files.
 
-A Ruby library for working with Universal Container Format files - a type of
-EPUB document. See the UCF specification
-(https://learn.adobe.com/wiki/display/PDFNAV/Universal+Container+Format) for
-details. They are very similar, although not as restrictive, as the EPUB Open
-Container Format (OCF) (http://www.idpf.org/epub/30/spec/epub30-ocf.html).
+This is a Ruby library for working with UCF documents. See the specification at
+https://learn.adobe.com/wiki/display/PDFNAV/Universal+Container+Format for more
+details. UCF is a type of EPUB and very similar to the EPUB Open Container
+Format (OCF).
 
 %description   -n gem-ucf-doc -l ru_RU.UTF-8
 Файлы сведений для самоцвета ucf.
@@ -61,7 +60,7 @@ Container Format (OCF) (http://www.idpf.org/epub/30/spec/epub30-ocf.html).
 %package       -n gem-ucf-devel
 Version:       2.0.2
 Release:       alt1
-Summary:       Universal Container Format (UCF) Ruby Library development package
+Summary:       This is a Ruby library for working with UCF documents development package
 Summary(ru_RU.UTF-8): Файлы для разработки самоцвета ucf
 Group:         Development/Ruby
 BuildArch:     noarch
@@ -75,13 +74,12 @@ Requires:      gem(coveralls) >= 0
 Requires:      gem(nokogiri) >= 1.6 gem(nokogiri) < 2
 
 %description   -n gem-ucf-devel
-Universal Container Format (UCF) Ruby Library development package.
+This is a Ruby library for working with UCF documents development package.
 
-A Ruby library for working with Universal Container Format files - a type of
-EPUB document. See the UCF specification
-(https://learn.adobe.com/wiki/display/PDFNAV/Universal+Container+Format) for
-details. They are very similar, although not as restrictive, as the EPUB Open
-Container Format (OCF) (http://www.idpf.org/epub/30/spec/epub30-ocf.html).
+This is a Ruby library for working with UCF documents. See the specification at
+https://learn.adobe.com/wiki/display/PDFNAV/Universal+Container+Format for more
+details. UCF is a type of EPUB and very similar to the EPUB Open Container
+Format (OCF).
 
 %description   -n gem-ucf-devel -l ru_RU.UTF-8
 Файлы для разработки самоцвета ucf.

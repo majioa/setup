@@ -32,14 +32,14 @@ class Setup::Space
 
    # +version+ returns a default version for the space. Returns version of a source when
    # its root is the same as the space's root, or returns version defined in the spec if any,
-   # or returns default one, which is the datestamp.
+   # or returns default one.
    #
    # space.version # => 2.1.1
    #
    def version
       return @version if @version
 
-      @version ||= main_source&.version || spec&.version || time_stamp
+      @version ||= main_source&.version || spec&.version
    end
 
    attr_writer :rootdir

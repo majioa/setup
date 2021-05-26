@@ -12,7 +12,8 @@ class Setup::Spec::Rpm
    OPTIONS = %w(source conflicts uri vcs maintainer_name maintainer_email
                 source_files patches build_pre_requires context comment
                 readme executables ignored_names main_source dependencies
-                valid_sources available_gem_list rootdir)
+                valid_sources available_gem_list rootdir aliased_names
+                time_stamp devel_dep_setup)
 
    PARTS = {
       lib: nil,
@@ -39,8 +40,8 @@ class Setup::Spec::Rpm
          default: nil,
       },
       version: {
-         seq: %w(of_options of_source of_state _version),
-         default: nil,
+         seq: %w(of_options of_source of_state of_default _version),
+         default: ->(this) { this.options.time_stamp },
       },
       release: {
          seq: %w(of_options of_state _release),
@@ -215,6 +216,10 @@ class Setup::Spec::Rpm
          seq: %w(of_options of_state),
          default: []
       },
+      aliased_names: {
+         seq: %w(of_options of_state),
+         default: []
+      },
       available_gem_list: {
          seq: %w(of_options of_state _available_gem_list),
          default: {}
@@ -226,6 +231,10 @@ class Setup::Spec::Rpm
       rootdir: {
          seq: %w(of_options of_state),
          default: nil
+      },
+      rake_build_tasks: {
+         seq: %w(of_options of_source of_state of_default _rake_build_tasks),
+         default: ""
       }
    }
 
@@ -304,6 +313,8 @@ class Setup::Spec::Rpm
          end
 
          res
+      end.map do |aliases|
+         aliased_names.reject { |x| (x & aliases).blank? }.flatten | aliases
       end
    end
 
@@ -332,6 +343,7 @@ class Setup::Spec::Rpm
          secondary_parts_for(sec, source)
       end.concat(secondary_parts_for(self, source)).flatten.compact
 
+      #binding.pry
       secondaries = secondaries.map do |sec|
          if presec = names.delete(sec.name)
             sub_sec = of_state(:secondaries).find do |osec|
@@ -350,22 +362,27 @@ class Setup::Spec::Rpm
       end
 
       #binding.pry
-      secondaries | names.map do |an|
-         sec = value_in.find { |sec| sec.name == an }
+      secondaries =
+         secondaries | names.map do |an|
+            sec = value_in.find { |sec| sec.name == an }
 
-         if sec.is_a?(Secondary)
-            sec
-         else
-            source = sources.find { |s| s.name == an.autoname }
-            name = Setup::Spec::Rpm::Name.parse(an.fullname)
+            if sec.is_a?(Secondary)
+               sec
+            elsif sec.is_a?(OpenStruct)
+               source = sources.find { |s| sec.name == s.name }
+               #name = Setup::Spec::Rpm::Name.parse(an.fullname)
 
-            Secondary.new(spec: self,
-                          kind: an.kind,
-                          state: sec,
-                          source: source,
-                          options: { name: name,
-                                     available_gem_list: available_gem_list })
+               Secondary.new(spec: self,
+                             kind: sec.name.kind,#an.kind
+                             state: sec,
+                             source: source,
+                             options: { name: sec.name,
+                                        available_gem_list: available_gem_list })
+            end
          end
+
+      secondaries.select do |sec|
+         sec.kind != :devel || options.devel_dep_setup != "skip"
       end
    end
 
@@ -477,10 +494,12 @@ class Setup::Spec::Rpm
                # TODO suffix
                /alt(?<release_version>.*)/ =~ of_state(:release)
                release_version_bump =
-                  if release_version.split(".").size > 1
+                  if release_version && release_version.split(".").size > 1
                      Gem::Version.new(release_version).bump.to_s
-                  else
+                  elsif release_version
                      release_version + '.1'
+                  else
+                     "1"
                   end
                release = "alt" + release_version_bump
             end
@@ -504,6 +523,12 @@ class Setup::Spec::Rpm
       changes.last.release
    end
 
+   def _rake_build_tasks value_in
+      /--pre=(?<list>[^\s]*)/ =~ %w(context __macros ruby_build).reduce(state) {|r, a| r&.[](a) }
+
+      value_in.split(",") | (of_state(:ruby_on_build_rake_task_list) || list || "").split(",")
+   end
+
    def secondary_parts_for object, source
       PARTS.map do |(kind, func)|
          next object.is_a?(Secondary) && object || nil if !func
@@ -512,6 +537,7 @@ class Setup::Spec::Rpm
             Secondary.new(source: source,
                           spec: self,
                           kind: kind,
+                          host: object,
                           state: { context: context },
                           options: { name_prefix: name.prefix,
                                      available_gem_list: available_gem_list })
@@ -540,8 +566,8 @@ class Setup::Spec::Rpm
          Parser.match?(source_in)
       end
 
-      def parse source_in, options = {}
-         state = Parser.new.parse(source_in)
+      def parse source_in, options = {}.to_os
+         state = Parser.new.parse(source_in, options)
 
          Setup::Spec::Rpm.new(state: state, options: options)
       end

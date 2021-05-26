@@ -8,7 +8,7 @@ When('developer loads the spec') do
 end
 
 When(/(?:he|developer) loads the spec into the space/) do
-   space.spec = Setup::Spec.load_from(@spec_in)
+   space.spec = Setup::Spec.load_from(@spec_in, space.options)
 end
 
 When(/(?:he|developer) sets the space option "([^"]*)" to "([^"]*)"/) do |option, value|

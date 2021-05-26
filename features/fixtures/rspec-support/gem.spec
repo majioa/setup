@@ -13,6 +13,8 @@ BuildArch:     noarch
 
 Source:        %name-%version.tar
 BuildRequires(pre): rpm-build-ruby
+BuildRequires: gem(rake) > 10.0.0
+BuildRequires: gem(thread_order) >= 1.1.0 gem(thread_order) < 1.2
 
 %add_findreq_skiplist %ruby_gemslibdir/**/*
 %add_findprov_skiplist %ruby_gemslibdir/**/*
@@ -38,6 +40,9 @@ Requires:      gem(rspec-support) = 3.8.0
 %description   -n gem-rspec-support-doc
 Common code needed by the other RSpec gems documentation files.
 
+RSpec::Support provides common functionality to RSpec::Core, RSpec::Expectations
+and RSpec::Mocks. It is considered suitable for internal use only at this time.
+
 %description   -n gem-rspec-support-doc -l ru_RU.UTF-8
 Файлы сведений для самоцвета rspec-support.
 
@@ -55,10 +60,12 @@ Common code needed by the other RSpec gems documentation files.
 %ruby_test
 
 %files
+%doc README.md
 %ruby_gemspec
 %ruby_gemlibdir
 
 %files         -n gem-rspec-support-doc
+%doc README.md
 %ruby_gemdocdir
 
 

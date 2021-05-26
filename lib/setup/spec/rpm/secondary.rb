@@ -1,5 +1,5 @@
 class Setup::Spec::Rpm::Secondary
-   attr_reader :source, :spec
+   attr_reader :source, :spec, :host
 
    STATE = {
       name: {
@@ -15,8 +15,8 @@ class Setup::Spec::Rpm::Secondary
          default: nil,
       },
       version: {
-         seq: %w(of_options of_source of_state _version),
-         default: nil,
+         seq: %w(of_options of_source of_state of_default _version),
+         default: ->(_) { Time.now.strftime("%Y%m%d") },
       },
       release: {
          seq: %w(of_options of_state _release),
@@ -135,16 +135,17 @@ class Setup::Spec::Rpm::Secondary
    protected
 
    def _group value_in
-      value_in || is_exec? && is_app? && of_state(:group)
+      value_in || (is_exec? || is_app?) && of_state(:group)
    end
 
    def _release _value_in
       spec.changes.last.release
    end
 
-   def initialize spec: raise, source: nil, kind: nil, state: {}, options: {}
+   def initialize spec: raise, source: nil, host: nil, kind: nil, state: {}, options: {}
       @source = source
       @spec = spec
+      @host = host
       @kind = kind
       @state = state.to_os
       @options = options.to_os

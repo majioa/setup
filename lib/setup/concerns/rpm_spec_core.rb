@@ -67,6 +67,10 @@ module Setup::RpmSpecCore
    end
 
    def state= value
+      if value.name
+         @name = name.merge(value.name)
+      end
+
       @state = value.to_os
    end
 
@@ -115,9 +119,16 @@ module Setup::RpmSpecCore
    def _name value_in
       return value_in if value_in.is_a?(Setup::Spec::Rpm::Name)
 
-      name = is_exec? && executable_name.size >= 3 && executable_name || value_in
+      (name, aliases) =
+         if is_exec? && executable_name.size >= 3
+            [ executable_name, executables ]
+         elsif executable_name.size < 3
+            [ value_in, executables ]
+         else
+            [ value_in, [] ]
+         end
 
-      Setup::Spec::Rpm::Name.parse(name, kind: kind, prefix: options[:name_prefix])
+      Setup::Spec::Rpm::Name.parse(name, kind: kind, prefix: options[:name_prefix], aliases: aliases)
    end
 
    def _devel _in = nil
@@ -134,11 +145,12 @@ module Setup::RpmSpecCore
 
    def _summaries value_in
       source_name = source&.name
-      summary_in = of_source(:summary)
+      summaries_in = @host && host.summaries || { "" => of_source(:summary) } || []
 
       Setup::I18n.defaulted_locales.map do |locale_in|
          locale = locale_in.blank? && Setup::I18n.default_locale || locale_in
-         summary = !%i(lib app).include?(self.kind) && summary_in || value_in[locale] || value_in[locale_in] || nil
+         summary_pre = !%i(lib app).include?(self.kind) && summaries_in[locale_in] || value_in[locale] || value_in[locale_in] || nil
+         summary = summary_pre&.match("(.*?)[\-\.,_\s]*?$")&.[](1)
 
          [ locale_in, t(:"spec.rpm.#{self.kind}.summary", locale: locale, binding: binding) ]
       end.to_os.compact
@@ -163,7 +175,8 @@ module Setup::RpmSpecCore
 
    def _descriptions value_in
       source_name = of_source(:name)
-      summary = of_source(:summary)
+      summaries_in = @host && summaries || { "" => of_source(:summary)&.match("(.*?)[\.,-_\s]+$")&.[](1) }
+      descriptions_in = @host && host.descriptions || { "" => of_source(:description) }
 
       Setup::I18n.defaulted_locales.map do |locale|
          sum = t(:"spec.rpm.#{self.kind}.description", locale: locale, binding: binding)
@@ -172,14 +185,15 @@ module Setup::RpmSpecCore
       end.to_os.map do |locale_in, summary_in|
          if locale_in.blank?
             if !%i(lib app).include?(self.kind)
-               description = of_source(:description)
-               [ summary_in, description ].compact.join("\n\n")
+               summary_in = summaries_in[locale_in]
+               [ summary_in && summary_in + ".", descriptions_in[locale_in] ].compact.join("\n\n")
             else
                locale = Setup::I18n.default_locale
                value_in[locale] || value_in[locale_in]
             end
          else
-            summary_in || value_in[locale_in]
+            summary_in = summaries_in[locale_in]
+            summary_in && summary_in + "." || value_in[locale_in]
          end
       end.compact
    end

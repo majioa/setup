@@ -22,7 +22,7 @@ module Lib
       when ""
          nil
       when /\[/
-         value.gsub(/[\]\[]/,"").split(",")
+         YAML.load(value)
       else
          value
       end

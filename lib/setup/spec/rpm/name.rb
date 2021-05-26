@@ -2,7 +2,7 @@ class Setup::Spec::Rpm::Name
    class InvalidAdoptedNameError < StandardError; end
    class UnsupportedMatchError < StandardError; end
 
-   RULE = /^(?:(?<prefix>gem|ruby)-)?(?<name>.*?)(?:-(?<suffix>doc|devel))?$/
+   RULE = /^(?<full_name>(?:(?<prefix>gem|ruby)-)?(?<name>.*?))(?:-(?<suffix>doc|devel))?$/
 
    attr_reader :name, :kind, :suffix
    attr_accessor :support_name
@@ -32,7 +32,7 @@ class Setup::Spec::Rpm::Name
       if other.is_a?(self.class)
          self.match_by?("kind", other) && self.match_by?("name", other)
       elsif other.is_a?(String)
-         ([ autoname ] | aliases).include?(name)
+         ([ autoname, fullname ] | aliases).include?(other)
       else
          other.to_s == self.fullname
       end
@@ -48,6 +48,15 @@ class Setup::Spec::Rpm::Name
 
    def to_s
       fullname
+   end
+
+   def merge other
+      options =
+         %w(prefix suffix name support_name kind).map do |prop|
+            [ prop.to_sym, other.send(prop) || self.send(prop) ]
+         end.to_h
+
+      self.class.new(options.merge(aliases: self.aliases | other.aliases))
    end
 
    def match_by? value, other
@@ -96,7 +105,7 @@ class Setup::Spec::Rpm::Name
    protected
 
    def initialize options = {}
-      @aliases = options[:name]&.gsub(/[\.\_]+/, "-").split(",")
+      @aliases = options.fetch(:aliases, []) | options.fetch(:name, "").gsub(/[\.\_]+/, "-").split(",")
       @prefix = options[:prefix]
       @suffix = options[:suffix]
       @name = options[:name]
@@ -116,13 +125,25 @@ class Setup::Spec::Rpm::Name
                name_in.match(RULE)
             end
 
+         aliases_in = (options_in[:aliases] || []).flatten.uniq
+         subaliases = aliases_in - [ m["full_name"] ]
+         #aliases = subaliases | [ m["full_name"] ]
+
          raise(InvalidAdoptedNameError) if !m
 
+         prefixed = subaliases.size >= aliases_in.size
          options = {
-             prefix: m["prefix"],
-             suffix: m["suffix"],
-             name: m["name"],
-         }.merge(options_in)
+            prefix: prefixed && m["prefix"] || nil,
+            #prefix: subaliases.blank? && m["prefix"] || nil,
+            #prefix: m["prefix"],
+            suffix: m["suffix"],
+            #name: m["name"],
+            name: prefixed && m["name"] || m["full_name"],
+            #name: subaliases.blank? && m["name"] || m["full_name"],
+         }.merge(options_in).merge({
+            aliases: subaliases | [ m["full_name"] ]
+         })
+         #binding.pry if name_in =~  /ruby/
 
          new(options)
       end

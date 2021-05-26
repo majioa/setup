@@ -11,10 +11,12 @@ class Setup::CLI
       spec_type: "rpm",
       ignored_names: [],
       regarded_names: [],
+      aliased_names: [],
       spec_file: nil,
       maintainer_name: nil,
       maintainer_email: nil,
-      available_gem_list: {}
+      available_gem_list: {},
+      devel_dep_setup: :include
    }.to_os
 
    def option_parser
@@ -38,6 +40,10 @@ class Setup::CLI
                options.regarded_names |= list.compact
             end
 
+            opts.on("-A", "--alias-names=LIST", Array, "Source names comma-separated alias list") do |list|
+               options.aliased_names << list.compact
+            end
+
             opts.on("-o", "--output-file=FILE", String, "Output file for a spec action") do |file|
                options.output_file = file
             end
@@ -52,6 +58,10 @@ class Setup::CLI
 
             opts.on("--maintainer-email=EMAIL", String, "Email of the maintainer to use on spec generation") do |email|
                options.maintainer_email = email
+            end
+
+            opts.on("--devel-dep-setup=[TYPE]", %i(include skip), "Apply setup type for devel dependencies to use with, defaulting to 'include'") do |type|
+               options.devel_dep_setup = type
             end
 
             opts.on("-g", "--available-gem-list-file=FILE", String, "Path to a YAML-formatted file with the list of available gems to replace in dependencies") do |file|

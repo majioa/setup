@@ -2775,7 +2775,7 @@ Feature: Spec actor
 
          %package       -n gem-foo-boo-devel
          Version:       5.2
-         Summary:       Foo Boo gem summary development package
+         Summary:       RPM Actual Summary development package
          Summary(ru_RU.UTF-8): Файлы для разработки самоцвета foo_boo
          Group:         Development/Ruby
          BuildArch:     noarch
