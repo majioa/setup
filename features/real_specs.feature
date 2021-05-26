@@ -48,7 +48,7 @@ Feature: Spec actor
       And he sets the space options as:
          | options            | value                             |
          | rootdir            | features/fixtures/rspec-support   |
-         | devel_dep_setup    | skip                              |
+         | devel_dep_setup    | :skip                             |
          | maintainer_name    | Pavel Skrylev                     |
          | maintainer_email   | majioa@altlinux.org               |
       And he loads the spec into the space

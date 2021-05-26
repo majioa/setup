@@ -382,7 +382,7 @@ class Setup::Spec::Rpm
          end
 
       secondaries.select do |sec|
-         sec.kind != :devel || options.devel_dep_setup != "skip"
+         sec.kind != :devel || options.devel_dep_setup != :skip
       end
    end
 
@@ -397,7 +397,7 @@ class Setup::Spec::Rpm
       #TODO move fo filter options
       deps_pre -= ["ruby-tool-setup"]
       filtered = replace_versioning(deps_pre).reject do |dep|
-         dep.is_a?(Gem::Dependency) && dep.type == :development && options.devel_dep_setup == "skip"
+         dep.is_a?(Gem::Dependency) && dep.type == :development && options.devel_dep_setup == :skip
       end
 
       append_versioning(filtered).reduce([]) do |deps, dep|

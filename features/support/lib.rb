@@ -23,6 +23,8 @@ module Lib
          nil
       when /\[/
          YAML.load(value)
+      when /^:/
+         value[1..-1].to_sym
       else
          value
       end
