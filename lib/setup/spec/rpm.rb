@@ -543,7 +543,7 @@ class Setup::Spec::Rpm
    def _rake_build_tasks value_in
       /--pre=(?<list>[^\s]*)/ =~ %w(context __macros ruby_build).reduce(state) {|r, a| r&.[](a) }
 
-      value_in.split(",") | (of_state(:ruby_on_build_rake_task_list) || list || "").split(",")
+      value_in.split(",") | (of_state(:ruby_on_build_rake_tasks) || list || "").split(",")
    end
 
    def secondary_parts_for object, source

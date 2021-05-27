@@ -31,7 +31,7 @@ BuildRequires: gem(gauntlet) >= 0
 Requires:      gem(ast) >= 2.4.1 gem(ast) < 2.5
 Provides:      gem(parser) = 3.0.1.0
 
-%ruby_on_build_rake_task_list build
+%ruby_on_build_rake_tasks build
 
 %description
 Parser is a production-ready Ruby parser written in pure Ruby. It recognizes as
