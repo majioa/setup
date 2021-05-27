@@ -314,8 +314,22 @@ class Setup::Spec::Rpm
 
          res
       end.map do |aliases|
-         aliased_names.reject { |x| (x & aliases).blank? }.flatten | aliases
+         aliases |
+            [ aliased_names, [ autoaliases ]].map do |a|
+               a.reject { |x| (x & aliases).blank? }
+            end.flatten
       end
+   end
+
+   def autoaliases
+      @autoaliases =
+         [ secondaries.map do |sec|
+            sec.name.name
+         end, secondaries.map do |sec|
+            sec.name.support_name&.name
+         end ].transpose.select do |x|
+            x.compact.uniq.size > 1
+         end.flatten
    end
 
    def _ruby_alias_names_local value_in
@@ -542,7 +556,7 @@ class Setup::Spec::Rpm
                           kind: kind,
                           host: object,
                           state: { context: context },
-                          options: { name_prefix: name.prefix,
+                          options: { name_prefix: kind != :exec && name.prefix || nil,
                                      available_gem_list: available_gem_list })
          end
       end

@@ -178,12 +178,19 @@ class Setup::Spec::Rpm::Parser
       rematched = match.to_a.map { |x| x.is_a?(String) && reeval(x, opts) || x }
       value = method(parse_func)[rematched, reflown, opts, context]
       copts = !non_contexted && context[:name] && opts["secondaries"].find do |sec|
+      #binding.pry
          sec.name == Setup::Spec::Rpm::Name.parse(
             context[:name],
             support_name: opts["name"],
             aliases: aliased_names(opts))
       end || opts
-      ##binding.pry
+      #binding.pry if context[:kind]
+      if !non_contexted && context[:kind] && context[:kind].to_s != copts["name"].kind
+         copts["name"] =
+            Setup::Spec::Rpm::Name.parse(copts["name"].original_fullname,
+               kind: context[:kind],
+               support_name: copts["name"].support_name)
+      end
 
       copts[key] =
       case copts[key]
@@ -200,6 +207,17 @@ class Setup::Spec::Rpm::Parser
 
       opts
    end
+
+   def secondary_for_context opts, context
+      opts["secondaries"].find do |sec|
+      #binding.pry
+         sec.name == Setup::Spec::Rpm::Name.parse(
+            context[:name],
+            support_name: opts["name"],
+            aliases: aliased_names(opts))
+      end
+   end
+
 
    def reeval flow, opts
       opts.deep_merge(opts["context"]).reduce(flow) do |reflown, (name, value)|
@@ -220,7 +238,12 @@ class Setup::Spec::Rpm::Parser
    end
 
    def parse_file_list match, flow, opts, context
-      context.replace(parse_context_line(match[1], opts))
+      kind = {
+         lib: /ruby_gemspec|ruby_gemlibdir/,
+         doc: /ruby_gemdocdir/,
+         exec: /_bindir/,
+      }.find { |(k, re)| re =~ flow }&.[](0)
+      context.replace(parse_context_line(match[1], opts).merge(kind: kind))
       flow.split("\n")[1..-1].join("\n")
    end
 

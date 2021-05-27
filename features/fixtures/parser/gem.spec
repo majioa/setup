@@ -27,7 +27,7 @@ BuildRequires: gem(gauntlet) >= 0
 
 %add_findreq_skiplist %ruby_gemslibdir/**/*
 %add_findprov_skiplist %ruby_gemslibdir/**/*
-%ruby_alias_names parser,ruby-parse,parse
+%ruby_alias_names parser,parse
 Requires:      gem(ast) >= 2.4.1 gem(ast) < 2.5
 Provides:      gem(parser) = 3.0.1.0
 

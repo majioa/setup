@@ -96,7 +96,7 @@ class Setup::Spec::Rpm::Name
       when "lib"
          default_prefix
       when "exec", "app"
-         nil
+         prefix
       else
          prefix && default_prefix || prefix
       end
@@ -143,7 +143,9 @@ class Setup::Spec::Rpm::Name
          }.merge(options_in).merge({
             aliases: subaliases | [ m["full_name"] ]
          })
-         #binding.pry if name_in =~  /ruby/
+
+         options[:name] = options[:name].blank? && options[:aliases].first || options[:name]
+         #binding.pry if name_in =~ /ruby/
 
          new(options)
       end

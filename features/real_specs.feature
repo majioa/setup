@@ -64,7 +64,6 @@ Feature: Spec actor
       And he sets the space options as:
          | options            | value                             |
          | rootdir            | features/fixtures/parser          |
-         | aliased_names      | [[parser,ruby-parse]]             |
          | maintainer_name    | Pavel Skrylev                     |
          | maintainer_email   | majioa@altlinux.org               |
       And he loads the spec into the space
