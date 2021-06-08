@@ -227,7 +227,17 @@ module Setup::RpmSpecCore
    end
 
    def _version value_in
-      value_in.is_a?(Gem::Version) && value_in || Gem::Version.new(value_in.to_s)
+      reversion = gem_versionings.select {|n,v| name.match?(n, true) }.to_h.values.first
+      value = reversion || value_in
+
+      case value
+      when Gem::Version
+         value
+      when Gem::Dependency
+         value.requirement.requirements.first.last
+      else
+         Gem::Version.new(value.to_s)
+      end
    end
 
    def _readme _in
@@ -260,17 +270,17 @@ module Setup::RpmSpecCore
             source&.dependencies(:runtime) || []
          else
             reqs = self.kind == :devel && devel_requires || []
-            [ source&.provide ].compact | reqs
+            [ provide_dep ].compact | reqs
          end
 
       deps = replace_versioning(deps_pre | value_in)
 
-      #binding.pry
       render_deps(deps)
    end
 
+   #
    def replace_versioning deps_in
-      versioning_list = available_gem_list.merge(gem_versionings)
+      versioning_list = available_gem_ranges.merge(gem_versionings)
 
       deps_in.map do |dep_in|
          if dep_in.is_a?(Gem::Dependency)
@@ -285,12 +295,11 @@ module Setup::RpmSpecCore
             dep_in
          end
       end
-      #   binding.pry
    end
 
    def append_versioning deps_in
       gem_versionings.reduce(deps_in) do |deps, name, dep|
-         index = deps.index { |dep_in| dep_in.name == name.to_s }
+         index = deps.index { |dep_in| dep_in.is_a?(Gem::Dependency) && dep_in.name == name.to_s }
 
          #binding.pry
          index && deps || deps | [ dep ]
@@ -313,6 +322,10 @@ module Setup::RpmSpecCore
       end
    end
 
+   def provide_dep
+      gem_versionings.select {|n,v| name.match?(n, true) }.to_h.values.first || source&.provide
+   end
+
    def _provides value_in
       stated_name = of_state(:name)
       #binding.pry
@@ -328,7 +341,7 @@ module Setup::RpmSpecCore
       provides |
          case self.kind
          when :lib
-            render_deps([source.provide])
+            render_deps([provide_dep])
          when :app
             [[ "ruby", name ].join("-")]
          else
@@ -349,7 +362,11 @@ module Setup::RpmSpecCore
    end
 
    def _available_gem_list value_in
-      (value_in || options.available_gem_list || of_default(:available_gem_list)).reduce({}.to_os) do |res, (name, version_in)|
+      value_in || options.available_gem_list || of_default(:available_gem_list)
+   end
+
+   def _available_gem_ranges value_in
+      available_gem_list.reduce({}.to_os) do |res, (name, version_in)|
          low = [ version_in ].flatten.map {|v| Gem::Version.new(v) }.min
          bottom = [ version_in ].flatten.map {|v| Gem::Version.new(v.split(".")[0..1].join(".")).bump }.max
          reqs = [ ">= #{low}", "< #{bottom}" ]
@@ -357,11 +374,28 @@ module Setup::RpmSpecCore
          res[name] = Gem::Dependency.new(name, Gem::Requirement.new(reqs))
 
          res
-      end || []
+      end
    end
 
-   def _gem_versionings _value_in
-      #binding.pry
+   def dep_list_merge first_in, second_in
+      first = first_in || {}.to_os
+      second = second_in || {}.to_os
+      a=
+      first.reduce(second) do |r, name, req|
+         if r[name]
+            r[name] = r[name].merge(req)
+
+            r
+         else
+            r.merge({ name => req }.to_os)
+         end
+      end
+         #binding.pry
+         a
+   end
+
+   def _gem_versionings value_in
+      pre_vers =
       [ variables.gem_replace_version ].flatten.compact.reduce({}.to_os) do |res, gemver|
          /^(?<name>[^\s]+)(?:\s(?<rel>[<=>~]+)\s(?<version>[^\s]+))?/ =~ gemver
 
@@ -373,6 +407,8 @@ module Setup::RpmSpecCore
 
          res
       end
+
+      dep_list_merge(value_in, pre_vers)
    end
 
 #   def parse_options options_in

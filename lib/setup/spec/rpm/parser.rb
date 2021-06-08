@@ -251,7 +251,7 @@ class Setup::Spec::Rpm::Parser
       rows = flow.split("\n* ").map { |p| p.strip }.compact.map { |p| p.split("\n") }
 
       rows[1..-1].map do |row|
-         /(?<date>^\w+\s+\w+\s+\w+\s+\w+)\s+(?<author>.*)\s*(?:<(?<email>.*)>)\s+(?<version>[\w\.]+)(?:-(?<release>[\w\._]+))?$/ =~ row[0]
+         /(?<date>^\w+\s+\w+\s+\w+\s+\w+)\s+(?<author>.*)\s*(?:<(?<email>.*)>)\s+(?:(?<epoch>[0-9]+):)?(?<version>[\w\.]+)(?:-(?<release>[\w\._]+))?$/ =~ row[0]
 
          {
             date: date,

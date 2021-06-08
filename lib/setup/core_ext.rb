@@ -325,9 +325,11 @@ class Gem::Requirement
       b = [ relas[0], relas[2], relas[4], relas[6].begin ].compact.min
       e = [ relas[3], relas[5], relas[6].end ].compact.max
 
+      more = ![2,4,6].all? {|x| relas[x] === nil }
+      less = ![3,5,6].all? {|x| relas[x] === nil }
       bounds =
-         [ b && Gem::Requirement.new(">#{b != relas[2] && "=" || ""} #{b}") || nil,
-           e && Gem::Requirement.new("<#{e != relas[3] && "=" || ""} #{e}") || nil ].compact
+         [ b && Gem::Requirement.new("#{more && ">" || ""}#{b != relas[2] && "=" || ""} #{b}") || nil,
+           e && Gem::Requirement.new("#{less && "<" || ""}#{e != relas[3] && "=" || ""} #{e}") || nil ].compact
 
       nes = relas[1].select {|ver| bounds.all? {|b| b.satisfied_by?(ver) }}
 

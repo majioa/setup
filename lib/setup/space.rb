@@ -198,8 +198,8 @@ class Setup::Space
             YAML.load(_spec)
          elsif options.spec_file
             Setup::Spec.load_from(IO.read(options.spec_file))
-         elsif spec_type
-            Setup::Spec.find(spec_type).new
+         elsif @spec_type || options.spec_type
+            Setup::Spec.find(@spec_type || options.spec_type).new
          end
 
       if @spec

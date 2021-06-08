@@ -94,6 +94,7 @@ Feature: Setup CLI
          """
          ---
          rake: 13.0.1
+         minitest: 5.14.0
          json:
           - 2.3.0
           - 2.3.1
@@ -102,6 +103,7 @@ Feature: Setup CLI
          """
          ---
          rake: 13.0.1
+         minitest: 5.14.0
          json:
           - 2.3.0
           - 2.3.1

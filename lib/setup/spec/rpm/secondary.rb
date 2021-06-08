@@ -106,6 +106,10 @@ class Setup::Spec::Rpm::Secondary
          seq: %w(of_options of_state _available_gem_list),
          default: {}
       },
+      available_gem_ranges: {
+         seq: %w(of_options of_state _available_gem_ranges),
+         default: {}.to_os
+      },
       rootdir: {
          seq: %w(of_options of_state),
          default: nil

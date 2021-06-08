@@ -62,8 +62,10 @@ Provides:      <%= dep %>
 Conflicts:     <%= dep %>
 <% end -%>
 
+<% if has_rake_build_tasks? or has_use_gem_version_list? -%>
 <% if has_rake_build_tasks? -%>
 %ruby_on_build_rake_tasks <%= rake_build_tasks.join(",") %>
+<% end -%>
 
 <% end -%>
 <% descriptions.each_pair do |cp, description| -%>

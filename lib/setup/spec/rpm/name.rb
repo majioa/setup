@@ -28,14 +28,15 @@ class Setup::Spec::Rpm::Name
       end
    end
 
-   def match? other
-      if other.is_a?(self.class)
-         self.match_by?("kind", other) && self.match_by?("name", other)
-      elsif other.is_a?(String)
-         ([ autoname, fullname ] | aliases).include?(other)
+   def match? other, deep = false
+      case other
+      when self.class
+         self.match_by?(:kind, other) && self.match_by?(:name, other)
+      when String, Symbol
+         ([ autoname, fullname ] | [ aliases ].flatten).include?(other.to_s)
       else
          other.to_s == self.fullname
-      end
+      end || deep && self.match_by?(:support_name, other)
    end
 
    def == other
@@ -61,10 +62,12 @@ class Setup::Spec::Rpm::Name
 
    def match_by? value, other
       case value
-      when "name"
+      when :name
          ([ self.name, self.aliases ].flatten & [ other.name, other.aliases ].flatten).any?
-      when "kind"
+      when :kind
          self.kind == other.kind
+      when :support_name
+         self.support_name === (other.is_a?(self.class) && other.support_name || other)
       else
          raise(UnsupportedMatchError.new)
       end

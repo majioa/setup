@@ -62,10 +62,30 @@ Feature: Spec actor
       And a spec from fixture "parser"
       When developer locks the time to "21.04.2021"
       And he sets the space options as:
-         | options            | value                             |
-         | rootdir            | features/fixtures/parser          |
-         | maintainer_name    | Pavel Skrylev                     |
-         | maintainer_email   | majioa@altlinux.org               |
+         | options               | value                             |
+         | rootdir               | features/fixtures/parser          |
+         | available_gem_list    | {racc: 1.5.1}                     |
+         | use_gem_version_list  | parser:3.0.1.1                    |
+         | maintainer_name       | Pavel Skrylev                     |
+         | maintainer_email      | majioa@altlinux.org               |
       And he loads the spec into the space
       And he applies "spec" actor to the setup
       Then he acquires an "parser" fixture spec for the setup
+
+   @scratch @index_gemspec
+   Scenario: Apply the Spec actor to setup for ucf gem and old Ruby Policy 1.0 setup
+      Given blank space
+      When developer locks the time to "21.04.2021"
+      And he sets the space option "rootdir" to fixture "turn"
+      And he sets the space option "maintainer_name" to "Pavel Skrylev"
+      And he sets the space option "maintainer_email" to "majioa@altlinux.org"
+      And he sets the space options as:
+         | options               | value                             |
+         | rootdir               | features/fixtures/turn            |
+         | available_gem_list    | {minitest: 5.14.0}                |
+         | spec_type             | rpm                               |
+         | maintainer_name       | Pavel Skrylev                     |
+         | maintainer_email      | majioa@altlinux.org               |
+      And he applies "spec" actor to the setup
+      Then he acquires an "turn" fixture spec for the setup
+

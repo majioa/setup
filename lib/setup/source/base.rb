@@ -306,8 +306,8 @@ class Setup::Source::Base
    # source.summaries # => #<OpenStruct en_US.UTF-8: ...>
    #
    def summaries
-      if spec.summary
-         { Setup::I18n.default_locale => spec.summary }.to_os
+      if spec&.summary
+         { Setup::I18n.default_locale => spec&.summary }.to_os
       else
          {}.to_os
       end

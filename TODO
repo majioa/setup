@@ -15,3 +15,20 @@
  - gem:multi_test,parser 2x -> 3x
  - app:cucumber_common - blank root (Fake Source) / Url, Vsc, summary, description, filters for blank packages, dedup packages by name
 
+
+ - rubyzip  old -> new
+ - check rubocop *.h adding in devel pkg, bo they are absent
+ - coveralls with %ruby_use_gem_dependency, 0.8.23-alt2 -> 0.8.23.1-alt0.1 (увеличение версии с помоїью командной строки или анализа git),and Epoch =1
+ - google-cloud-ruby - deduplication of build req list for gems: simplecov
+ - photobuf - noarch with so packages
+ - grpc - custom root - grpc, and not gem-grpc
+ - googleauth - alias to google-auth
+ - google-api-ruby-client: correct spec, filter by regexp to ignore-names, validate build
+ - digest-crc - developmnt gems from Gemfile, valid loading the Gemfile with fixed deps
+ - gapic-generator-ruby
+  - filterout README.erb, alow pure, or .md/rdoc/.../
+  - add README with offset paths to the root source
++ uniq name for spe %doc: README.md can't be multiple
++ generate relative symlinks instead of absolute for execs
++ filter out desc and summary char to other like "’" -> "'"
++ filter out names with path "test/spec/feature/fixture/sandbox": example "turn" gem

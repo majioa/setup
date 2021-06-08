@@ -13,7 +13,7 @@ class Setup::Spec::Rpm
                 source_files patches build_pre_requires context comment
                 readme executables ignored_names main_source dependencies
                 valid_sources available_gem_list rootdir aliased_names
-                time_stamp devel_dep_setup)
+                time_stamp devel_dep_setup use_gem_version_list)
 
    PARTS = {
       lib: nil,
@@ -209,7 +209,7 @@ class Setup::Spec::Rpm
          default: []
       },
       gem_versionings: {
-         seq: %w(of_options of_state _gem_versionings),
+         seq: %w(of_options of_state _gem_versionings_with_use),
          default: []
       },
       ignored_names: {
@@ -227,6 +227,14 @@ class Setup::Spec::Rpm
       versioned_gem_list: {
          seq: %w(of_options of_state _versioned_gem_list),
          default: {}
+      },
+      available_gem_ranges: {
+         seq: %w(of_options of_state _available_gem_ranges),
+         default: {}.to_os
+      },
+      use_gem_version_list: {
+         seq: %w(of_options of_state _use_gem_version_list),
+         default: {}.to_os
       },
       rootdir: {
          seq: %w(of_options of_state),
@@ -300,7 +308,13 @@ class Setup::Spec::Rpm
    end
 
    def _versioned_gem_list value_in
-      value_in.to_os.merge(available_gem_list.merge(gem_versionings))
+      value_in.to_os.merge(available_gem_ranges.merge(gem_versionings))
+   end
+
+   def _gem_versionings_with_use value_in
+      dep_list_merge(_gem_versionings(value_in), use_gem_version_list)
+      #_gem_versionings(value_in).reduce(use_gem_version_list) do |r, name, value|
+      #end
    end
 
    def _ruby_alias_names value_in
@@ -340,6 +354,13 @@ class Setup::Spec::Rpm
       @ruby_alias_names_local = value_in | (names.size > 1 && [ names ] || [])
    end
 
+   def _use_gem_version_list value_in
+      #binding.pry
+      value_in && value_in.map do |name, v|
+         Gem::Dependency.new(name.to_s, Gem::Requirement.new(v))
+      end
+   end
+
    def _secondaries value_in
       names = value_in.map { |x| x.name }
 
@@ -352,6 +373,7 @@ class Setup::Spec::Rpm
                              spec: self,
                              state: { context: context },
                              options: { name_prefix: name.prefix,
+                                        gem_versionings: gem_versionings,
                                         available_gem_list: available_gem_list })
 
          secondary_parts_for(sec, source)
@@ -391,6 +413,7 @@ class Setup::Spec::Rpm
                              state: sec,
                              source: source,
                              options: { name: sec.name,
+                                        gem_versionings: gem_versionings,
                                         available_gem_list: available_gem_list })
             end
          end
@@ -414,7 +437,13 @@ class Setup::Spec::Rpm
          dep.is_a?(Gem::Dependency) && dep.type == :development && options.devel_dep_setup == :skip
       end
 
-      append_versioning(filtered).reduce([]) do |deps, dep|
+      reqs =
+         append_versioning(filtered).reject do |n_in|
+            n = n_in.is_a?(Gem::Dependency) && n_in.name || n_in
+            name.match?(n, true)
+         end
+
+      reqs.reduce([]) do |deps, dep|
          deps |
             if dep.is_a?(Gem::Dependency)
                deph = Setup::Deps.to_rpm(dep.requirement)
@@ -432,9 +461,10 @@ class Setup::Spec::Rpm
    end
 
    def _vcs value_in
-      vcs = URL_MATCHER.reduce(value_in) do |res, (rule, e)|
+      pre = URL_MATCHER.reduce(value_in) do |res, (rule, e)|
          res || uri && (match = uri.match(rule)) && e[match] || nil
       end
+      vcs = /github.com/ =~ pre.to_s && pre.gsub(/http:/, "https:") || pre
 
       vcs && "#{vcs}#{/\.git/ !~ vcs && ".git" || ""}".downcase || nil
    end
@@ -557,6 +587,7 @@ class Setup::Spec::Rpm
                           host: object,
                           state: { context: context },
                           options: { name_prefix: kind != :exec && name.prefix || nil,
+                                     gem_versionings: gem_versionings,
                                      available_gem_list: available_gem_list })
          end
       end

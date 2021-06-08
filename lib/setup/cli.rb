@@ -16,7 +16,8 @@ class Setup::CLI
       maintainer_name: nil,
       maintainer_email: nil,
       available_gem_list: {},
-      devel_dep_setup: :include
+      devel_dep_setup: :include,
+      use_gem_version_list: {}.to_os,
    }.to_os
 
    def option_parser
@@ -66,6 +67,11 @@ class Setup::CLI
 
             opts.on("-g", "--available-gem-list-file=FILE", String, "Path to a YAML-formatted file with the list of available gems to replace in dependencies") do |file|
                options.available_gem_list = YAML.load(IO.read(file))
+            end
+
+            opts.on("-V", "--use-gem-version=GEM_VERSION", String, "Gem version pair to forcely use in the setup") do |gem_version|
+               hash = gem_version.split(",").map {|gv| gv.split(":") }.to_h
+               options.use_gem_version_list = options.use_gem_version_list.merge(hash)
             end
 
             opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|

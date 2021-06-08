@@ -40,7 +40,7 @@ class Setup::Source::Gem < Setup::Source::Base
       end
 
       def search dir, options_in = {}
-         specs = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).map do |f|
+         sources = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).map do |f|
             Setup::Gemspec.gemspecs.map do |gemspec|
                gemspec::RE =~ f && [ gemspec, f ] || nil
             end
@@ -50,7 +50,17 @@ class Setup::Source::Gem < Setup::Source::Base
             new_if_valid(gemspec.parse(f), options_in.merge(rootdir: File.dirname(f)))
          end.flatten(1).compact
 
-         specs.map { |x| x.name }.uniq.map { |name| specs.find { |spec| spec.name == name } }
+         sources.map { |x| x.name }.uniq.map do |name|
+           # Sort by firstly version, the newer is moved forward,
+           # then rootdir size, the closer to root folder is moved forward
+           # then keep found order
+           sources.select { |s| s.name == name }.sort do |x, y|
+             r = y.version <=> x.version
+             r == 0 &&
+               (x.rootdir.size > y.rootdir.size && -1 ||
+                x.rootdir.size < y.rootdir.size && 1) || r
+           end.first
+         end
       end
 
       def new_if_valid spec, options_in = {}

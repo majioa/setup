@@ -20,13 +20,13 @@ module ::Setup::Source
          sources_pre.group_by do |source|
             source.rootdir
          end.map do |_a, sources_in|
-            #gem_sources = sources_in.select { |source| source.is_a?(Setup::Source::Gem) }
-            #gem_sources.empty? && sources_in.first || gem_sources
-            sources_pre = sources_in.sort_by do |source_in|
+            sources_in_pre = sources_in.sort_by do |source_in|
                TYPES.values.index(source_in.class.to_s)
             end
 
-            sources_pre.select {|source_pre| source_pre.class == sources_pre.first.class }
+            sources_in_pre.select do |source_in_pre|
+               source_in_pre.class == sources_in_pre.first.class
+            end
          end.flatten
       end
 
