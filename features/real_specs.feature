@@ -27,14 +27,16 @@ Feature: Spec actor
 
    @policy2_0 @gem_change
    Scenario: Apply the Spec actor to setup for rbvmomi gem and manual Ruby Policy 2.0 setup
+         with optimize available gem list feature
       Given blank space
       And a spec from fixture "rbvmomi"
       When developer locks the time to "21.04.2021"
       And he sets the space options as:
-         | options            | value                       |
-         | rootdir            | features/fixtures/rbvmomi   |
-         | maintainer_name    | Pavel Skrylev               |
-         | maintainer_email   | majioa@altlinux.org         |
+         | options            | value                                         |
+         | rootdir            | features/fixtures/rbvmomi                     |
+         | available_gem_list | {racc: 1.5.1, rake: '15.0', test-unit: '3.0'} |
+         | maintainer_name    | Pavel Skrylev                                 |
+         | maintainer_email   | majioa@altlinux.org                           |
       And he loads the spec into the space
       And he applies "spec" actor to the setup
       Then he acquires an "rbvmomi" fixture spec for the setup
@@ -88,4 +90,3 @@ Feature: Spec actor
          | maintainer_email      | majioa@altlinux.org               |
       And he applies "spec" actor to the setup
       Then he acquires an "turn" fixture spec for the setup
-

@@ -308,7 +308,11 @@ class Setup::Spec::Rpm
    end
 
    def _versioned_gem_list value_in
-      value_in.to_os.merge(available_gem_ranges.merge(gem_versionings))
+      dep_list = dep_list_intersect(value_in.to_os, available_gem_ranges, gem_versionings)
+      dependencies_with = dependencies | [provide_dep].compact
+      #binding.pry
+
+      dep_list.select {|n, _| dependencies_with.any? {|dep| dep.name == n.to_s }}
    end
 
    def _gem_versionings_with_use value_in
@@ -367,7 +371,7 @@ class Setup::Spec::Rpm
       #binding.pry
       secondaries = sources.reject do |source_in|
          source_in.name == source&.name ||
-            ignored_names.include?(source_in.name)
+            ignored_names.any? { |i| i === source_in.name }
       end.map do |source|
          sec = Secondary.new(source: source,
                              spec: self,
@@ -397,7 +401,6 @@ class Setup::Spec::Rpm
          end
       end
 
-      #binding.pry
       secondaries =
          secondaries | names.map do |an|
             sec = value_in.find { |sec| sec.name == an }
@@ -496,6 +499,7 @@ class Setup::Spec::Rpm
             source.licenses
          end.flatten.uniq
 
+         #binding.pry
       list.blank? && value_in || list
    end
 

@@ -34,11 +34,17 @@ class Setup::CLI
             end
 
             opts.on("-I", "--ignore-names=LIST", Array, "Source names comma-separated ignore list") do |list|
-               options.ignored_names |= list.compact
+               options.ignored_names |= list.compact.map do |x|
+                  m = /^\/(?<re>.*)/.match(x)
+                  m && /#{m[:re]}/ || x
+               end
             end
 
             opts.on("-R", "--regard-names=LIST", Array, "Source names comma-separated regard list") do |list|
-               options.regarded_names |= list.compact
+               options.regarded_names |= list.compact |= list.compact.map do |x|
+                  m = /^\/(?<re>.*)/.match(x)
+                  m && /#{m[:re]}/ || x
+               end
             end
 
             opts.on("-A", "--alias-names=LIST", Array, "Source names comma-separated alias list") do |list|

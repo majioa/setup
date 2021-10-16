@@ -54,7 +54,16 @@ class Setup::Space
    end
 
    def main_source
-      @main_source ||= valid_sources.find { |source| source.rootdir == rootdir }
+      return @main_source if @main_source
+
+      reals = valid_sources.select { |source| !source.is_a?(Setup::Source::Fake) }
+      if spec && !spec.state.blank?
+         specen_source = reals.find { |real| spec.state["name"] === real.name }
+      end
+
+      root_source ||= valid_sources.find { |source| source.rootdir == rootdir }
+      @main_source =
+         specen_source || root_source.is_a?(Setup::Source::Fake) && reals.size == 1 && reals.first || root_source
    end
 
    def time_stamp
@@ -146,7 +155,7 @@ class Setup::Space
    end
 
    def is_regarded? source
-      !ignored_names.include?(source.name)
+      !ignored_names.any? { |i| i === source.name }
    end
 
    def ignored_names
@@ -179,23 +188,23 @@ class Setup::Space
    # spec #=> {...}
    #
    def spec
-      @spec ||= _spec
+      @spec ||= gen_spec
    end
 
    def spec= value
-      _spec(value)
+      gen_spec(value)
    end
 
    protected
 
-   def _spec spec_in = nil
-      _spec = spec_in || state.spec
+   def gen_spec spec_in = nil
+      spec_pre = spec_in || state.spec
 
       @spec =
-         if _spec.is_a?(Setup::Spec::Rpm)
-            _spec
-         elsif _spec.is_a?(String)
-            YAML.load(_spec)
+         if spec_pre.is_a?(Setup::Spec::Rpm)
+            spec_pre
+         elsif spec_pre.is_a?(String)
+            YAML.load(spec_pre)
          elsif options.spec_file
             Setup::Spec.load_from(IO.read(options.spec_file))
          elsif @spec_type || options.spec_type

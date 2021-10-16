@@ -34,11 +34,17 @@ end
 module Kernel
    alias :__old_system_call :`
    alias :__setup_orig_require :require
+   alias :__setup_orig_gem :gem
 
   def ` cmd
     def lsfiles tokens
-      mask = tokens.select { |t| t !~ /^-/ }.first&.sub('*', '**/*') || '**/*'
-      list = Dir.glob(mask, File::FNM_DOTMATCH).select { |x| File.file?(x) }
+      masks = tokens[2..-1].select do |t|
+        t !~ /^-/
+      end.map do |x|
+        x =~ /\*/ && x.sub('*', '**/*') || File.directory?(x) && "#{x}/**/*" || File.file?(x) && x || '**/*'
+      end
+      masks << "**/*" if masks.empty?
+      list = masks.map {|mask| Dir.glob(mask, File::FNM_DOTMATCH).select { |x| File.file?(x) } }.flatten
       char = tokens.include?('-z') && "\0" || "\n"
       list.join(char)
     end
@@ -71,9 +77,18 @@ module Kernel
       'wrongdoc' => 'setup/extcore/wrongdoc',
       'bones' => 'setup/extcore/bones',
       'echoe' => 'setup/extcore/echoe',
+      'jeweler' => 'setup/extcore/jeweler',
    }
 
+   def gem(gem_name, *requirements) # :doc
+      __setup_orig_gem(gem_name, *requirements)
+   rescue Gem::MissingSpecError => e
+      !MODULES[gem_name.to_s] && raise(e) || false
+   end
+
    def require mod
+      return false if mod === 'bundler/setup'
+
       __setup_orig_require(mod)
    rescue LoadError => e
       if MODULES[mod]
@@ -186,6 +201,17 @@ class Hash
 end
 
 class Object
+   def self.const_get c
+      super
+   rescue Exception => e
+      begin
+        require c.to_s.downcase
+      rescue Exception => e
+      end
+
+      super
+   end
+
    def blank?
       case self
       when NilClass, FalseClass

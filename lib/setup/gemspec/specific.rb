@@ -1,44 +1,40 @@
 module Setup::Gemspec::Specific
-   RE = /\/(?<name>psych|rdoc|signet).gemspec$/
+   RE = /\/(?<name>psych|rdoc|signet|coderay).gemspec$/
 
    RULE = {
-      RDoc: "lib/rdoc",
-      Signet: "lib/signet",
-      Psych: "lib/psych"
+      RDoc: "rdoc",
+      Signet: "signet",
+      Psych: "psych",
+      CodeRay: "coderay"
    }
 
    class << self
       def parse file
          spec = nil
 
+         dir = File.dirname(file)
+         libdir = File.join(dir, 'lib')
+         $:.unshift(libdir) if !$:.include?(libdir)
+
          match = file.match(RE)
          rule = RULE.find { |(cls, _)| cls.to_s.downcase == match[:name] }
 
-         fix_preloaded_for(rule[0], rule[1], file)
+         fix_preloaded_for(rule[0], rule[1], dir)
 
-         FileUtils.chdir(File.dirname(file)) { spec = Gem::Specification.load(File.basename(file)) }
+         FileUtils.chdir(dir) { spec = Gem::Specification.load(File.basename(file)) }
 
          spec
       rescue Exception => e
          $stderr.puts "WARN [#{e.class}]: #{e.message}"
       end
 
-      def fix_preloaded_for const_name, lib, file
-         core_file = File.join(File.dirname(file), lib + '.rb')
+      def fix_preloaded_for const_name, name, dir
          if Object.constants.include?(const_name)
-            if File.file?(core_file)
-               Object.send(:remove_const, const_name)
-               require_relative(core_file)
-            end
-         end
+            Object.send(:remove_const, const_name)
+            to_remove = $LOADED_FEATURES.select {|x| /#{name}/ =~ x }
+            $LOADED_FEATURES.replace($LOADED_FEATURES - to_remove)
 
-         version_file = File.join(File.dirname(file), File.join(lib, "version.rb"))
-         const = Object.const_get(const_name)
-         if const.constants.include?(:VERSION)
-            if File.file?(version_file)
-               const.send(:remove_const, :VERSION)
-               require_relative(version_file)
-            end
+            require(name)
          end
       end
    end

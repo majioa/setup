@@ -28,7 +28,25 @@
  - gapic-generator-ruby
   - filterout README.erb, alow pure, or .md/rdoc/.../
   - add README with offset paths to the root source
+ - chef 15->17
 + uniq name for spe %doc: README.md can't be multiple
 + generate relative symlinks instead of absolute for execs
 + filter out desc and summary char to other like "’" -> "'"
 + filter out names with path "test/spec/feature/fixture/sandbox": example "turn" gem
++ ignore by part: example: update-rubygems[doc,lib] to ignore when detecting and processing
+
+gem-ascii85 - capital name
+
+gem-lemon update stable ver to unstable
+gem-compass - multi gem deps in build requiers (sass), embedded gem = instead of >=, markdown extension for readme, false absent README.md generated in spec
+
+gettext-setup - invalid ruby_alias_names when genspec
+async-rspec - blank description
+gem-treetop - break epoch
+gem-nokogiri - crop changelog, fix gem deps on the file  (example for mini_portile2, see patch)
+prometheus-client - invalid dep tags when is in available list
+ruby-rc4 - ruby isnt prefix, leads to ruby-ruby-rc4
+facets - new spec invalid type dependencies runtime  instead devel
+ffi - git describe --tags command to fix in gemspec
+passenger - minon require list check, because when rebuild spec it losts some things
+

@@ -313,8 +313,8 @@ class Setup::Source::Base
       end
    end
 
-   def dependencies *args
-      []
+   def dependencies *types
+     definition&.dependencies&.select {|dep| types.empty? || types.include?(dep.type) } || []
    end
 
    def licenses

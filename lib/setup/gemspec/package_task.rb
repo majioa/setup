@@ -41,7 +41,6 @@ module Setup::Gemspec::PackageTask
             else
                specs.first
             ensure
-               $stdout.unlink
                $stderr = stderr
                $stdout = stdout
             end

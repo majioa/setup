@@ -24,6 +24,10 @@
 
 ## Introduction
 
+    %ruby_use_gem_dependency simplecov >= 0.16.1,simplecov < 1
+    %ruby_use_gem_version coveralls:0.8.23.1
+    %ruby_alias_names parser_p,parser-p
+
 Every well practiced Rubyist is aware of Minero Aoki's ever `setup.rb`
 script. It's how most of us used to install our Ruby programs before RubyGems
 came along. And it's still mighty useful in certain scenarios, not the

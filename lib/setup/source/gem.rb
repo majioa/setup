@@ -47,8 +47,11 @@ class Setup::Source::Gem < Setup::Source::Base
          end.flatten(1).compact.sort_by do |(gemspec, _)|
             Setup::Gemspec.gemspecs.index(gemspec)
          end.map do |gemspec, f|
-            new_if_valid(gemspec.parse(f), options_in.merge(rootdir: File.dirname(f)))
-         end.flatten(1).compact
+            specs = gemspec.parse(f)
+            [ specs ].flatten.compact.map {|s| [s,f] }
+         end.flatten(1).map do |spec, f|
+            new_if_valid(spec, options_in.merge(rootdir: File.dirname(f)))
+         end.compact
 
          sources.map { |x| x.name }.uniq.map do |name|
            # Sort by firstly version, the newer is moved forward,
@@ -64,7 +67,7 @@ class Setup::Source::Gem < Setup::Source::Base
       end
 
       def new_if_valid spec, options_in = {}
-         if spec && spec.platform == 'ruby'
+         if spec && spec.version && spec.platform == 'ruby'
             self.new(source_options(options_in.merge(spec: spec)))
          end
       end
@@ -225,7 +228,7 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def provide
-      Gem::Dependency.new(spec.name, Gem::Requirement.new(["= #{spec.version}"]), :runtime)
+      spec.version && Gem::Dependency.new(spec.name, Gem::Requirement.new(["= #{spec.version}"]), :runtime)
    end
 
    def licenses

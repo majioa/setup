@@ -175,8 +175,8 @@ module Setup::RpmSpecCore
 
    def _descriptions value_in
       source_name = of_source(:name)
-      summaries_in = @host && summaries || { "" => of_source(:summary)&.match("(.*?)[\.,-_\s]+$")&.[](1) }
-      descriptions_in = @host && host.descriptions || { "" => of_source(:description) }
+      summaries_in = @host && summaries || { "": of_source(:summary)&.match("(.*?)[\.,-_\s]+$")&.[](1) }
+      descriptions_in = @host && host.descriptions || { "": of_source(:description) || of_source(:summary)}
 
       Setup::I18n.defaulted_locales.map do |locale|
          sum = t(:"spec.rpm.#{self.kind}.description", locale: locale, binding: binding)
@@ -186,10 +186,14 @@ module Setup::RpmSpecCore
          if locale_in.blank?
             if !%i(lib app).include?(self.kind)
                summary_in = summaries_in[locale_in]
-               [ summary_in && summary_in + ".", descriptions_in[locale_in] ].compact.join("\n\n")
+               first = summary_in && (summary_in + ".")
+               rest_in = descriptions_in[locale_in]
+               /(?<re>.*)\.$/ =~ rest_in
+               rest = !first&.include?(re || rest_in || "") && rest_in || nil
+               [ first, rest ].compact.join("\n\n")
             else
                locale = Setup::I18n.default_locale
-               value_in[locale] || value_in[locale_in]
+               value_in[locale] || value_in[locale_in] || descriptions_in[locale_in]
             end
          else
             summary_in = summaries_in[locale_in]
@@ -235,6 +239,8 @@ module Setup::RpmSpecCore
          value
       when Gem::Dependency
          value.requirement.requirements.first.last
+      when Array
+         Gem::Version.new(value.first.to_s)
       else
          Gem::Version.new(value.to_s)
       end
@@ -392,6 +398,22 @@ module Setup::RpmSpecCore
       end
          #binding.pry
          a
+   end
+
+   def dep_list_intersect *lists_in
+      lists = lists_in.map {|list| list.to_os }
+
+      lists.reduce do |r_list, list|
+         list.reduce(r_list) do |r, name, req|
+            if r[name]
+               r[name] = Gem::Dependency.new("rake", req.requirement | r[name].requirement)
+
+               r
+            else
+               r.merge({ name => req }.to_os)
+            end
+         end
+      end
    end
 
    def _gem_versionings value_in

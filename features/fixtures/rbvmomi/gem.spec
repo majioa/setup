@@ -24,7 +24,7 @@ BuildRequires: gem(test-unit) >= 2.5
 
 %add_findreq_skiplist %ruby_gemslibdir/**/*
 %add_findprov_skiplist %ruby_gemslibdir/**/*
-%ruby_use_gem_dependency rake >= 10.0,rake < 12.0
+%ruby_use_gem_dependency rake >= 10.0,rake < 16
 %ruby_alias_names rbvmomi,rbvmomish
 Requires:      gem(builder) >= 3.0 gem(builder) < 4
 Requires:      gem(json) >= 1.8
