@@ -88,6 +88,8 @@ module Setup
 
     option :'ignore-names'  , :pick, 'ignore sources with the specified comma-separated name list'
 
+    option :'regard-names'  , :pick, 'regard sources with the specified comma-separated name list'
+
     option :shebang         , :pick, 'replace a shebang line for a newly installed executables ("",auto,env,ruby,<custom>)'
 
     option :use             , :pick, 'apply the following to the module options'
@@ -148,11 +150,23 @@ module Setup
       end
     end
 
+    def use_gem_version_list= value
+       @gem_version_replace = gem_version_replace.merge(value)
+    end
+
+    def use_gem_version_list
+       @gem_version_replace
+    end
+
     def ignore_names= value
       @ignore_names =
       if value.is_a?(String)
         tokens = (value || '').split(/[,;:]/)
-        tokens.map(&:strip).select {|x| x.size > 0 }
+        tokens.map(&:strip).select {|x| x.size > 0 }.map do |x|
+           m = /^\/(?<name>.*)\/?$/.match(x)
+
+           m && m[:name] && Regexp.new(m[:name]) || x
+        end
       else
         value
       end
@@ -160,6 +174,24 @@ module Setup
 
     def ignore_names
        @ignore_names || []
+    end
+
+    def regard_names= value
+      @regard_names =
+      if value.is_a?(String)
+        tokens = (value || '').split(/[,;:]/)
+        tokens.map(&:strip).select {|x| x.size > 0 }.map do |x|
+           m = /^\/(?<name>.*)\/?$/.match(x)
+
+           m && m[:name] && Regexp.new(m[:name]) || x
+        end
+      else
+        value
+      end
+    end
+
+    def regard_names
+       @regard_names || []
     end
 
     def shebang= value
@@ -173,7 +205,7 @@ module Setup
     end
 
     def current_alias= value
-       aliases[current_source_name] = current_alias | (value.is_a?(Array) && value || value.split(/[:;,]/))
+       aliases[current_source_name] = current_alias | (value.is_a?(Array) && value || value.split(/[:;]/)).map {|sub| sub.split(",") }
     end
 
     def current_alias
@@ -230,6 +262,24 @@ module Setup
 
     def current_dep_source
        dep_sources[current_source_name] || dep_sources[nil] || []
+    end
+
+    def use_gem_dependencies= value
+      @use_gem_dependencies =
+      if value.is_a?(String)
+        tokens = (value || ENV['RPM_RUBY_USE_GEM_DEPENDENCY_LIST'] || '').split(/[,;:]/)
+        tokens.map(&:strip).select {|x| x.size > 0 }.map do |x|
+           match = x.match(/^([^\s]+)\s+(.*)/)
+
+           [ match[1], match[2] ]
+        end.to_h
+      else
+        value
+      end
+    end
+
+    def use_gem_dependencies
+       @use_gem_dependencies ||= {}
     end
 
     def suffixes
@@ -366,12 +416,20 @@ module Setup
       end
     end
 
+    def load
+       erb = ERB.new(File.read(CONFIG_FILE))
+       txt = erb.result(binding)
+       if Gem::Version.new(Psych::VERSION) >= Gem::Version.new("4.0.0")
+          YAML.load(txt, aliases: true, permitted_classes: [Gem::Specification, Symbol])
+       else
+          YAML.load(txt)
+       end
+    end
+
     # Load configuration.
     def initialize_configfile
       if exist?
-        erb = ERB.new(File.read(CONFIG_FILE))
-        txt = erb.result(binding)
-        dat = YAML.load(txt)
+        dat = load
         dat.each do |k, v|
           next if 'type' == k
           next if 'mode' == k

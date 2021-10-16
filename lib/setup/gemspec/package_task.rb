@@ -5,7 +5,7 @@ require 'setup/log'
 # Sample is: ruby-gnome2
 #
 module Setup::Gemspec::PackageTask
-   RE = /\/Rakefile$/
+   RE = /\/(Rakefile|rakefile)$/
 
    class << self
       include Setup::Log
@@ -41,7 +41,6 @@ module Setup::Gemspec::PackageTask
             else
                specs.first
             ensure
-               $stdout.unlink
                $stderr = stderr
                $stdout = stdout
             end

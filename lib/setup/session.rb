@@ -155,15 +155,12 @@ module Setup
           stdout = $stdout
           $stdout = $stderr
 
-          begin
-            load('Rakefile')
-          rescue Exception => e
-            $stderr.puts("WARN [#{e.class}]: #{e.message}")
-          end
-
-          Rake.application.load_imports
           configuration.pre&.map do |task_name|
-            Rake::MultiTask[task_name].invoke
+            project.all_sources.each do |src|
+              if src.respond_to?(:rake) and src.rake.present?
+                src.rake.run_task(task_name)
+              end
+            end
           end
         ensure
           $stderr = $stdout
@@ -263,7 +260,7 @@ module Setup
       end.compact.to_h.merge(config: configuration,
                              aliases: configuration.aliases,
                              version_replaces: configuration.version_replaces,
-                             gem_version_replace: configuration.gem_version_replace)
+                             gem_version_replace: (configuration.gem_version_replace || {}).merge(configuration.use_gem_dependencies || {}))
     end
 
     #

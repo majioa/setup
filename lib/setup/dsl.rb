@@ -1,3 +1,4 @@
+require 'bundler'
 require 'fileutils'
 require 'tempfile'
 
@@ -12,26 +13,59 @@ class Setup::DSL
    # attributes
    attr_reader :source, :replace_list, :skip_list, :append_list
 
+   def gemfiles
+      return @gemfiles if @gemfiles
+
+      gemfiles = dsl.instance_variable_get(:@gemfiles) || []
+
+      @gemfiles = gemfiles.map {|g| g.is_a?(Pathname) && g || Pathname.new(g) }
+   end
+
    def gemfile
-      File.join(source.root, 'Gemfile')
+      gemfiles.first
+   end
+
+   def original_gemfile
+      @original_gemfile ||= Pathname.new(File.join(source.root, 'Gemfile'))
    end
 
    def dsl
       @dsl ||= (
          begin
-            require 'bundler'
-
-            dsl = Dir.chdir(source.root) { Bundler::Dsl.new }
-            dsl.eval_gemfile(gemfile)
-            dsl
+            dsl =
+               Dir.chdir(source.root) do
+                  dsl = Bundler::Dsl.new
+                  dsl.eval_gemfile(original_gemfile)
+                  dsl
+               end
          rescue LoadError,
                 Bundler::GemNotFound,
                 Bundler::GemfileNotFound,
                 Bundler::VersionConflict,
                 Bundler::Dsl::DSLError,
                 ::Gem::InvalidSpecificationException => e
-           nil
+
+            Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", Tempfile.create('Gemfile').path
+            dsl = Bundler::Dsl.new
+            dsl.instance_variable_set(:@gemfiles, [Pathname.new(ENV["BUNDLE_GEMFILE"])])
+            dsl.to_definition(Tempfile.create('Gemfile.lock').path, {})
+            Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", nil
+
+            dsl
          end)
+   end
+
+   def edsl
+      @edsl ||= (
+         begin
+            edsl = dsl.dup
+            edsl.dependencies = deps_but(dsl.dependencies, replace_list, skip_list, append_list)
+            edsl
+         end)
+   end
+
+   def definition
+      @definition ||= edsl.to_definition(Tempfile.create.path, {})
    end
 
    def deps
@@ -51,7 +85,7 @@ class Setup::DSL
    end
 
    def valid?
-      !dsl.nil?
+      gemfiles.any? {|g| g.eql?(original_gemfile) }
    end
 
    def to_ruby
@@ -90,7 +124,7 @@ class Setup::DSL
             s || name == dep.name && req
          end
 
-         new_req && Gem::Dependency.new(dep.name, Gem::Requirement.new([new_req]), dep.type) || dep
+         new_req && Bundler::Dependency.new(dep.name, Gem::Requirement.new([new_req]), options: { "type" => dep.type }) || dep
       end.compact | append_list
    end
 

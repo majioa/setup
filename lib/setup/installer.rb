@@ -322,8 +322,10 @@ module Setup
         FileUtils.mkdir_p(File.dirname(dest_file))
         if options[:symlink]
           io.puts "    #{file} -> [#{chroot}]#{dest_file_in}"
-          FileUtils.rm_rf(dest_file)
-          FileUtils.ln_s(file, dest_file, force: true)
+          # FileUtils.rm_rf(dest_file)
+          if !File.exist?(dest_file)
+            FileUtils.ln_s(file, dest_file, force: true)
+          end
         elsif options[:shebang]
           io.puts "    #{file} -> [#{chroot}]#{dest_file_in}"
           install_reshebanged(file, dest_file, shebang: options[:shebang], mode: options[:mode])

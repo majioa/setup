@@ -1,3 +1,6 @@
+require 'bundler/shared_helpers'
+require 'bundler/runtime'
+
 require 'setup'
 
 module Setup
@@ -31,7 +34,7 @@ module Setup
 
     #
     def initialize options = {}
-      self.sources  = options.delete(:sources)
+      self.all_sources  = options.delete(:sources)
       @rootdir  = options.delete(:rootdir)
       @config   = options.delete(:config) || raise
       @options  = options
@@ -58,6 +61,7 @@ module Setup
 
         # post create hook
         autoalias
+        runtime
     end
 
     # The name of the package, used to install docs in system doc/ruby-{name}/ location.
@@ -71,6 +75,10 @@ module Setup
 
     alias load_path loadpath
 
+    def runtime
+       @runtime ||= root_source && Bundler.instance_variable_set(:@setup, Bundler::Runtime.new(rootdir, root_source.dsl.definition))
+    end
+
     # Locate project root.
     def rootdir
       @rootdir ||= Dir.pwd
@@ -78,10 +86,14 @@ module Setup
 
     def to_h
        {
-          sources: sources.map {|x| x.to_h },
+          sources: all_sources.map {|x| x.to_h },
           options: options,
           rootdir: rootdir
        }
+    end
+
+    def spec_version
+       config.gem_version_replace.first.last
     end
 
     # Returns all the source list
@@ -100,8 +112,9 @@ module Setup
 
     # Sets a source list from config
     #
-    def sources= value
-       @sources = value&.map do |source_in|
+    def all_sources= value
+       @all_sources = value&.map do |source_in|
+          source_in[:aliases] = source_in[:aliases] | (config&.aliases || [])
           case source_in.delete(:type)
           when 'rakefile'
              new_source(Setup::Source::Rakefile, source_in)
@@ -139,7 +152,7 @@ module Setup
     end
 
     def is_enabled? source
-      !config.ignore_names.include?(source.name)
+      !config.ignore_names.any? { |i| i === source.name }
     end
     #
     #

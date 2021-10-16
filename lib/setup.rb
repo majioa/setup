@@ -1,3 +1,8 @@
+begin
+  require 'pry'
+rescue Exception
+end
+
 require 'setup/version'
 require 'setup/session'
 require 'setup/source'

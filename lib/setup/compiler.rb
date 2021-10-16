@@ -3,20 +3,57 @@ require 'setup/base'
 module Setup
 
   #
-  class Compiler < Base
+   class Compiler < Base
+      class Extconf
+         attr_reader :config, :original_config, :makeconfig, :original_makeconfig, :argv
+
+         def initialize extfile, *args
+            @extfile = extfile
+            @argv = args
+            @original_config = RbConfig::CONFIG.dup
+            @original_makeconfig = RbConfig::MAKEFILE_CONFIG.dup
+            #@oargv = ARGV.dup
+            RbConfig::MAKEFILE_CONFIG["configure_args"] = args.join(" ")
+            require 'mkmf'
+            RbConfig::CONFIG["srcdir"] = RbConfig::MAKEFILE_CONFIG["srcdir"] = '.'
+
+            init_mkmf(RbConfig::MAKEFILE_CONFIG, RbConfig::CONFIG)
+            # $0.replace(File.join(File.dirname(extfile), "fake"))
+         end
+
+         def configure
+            #ARGV.replace(@argv)
+            #binding.pry
+            load(File.basename(@extfile))
+
+            # module_eval("load('#{File.basename(extfile)}')")
+            @config = RbConfig::CONFIG.dup
+            @makeconfig = RbConfig::MAKEFILE_CONFIG.dup
+         rescue SystemExit
+         rescue Exception => e
+            $stderr.puts("[#{e.class}]> #{e.message}\t\n#{e.backtrace.join("\t\n")}")
+         ensure
+            # $0.replace(cmd)
+            #ARGV.replace(@oargv)
+            RbConfig::CONFIG.replace(@original_config)
+            RbConfig::MAKEFILE_CONFIG.replace(@original_makeconfig)
+         end
+     end
 
     #
     #
     def configure
-      project.sources.each do |source|
-        source.exttree.each do |dir_in, extfiles|
-          extfiles.each do |extfile|
-            Dir.chdir(File.join(source.root, dir_in, File.dirname(extfile))) do
-              ruby("extconf.rb", '--', '--use-system-libraries', '--enable-debug-build')
+      @configurations =
+        project.sources.map do |source|
+          source.exttree.map do |dir_in, extfiles|
+            extfiles.map do |extfile|
+              Dir.chdir(File.join(source.root, dir_in, File.dirname(extfile))) do
+                 # binding.pry
+                 Extconf.new(extfile, '--use-system-libraries', '--enable-debug-build', '--disable-static', '--srcdir=.').configure
+              end
             end
           end
-        end
-      end
+        end.flatten
     end
 
     #
@@ -27,6 +64,7 @@ module Setup
         source.exttree.each do |dir_in, extfiles|
           extfiles.each do |extfile|
             dir = File.join(source.root, dir_in, File.dirname(extfile))
+            headers = Dir.glob("*/**/*.{h,hpp}")
 
             Dir.chdir(dir) do
               puts "[#{dir}]$ make #{config.makeprog}"
@@ -43,6 +81,9 @@ module Setup
                   bash(chrpath_path, '-d', file) if !chrpath_path.empty?
                 end
               end
+
+              #cleanup
+
             end
           end
         end

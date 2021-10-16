@@ -298,7 +298,7 @@ module Setup
 
       # pre action
       parser.on('--pre LIST', 'Issue rake tasks from the comma-separated list before the action') do |val|
-        configuration.pre = val.split(',')
+         configuration.pre = val.split(',').select {|x|x && x != ""}
       end
 
       # gem version replace
@@ -314,6 +314,11 @@ module Setup
       # ignore name list
       parser.on('--ignore-names LIST', 'Ignore sources by a name specified in the comma-separated list') do |val|
         configuration.ignore_names = val
+      end
+
+      # regard name list
+      parser.on('--regard-names LIST', 'Regard sources by a name specified in the comma-separated list') do |val|
+        configuration.regard_names = val
       end
 
       # use source
@@ -359,6 +364,18 @@ module Setup
       # use dependency source for the set
       parser.on('--dep-source DEP_SOURCES', 'redefine dependency source for the set, default: auto') do |val|
         configuration.current_dep_source = val
+      end
+
+      parser.on('--use-gem-dependencies DEPS', '') do |val|
+        configuration.use_gem_dependencies = val
+      end
+
+      parser.on('--use-gem-version DEPS', '') do |gem_version|
+         hash = gem_version.split(",").map do |gv|
+            v = gv.split(":")
+            !v.empty? && (v + ["0"])[0..1] || nil
+         end.compact.to_h
+         configuration.use_gem_version_list = configuration.use_gem_version_list.merge(hash)
       end
 
       parser.separator ""

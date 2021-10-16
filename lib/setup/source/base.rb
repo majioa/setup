@@ -36,7 +36,7 @@ class Setup::Source::Base
    GROUPS = constants.select { |c| c =~ /_DIRS/ }.map { |c| c.to_s.sub('_DIRS', '').downcase }
 
    OPTIONS_IN = {
-      aliases: ->(o, name) { o.is_a?(Hash) && [ o[nil], o[name] ].flatten.compact.uniq || o },
+      aliases: ->(o, name) { o.is_a?(Hash) && [ o[nil], o[name], o.values.map {|x|x.flatten}.select {|x|x.include?(name)}.map {|x|x.first}.flatten ].flatten.compact.uniq || o },
       version_replaces: true,
       gem_version_replace: true,
       root: true,
@@ -215,11 +215,11 @@ class Setup::Source::Base
 
    def lockfile
       @lockfile ||= (
-         root && File.join(root, 'Gemfile.lock') || Tempfile.new('Gemfile.lock').path)
+         root && File.join(root, 'Gemfile.lock') || Tempfile.create('Gemfile.lock').path)
    end
 
    def definition
-      dsl&.dsl&.to_definition(lockfile, true)
+      dsl&.dsl&.to_definition(lockfile, {})
    end
 
    def deps groups_in = nil
@@ -260,6 +260,10 @@ class Setup::Source::Base
       end
    end
 
+   def dsl
+      @dsl ||= Setup::DSL.new(source: self, replace_list: replace_list)
+   end
+
    protected
 
    def exedir
@@ -280,6 +284,7 @@ class Setup::Source::Base
 
    def tree kind, &block
       re_in = self.class.const_get("#{kind.upcase}_RE") rescue nil
+      prc = self.class.const_get("#{kind.upcase}_FILTER") rescue nil
       re = re_in.is_a?(Proc) && re_in[self] || re_in || /.*/
 
       tree_in = send("#{kind}dirs").map do |dir|
@@ -294,7 +299,7 @@ class Setup::Source::Base
       tree_in.map do |dir, files_in|
          files = Dir.chdir(File.join(root, dir)) do
             files_in.select do |file|
-               re =~ file && File.file?(file)
+               re =~ file && File.file?(file) && (!prc || prc[self, file, dir])
             end
          end
 
@@ -308,7 +313,6 @@ class Setup::Source::Base
       send("#{kind}tree", &block).map { |(_, values)| values }.flatten
    end
 
-   #
    def initialize options_in = {}
       @options = { root: Dir.pwd,
                    replace_list: {} }.merge(options_in)

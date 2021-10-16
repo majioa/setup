@@ -1,7 +1,8 @@
-require 'setup/source/base'
-
+require 'bundler/dependency'
 require 'tempfile'
 require 'yaml'
+
+require 'setup/source/base'
 
 class Setup::Source::Gem < Setup::Source::Base
    BIN_IGNORES = %w(test)
@@ -18,19 +19,37 @@ class Setup::Source::Gem < Setup::Source::Base
    LIB_DIRS = ->(s) { s.require_pure_paths }
    DOCSRC_DIRS = ->(s) { s.require_pure_paths }
 
+   INC_FILTER  = ->(s, f, dir) { s.spec.files.include?(File.join(dir, f)) }
+
    OPTIONS_IN = {
       spec: true,
    }
 
-   attr_reader :spec
-
    class << self
+      def load spec_in
+         if Gem::Version.new(Psych::VERSION) >= Gem::Version.new("4.0.0")
+            YAML.load(spec_in, aliases: true, permitted_classes: [Gem::Specification, Gem::Version, Gem::Dependency, Gem::Requirement, Symbol, OpenStruct])
+         else
+            YAML.load(spec_in)
+         end
+      end
+
       def spec_for options_in = {}
          spec_in = options_in[:spec]
-         spec = spec_in.is_a?(String) && YAML.load(spec_in) || spec_in
-         if options_in[:version_replaces] && version = options_in[:version_replaces][spec.name]
+         spec = spec_in.is_a?(String) && load(spec_in) || spec_in
+         version =
+            if options_in[:version_replaces] && options_in[:version_replaces][spec.name]
+               options_in[:version_replaces][spec.name]
+            elsif !options_in[:gem_version_replace].empty?
+               prever = options_in[:gem_version_replace].find {|(n,v)| n == spec.name }&.last
+               /([=><]+\s*)?(?<version>.*)/ =~ prever
+               version
+            end
+
+         if version
             spec.version = Gem::Version.new(version)
          end
+
          spec.require_paths = options_in[:srclibdirs] if options_in[:srclibdirs]
 
          spec
@@ -51,11 +70,13 @@ class Setup::Source::Gem < Setup::Source::Base
             new_if_valid(gemspec.parse(f), { root: File.dirname(f) }.merge(options_in))
          end.flatten(1).compact
 
-         specs.map { |x| x.name }.uniq.map { |name| specs.find { |spec| spec.name == name } }
+         specs.map { |x| x.name }.uniq.map do |name|
+            specs.sort_by { |s| s.version }.select { |spec| spec.name == name }.last
+         end
       end
 
       def new_if_valid spec, options_in = {}
-         if spec && spec.platform == 'ruby'
+         if spec && spec.platform == 'ruby' && spec.version
             self.new(source_options({ spec: spec }.merge(options_in)))
          end
       end
@@ -70,7 +91,7 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def dep
-      Gem::Dependency.new(name, Gem::Requirement.new(["~> #{version}"]), :runtime)
+      Bundler::Dependency.new(name, Gem::Requirement.new(["~> #{version}"]), options: { type: :runtime })
    end
 
    def fullname
@@ -86,7 +107,7 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def gemspec_path
-      gemspec_file = Tempfile.new('gem.')
+      gemspec_file = Tempfile.create('gem.')
       gemspec_file.puts(dsl.to_ruby)
       gemspec_file.rewind
       gemspec_file.path
@@ -94,15 +115,11 @@ class Setup::Source::Gem < Setup::Source::Base
 
    def gemfile_path
       if gemfile.dsl.valid?
-         gemfile_file = Tempfile.new('Gemfile.')
+         gemfile_file = Tempfile.create('Gemfile.')
          gemfile_file.puts(gemfile.dsl.to_gemfile)
          gemfile_file.rewind
          gemfile_file.path
       end
-   end
-
-   def dsl
-      @dsl ||= Setup::DSL.new(source: self, replace_list: replace_list)
    end
 
    # tree
@@ -168,6 +185,14 @@ class Setup::Source::Gem < Setup::Source::Base
          paths.any? && paths || ['lib'])
    end
 
+   def spec
+      @spec ||= self.class.spec_for(options)
+   end
+
+   def rake
+      @rake ||= Setup::Rake.new(File.join(options[:root]))
+   end
+
    protected
 
    def extroots
@@ -178,11 +203,8 @@ class Setup::Source::Gem < Setup::Source::Base
       @exedir ||= if_exist('exe')
    end
 
-   #
    def initialize options_in = {}
       super
-
-      @spec = self.class.spec_for(options_in)
 
       gemfile
    end

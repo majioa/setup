@@ -42,7 +42,6 @@ module Setup::Gemspec::Hoe
             else
                specs.first
             ensure
-               $stdout.unlink
                $stderr = stderr
                $stdout = stdout
             end

@@ -89,6 +89,10 @@ class Setup::Target::Site
       libdir && libdir != logdir
    end
 
+   def require_libdir
+      File.join(libdir, source.name)
+   end
+
    protected
 
    def initialize source: raise, options: {}
