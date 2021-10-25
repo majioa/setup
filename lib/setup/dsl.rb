@@ -124,7 +124,7 @@ class Setup::DSL
             s || name == dep.name && req
          end
 
-         new_req && Bundler::Dependency.new(dep.name, Gem::Requirement.new([new_req]), options: { "type" => dep.type }) || dep
+         new_req && Bundler::Dependency.new(dep.name, Gem::Requirement.new([new_req]), "type" => dep.type) || dep
       end.compact | append_list
    end
 
