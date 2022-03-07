@@ -22,12 +22,17 @@ class Jeweler
          @files.data.exclude.map {|e| Dir[e] }.flatten
       end
 
+      def version
+         IO.read("VERSION")
+      end
+
       def spec
          Gem::Specification.new do |g|
             %w(name version license summary description email authors homepage files test_files extra_rdoc_files rdoc_options).each do |name|
                g.send("#{name}=", data[name]) if data[name]
             end
             g.files ||= Dir["**/*"] - excludes
+            g.version ||= version
          end
       end
 
@@ -43,7 +48,7 @@ class Jeweler
          if /(?<name>\w+)=/ =~ name_in
             @data[name] = args.first
          else
-            raise
+            super
          end
       end
    end

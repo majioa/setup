@@ -12,3 +12,5 @@ web
 setup.gemspec
 *.lock
 .polygon
+*~
+*.sw*

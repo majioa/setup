@@ -46,8 +46,8 @@ module Bones
    end
 
    module Methods
-      def name value
-         Bones.config.gem._spec.name = value
+      def name value = nil
+         Bones.config.gem._spec.name = value if value
       end
 
       def authors value

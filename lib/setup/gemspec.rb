@@ -12,6 +12,7 @@ module Setup::Gemspec
       Mast: "setup/gemspec/mast",
       Jeweler: "setup/gemspec/jeweler",
       Gem: "setup/gemspec/gem",
+      Rakefile: "setup/gemspec/rakefile",
       PackageTask: "setup/gemspec/package_task",
    }
 

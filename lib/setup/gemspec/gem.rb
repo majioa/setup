@@ -1,5 +1,13 @@
+# default gem specification based gemspec detection module
+# example: "polyglot" gem
+#
+require 'setup/loader'
+
 module Setup::Gemspec::Gem
-   RE = /\.gemspec$/
+   extend ::Setup::Loader
+
+   RE = /\.gemspec$/i
+   TYPE = 'Gem::Specification'
 
    class << self
       def load_from file
@@ -18,22 +26,19 @@ module Setup::Gemspec::Gem
       rescue Exception
       ensure
          # TODO puts $stderr into common error log
-         $stderr.rewind
-         stderr.puts $stderr.readlines.join("\n")
-
          $stderr = stderr
       end
 
       def parse file
-         spec = nil
+         dir = File.dirname(file)
+         $:.unshift(File.join(dir, "lib"))
+         $:.unshift(dir)
+         spec = FileUtils.chdir(dir) { load_from(File.basename(file)) }
 
-         FileUtils.chdir(File.dirname(file)) do
-            spec = load_from(File.basename(file))
-         end
-
-         spec
-      rescue Exception => e
-         $stderr.puts "WARN [#{e.class}]: #{e.message}"
+         spec || app_file(file).objects.first
+      ensure
+         $:.shift
+         $:.shift
       end
    end
 end

@@ -1,6 +1,8 @@
 #
 # Ruby Extensions
 #
+require 'bundler'
+
 Encoding.default_external = Encoding::UTF_8
 
 # Is this needed any more?
@@ -38,7 +40,7 @@ module Kernel
 
   def ` cmd
     def lsfiles tokens
-      masks = tokens[2..-1].select do |t|
+      masks = tokens.select do |t|
         t !~ /^-/
       end.map do |x|
         x =~ /\*/ && x.sub('*', '**/*') || File.directory?(x) && "#{x}/**/*" || File.file?(x) && x || '**/*'
@@ -53,19 +55,30 @@ module Kernel
 
     res = __old_system_call(cmd)
 
-    if res.empty? && tokens.first == 'git' && tokens[1] == 'ls-files'
-      lsfiles(tokens)
+    if res.empty? && tokens.first == 'git' && tokens.include?('ls-files')
+      i = tokens.index('ls-files')
+      lsfiles(tokens[i + 1..-1])
     else
       res
     end
   rescue => e
-    if tokens.first == 'git' && tokens[1] == 'ls-files'
+    if tokens.first == 'git'
+      if tokens.include?('ls-files')
        # TODO add gem TaskJuggler to test --
-      i = tokens.index_of('--')
-      if i
-        lsfiles(tokens[i + 1..-1])
+        i = tokens.index('--')
+        if i
+          lsfiles(tokens[i + 1..-1])
+        else
+          lsfiles(tokens[2..-1])
+        end
+      elsif tokens.include?('describe')
+        if tokens.include?("--tags")
+          ObjectSpace.each_object(Setup::Project).first.spec_version
+        else
+          res
+        end
       else
-        lsfiles(tokens[2..-1])
+        res
       end
     else
       raise(e)
@@ -81,15 +94,23 @@ module Kernel
       'hoe' => 'setup/extcore/hoe',
    }
 
+   def config
+      @@config ||= ObjectSpace.each_object(Setup::Configuration).first
+   rescue NameError
+   end
+
    def gem(gem_name, *requirements) # :doc
+      if req_in = config && config.use_gem_dependencies[gem_name]
+         req = Gem::Requirement.new(req_in)
+         requirements = requirements.map {|r| Gem::Requirement.new(r).merge(req).to_s.split(",") }.flatten
+      end
+
       __setup_orig_gem(gem_name, *requirements)
    rescue Gem::MissingSpecError => e
       !MODULES[gem_name.to_s] && raise(e) || false
    end
 
    def require mod
-      return false if mod === 'bundler/setup'
-
       __setup_orig_require(mod)
    rescue LoadError => e
       if MODULES[mod]
@@ -100,11 +121,51 @@ module Kernel
    end
 end
 
+module Bundler
+   class Runtime
+      alias :__setup :setup
+
+      def setup(*groups)
+         /(bundler\/setup.rb|Gemfile|Rakefile):/ !~ caller[0] && super || self
+      end
+   end
+
+   class << self
+      def read_file(file)
+         SharedHelpers.filesystem_access(file, :read) do
+            begin
+               File.open(file, "r:UTF-8", &:read)
+            rescue Errno::ENOENT
+               ""
+            end
+         end
+      end
+   end
+end
+
 class Array
    # actjoin(array) => [<pre_match1>, <pre_match2>, <pre_match3>, <post_match>]; array = [match1, match2, match3]
    #
    def actjoin array
       self.map.with_index { |x, i| [ x, array[i] ].compact }.flatten.join
+   end
+end
+
+class Pathname
+   def === value
+      if value.is_a?(String)
+         self.to_s === value
+      else
+         super
+      end
+   end
+
+   def == value
+      if value.is_a?(String)
+         self.to_s == value
+      else
+         super
+      end
    end
 end
 
@@ -154,6 +215,12 @@ class String
       SINGLE_R.reduce(nil) do |res, (re, char)|
          res || self.dup.sub!(re, char)
       end.to_s
+   end
+
+   def constantize
+      self.split('::').reduce(Object) do |c, token|
+        token.empty? && c || c.const_get(token)
+      end
    end
 end
 
