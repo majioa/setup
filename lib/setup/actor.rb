@@ -1,8 +1,10 @@
-require 'yaml'
+require 'rubygems'
 
 module Setup::Actor
    class InvalidActorKindError < StandardError; end
    class InvalidContextKindForActorError < StandardError; end
+
+   Gem.load_yaml
 
    AUTOMAP = {
       Spec: "setup/actor/spec",

@@ -78,6 +78,7 @@ module Kernel
       'bones' => 'setup/extcore/bones',
       'echoe' => 'setup/extcore/echoe',
       'jeweler' => 'setup/extcore/jeweler',
+      'hoe' => 'setup/extcore/hoe',
    }
 
    def gem(gem_name, *requirements) # :doc

@@ -10,15 +10,8 @@ module Setup::Gemspec::Hoe
    class << self
       include Setup::Log
 
-      def has_hoe?
-         require('hoe')
-
-         defined? Hoe
-      rescue Exception
-      end
-
       def parse rakefile
-         if File.file?(rakefile) && has_hoe?
+         if File.file?(rakefile)
             begin
                stdout = $stdout
                stderr = $stderr

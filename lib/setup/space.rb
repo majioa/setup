@@ -1,4 +1,4 @@
-require 'yaml'
+require 'rubygems'
 
 require 'setup/version'
 
@@ -8,6 +8,8 @@ class Setup::Space
    TYPES = {
       sources: Setup::Source
    }
+
+   Gem.load_yaml
 
    @@space = {}
    @@options = {}

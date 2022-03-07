@@ -1,5 +1,5 @@
+require 'rubygems'
 require 'tempfile'
-require 'yaml'
 require 'date'
 
 class Setup::Source::Gem < Setup::Source::Base
@@ -22,6 +22,8 @@ class Setup::Source::Gem < Setup::Source::Base
    }
 
    attr_reader :gem_version_replace
+
+   Gem.load_yaml
 
    class << self
       def spec_for options_in = {}

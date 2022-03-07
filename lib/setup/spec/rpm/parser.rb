@@ -201,7 +201,11 @@ class Setup::Spec::Rpm::Parser
       when Hash, OpenStruct
          copts[key].deep_merge(value)
       else
-         [ copts[key], value ]
+         if copts[key] == value
+            value
+         else
+            [copts[key], value]
+         end
       end
       #binding.pry
 

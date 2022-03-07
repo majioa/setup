@@ -3,7 +3,6 @@
 require "cucumber/rake/task"
 require "bundler/gem_tasks"
 require "fileutils"
-require "yaml"
 
 require "setup"
 
