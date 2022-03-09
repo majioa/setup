@@ -63,6 +63,9 @@ Conflicts:     <%= dep %>
 <% end -%>
 
 <% if has_rake_build_tasks? or has_use_gem_version_list? -%>
+<% use_gem_version_list.each do |name, dep| -%>
+%ruby_use_gem_version <%= name %>:<%= dep.requirement.requirements.first.last %>
+<% end -%>
 <% if has_rake_build_tasks? -%>
 %ruby_on_build_rake_tasks <%= rake_build_tasks.join(",") %>
 <% end -%>

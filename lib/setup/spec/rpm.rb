@@ -251,7 +251,7 @@ class Setup::Spec::Rpm
    def render spec = nil
       b = binding
 
-      #binding.pry
+      # binding.pry
       ERB.new(spec || spec_template, trim_mode: "<>-", eoutvar: "@spec").result(b).strip
    end
 
@@ -291,9 +291,10 @@ class Setup::Spec::Rpm
                #   package.of_state(:name) ||
                #   rootdir && rootdir.split("/").last
                name = package.pre_name
-               #binding.pry
+               # binding.pry
 
                Setup::Source::Gemfile.new({
+                  "rootdir" => rootdir,
                   "name" => name.to_s,
                   "version" => of_options(:version) || of_state(:version)
                })
@@ -310,9 +311,13 @@ class Setup::Spec::Rpm
    def _versioned_gem_list value_in
       dep_list = dep_list_intersect(value_in.to_os, available_gem_ranges, gem_versionings)
       dependencies_with = dependencies | [provide_dep].compact
-      #binding.pry
 
-      dep_list.select {|n, _| dependencies_with.any? {|dep| dep.name == n.to_s }}
+      dep_list.select do |n, dep_in|
+         dependencies_with.select { |dep| dep.name == n.to_s }.any? do |dep|
+            dep_ver = combine_deps(dep, dep_in)
+            dep_ver.requirement.requirements != dep.requirement.expand.requirements
+         end
+      end
    end
 
    def _gem_versionings_with_use value_in
@@ -368,7 +373,7 @@ class Setup::Spec::Rpm
    def _secondaries value_in
       names = value_in.map { |x| x.name }
 
-      #binding.pry
+      # binding.pry
       secondaries = sources.reject do |source_in|
          source_in.name == source&.name ||
             ignored_names.any? { |i| i === source_in.name }
@@ -383,7 +388,7 @@ class Setup::Spec::Rpm
          secondary_parts_for(sec, source)
       end.concat(secondary_parts_for(self, source)).flatten.compact
 
-      #binding.pry
+      # binding.pry
       secondaries = secondaries.map do |sec|
          if presec = names.delete(sec.name)
             sub_sec = of_state(:secondaries).find do |osec|
@@ -401,6 +406,7 @@ class Setup::Spec::Rpm
          end
       end
 
+      # binding.pry
       secondaries =
          secondaries | names.map do |an|
             sec = value_in.find { |sec| sec.name == an }

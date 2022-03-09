@@ -43,6 +43,7 @@ class Setup::DSL
                 Bundler::GemfileNotFound,
                 Bundler::VersionConflict,
                 Bundler::Dsl::DSLError,
+                Errno::ENOENT,
                 ::Gem::InvalidSpecificationException => e
 
             Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", Tempfile.new('Gemfile').path

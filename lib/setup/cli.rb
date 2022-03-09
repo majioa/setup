@@ -41,7 +41,7 @@ class Setup::CLI
             end
 
             opts.on("-R", "--regard-names=LIST", Array, "Source names comma-separated regard list") do |list|
-               options.regarded_names |= list.compact |= list.compact.map do |x|
+               options.regarded_names |= list.compact.map do |x|
                   m = /^\/(?<re>.*)/.match(x)
                   m && /#{m[:re]}/ || x
                end

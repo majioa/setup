@@ -1802,8 +1802,6 @@ Feature: Spec actor
          %description   -n foo-ba
          Foo Boo gem summary executable(s).
 
-         Foo Boo gem
-
          %description   -n foo-ba -l ru_RU.UTF-8
          Исполнямка для самоцвета foo_boo.
 
@@ -1818,8 +1816,6 @@ Feature: Spec actor
          %description   -n gem-foo-boo-doc
          Foo Boo gem summary documentation files.
 
-         Foo Boo gem
-
          %description   -n gem-foo-boo-doc -l ru_RU.UTF-8
          Файлы сведений для самоцвета foo_boo.
 
@@ -1833,8 +1829,6 @@ Feature: Spec actor
 
          %description   -n gem-foo-boo-devel
          Foo Boo gem summary development package.
-
-         Foo Boo gem
 
          %description   -n gem-foo-boo-devel -l ru_RU.UTF-8
          Файлы для разработки самоцвета foo_boo.
@@ -2293,8 +2287,6 @@ Feature: Spec actor
          %description   -n foo
          Foo Boo gem summary executable(s).
 
-         Foo Boo gem
-
          %description   -n foo -l ru_RU.UTF-8
          Исполнямка для самоцвета foo_boo.
 
@@ -2311,8 +2303,6 @@ Feature: Spec actor
          %description   -n gem-foo-boo-doc
          Foo Boo gem summary documentation files.
 
-         Foo Boo gem
-
          %description   -n gem-foo-boo-doc -l ru_RU.UTF-8
          Файлы сведений для самоцвета foo_boo.
 
@@ -2328,8 +2318,6 @@ Feature: Spec actor
 
          %description   -n gem-foo-boo-devel
          Foo Boo gem summary development package.
-
-         Foo Boo gem
 
          %description   -n gem-foo-boo-devel -l ru_RU.UTF-8
          Файлы для разработки самоцвета foo_boo.

@@ -293,7 +293,7 @@ module Setup::RpmSpecCore
             dep = versioning_list[dep_in.name]
 
             if dep
-               Gem::Dependency.new(dep_in.name, dep_in.requirement | dep.requirement)
+               combine_deps(dep_in, dep)
             else
                dep_in
             end
@@ -301,6 +301,21 @@ module Setup::RpmSpecCore
             dep_in
          end
       end
+   end
+
+   # +combine_deps+ method combines dependenies' requirements passed with arguments +base_dep+, and +dep+ base on
+   # the operators in +base_dep+
+   # Example:
+   #    combine_deps(base_dep, dep)
+   #
+   def combine_deps base_dep, dep
+      dep_ver = Gem::Dependency.new(base_dep.name, base_dep.requirement | dep.requirement)
+      ops = base_dep.requirement.requirements.map {|x| x.first }.join(" ").gsub(/\A(~>|=)\z/, ">= < =").split(" ").uniq
+      reqs = dep_ver.requirement.requirements.select {|x| ops.include?(x[0]) }
+
+      dep_ver.requirement.requirements.replace(reqs)
+
+      dep_ver
    end
 
    def append_versioning deps_in

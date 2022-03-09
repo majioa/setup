@@ -104,7 +104,7 @@ module Setup::Loader
       mods[file] ||= load_file(file)
 
       mod = mods[file].dup
-      objects = mod.object_hash[self]
+      objects = mod.object_hash&.fetch(self, []) || []
       if block_given?
          objects = [yield(objects)].flatten.compact
       end

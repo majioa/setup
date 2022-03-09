@@ -269,7 +269,7 @@ class Hash
 end
 
 class Object
-   def self.const_get c
+   def self.const_get c, inherit = true
       super
    rescue Exception => e
       begin
@@ -394,42 +394,156 @@ class Gem::Requirement
    }.freeze
 
    OR_RELAS = { #:nodoc:
-      "="  =>  :min,
-      "!=" =>  :dup,
-      ">"  =>  :min,
-      "<"  =>  :max,
-      ">=" =>  :min,
-      "<=" =>  :max,
-      "~>" =>  lambda do |a|
-         ranges = a.map { |v| [v, v.bump] }.transpose
-         ranges[0]&.min...ranges[1]&.max
-      end
+      [ "=", ">=", nil ] => ->(l, r) { [[">=", [r, l].min]] },
+      [ "=", "<=", -1 ] => ->(l, r) { [["<=", r]] },
+      [ "=", "<=", 0 ] => ->(l, r) { [["<=", r]] },
+      [ "=", ">", 0 ] => ->(l, r) { [[">=", r]] },
+      [ "=", ">", 1 ] => ->(l, r) { [[">", r]] },
+      [ "=", "<", -1 ] => ->(l, r) { [["<", r]] },
+      [ "=", "<", 0 ] => ->(l, r) { [["<=", r]] },
+      [ "=", "=", 0 ] => ->(l, r) { [["=", l]] },
+      [ "=", "~>", nil ] => ->(l, r) { [[">=", [r, l].min], ["<", r.bump]] },
+      [ "!=", "=", -1 ] => ->(l, r) { [["=", r], ["!=", l]] },
+      [ "!=", "=", 0 ] => ->(l, r) { [] },
+      [ "!=", "=", 1 ] => ->(l, r) { [["=", r], ["!=", l]] },
+      [ "!=", "!=", 0 ] => ->(l, r) { [["!=", l]] },
+      [ "!=", ">", -1 ] => ->(l, r) { [[">", r]] },
+      [ "!=", ">", 0 ] => ->(l, r) { [[">", r]] },
+      [ "!=", ">", 1 ] => ->(l, r) { [[">", r], ["!=", l]] },
+      [ "!=", "<", -1 ] => ->(l, r) { [["<", r], ["!=", l]] },
+      [ "!=", "<", 0 ] => ->(l, r) { [["<", r]] },
+      [ "!=", "<", 1 ] => ->(l, r) { [["<", r]] },
+      [ "!=", ">=", -1 ] => ->(l, r) { [[">=", r]] },
+      [ "!=", ">=", 0 ] => ->(l, r) { [[">", r]] },
+      [ "!=", ">=", 1 ] => ->(l, r) { [[">=", r], ["!=", l]] },
+      [ "!=", "<=", -1 ] => ->(l, r) { [["<=", r], ["!=", l]] },
+      [ "!=", "<=", 0 ] => ->(l, r) { [["<", r]] },
+      [ "!=", "<=", 1 ] => ->(̀r, l) { [["<=", r]] },
+      [ "!=", "~>", -1 ] => ->(l, r) { [[">=", r], ["<", r.bump], ["!=", l]] },
+      [ "!=", "~>", 0 ] => ->(l, r) { [[">", r], ["<", r.bump]] },
+      [ "!=", "~>", 1 ] => ->(l, r) { [[">=", r], ["<", r.bump], ["!=", l]] },
+      [ ">", "=", 0 ] => ->(l, r) { [[">=", l]] },
+      [ ">", "=", 1 ] => ->(l, r) { [[">", l]] },
+      [ ">", "!=", 0 ] => ->(l, r) { [[">", l]] },
+      [ ">", "!=", 1 ] => ->(l, r) { [[">", l]] },
+      [ ">", ">", nil ] => ->(l, r) { [[">", [r, l].min]] },
+      [ ">", "<", 0 ] => ->(l, r) { [] },
+      [ ">", "<", 1 ] => ->(l, r) { [] },
+      [ ">", ">=", -1 ] => ->(l, r) { [[">", l]] },
+      [ ">", ">=", 0 ] => ->(l, r) { [[">=", r]] },
+      [ ">", ">=", 1 ] => ->(l, r) { [[">=", r]] },
+      [ ">", "<=", 0 ] => ->(l, r) { [] },
+      [ ">", "<=", 1 ] => ->(l, r) { [] },
+      [ ">", "~>", -1 ] => ->(l, r) { [[">", l], ["<", r.bump]] },
+      [ ">", "~>", 0 ] => ->(l, r) { [[">=", r], ["<", r.bump]] },
+      [ ">", "~>", 1 ] => ->(l, r) { [[">=", r], ["<", r.bump]] },
+      [ "<", "=", 0 ] => ->(l, r) { [["<=", l]] },
+      [ "<", "=", 1 ] => ->(l, r) { [["<", l]] },
+      [ "<", "!=", -1 ] => ->(l, r) { [["<", l]] },
+      [ "<", "!=", 0 ] => ->(l, r) { [["<", l]] },
+      [ "<", ">", -1 ] => ->(l, r) { [] },
+      [ "<", ">", 0 ] => ->(l, r) { [] },
+      [ "<", ">", 1 ] => ->(l, r) { [[">", r], ["<", l]] },
+      [ "<", "<", nil ] => ->(l, r) { [["<", [r, l].max]] },
+      [ "<", ">=", -1 ] => ->(l, r) { [] },
+      [ "<", ">=", 0 ] => ->(l, r) { [] },
+      [ "<", ">=", 1 ] => ->(l, r) { [[">=", r], ["<", l]] },
+      [ "<", "~>", nil ] => ->(l, r) { [[">=", r], ["<", [l, r.bump].max]] },
+      [ ">=", "=", 0 ] => ->(l, r) { [[">=", l]] },
+      [ ">=", "=", -1 ] => ->(l, r) { [[">=", l], ["=", r]] },
+      [ ">=", "!=", 0 ] => ->(l, r) { [[">", l]] },
+      [ ">=", "!=", 1 ] => ->(l, r) { [[">=", l]] },
+      [ ">=", ">", -1 ] => ->(l, r) { [[">=", l]] },
+      [ ">=", ">", 0 ] => ->(l, r) { [[">=", l]] },
+      [ ">=", ">", 1 ] => ->(l, r) { [[">", r]] },
+      [ ">=", "<", 0 ] => ->(l, r) { [] },
+      [ ">=", "<", 1 ] => ->(l, r) { [] },
+      [ ">=", ">=", nil ] => ->(l, r) { [[">=", [r, l].min]] },
+      [ ">=", "<=", 0 ] => ->(l, r) { [["=", l]] },
+      [ ">=", "<=", 1 ] => ->(l, r) { [] },
+      [ ">=", "~>", nil ] => ->(l, r) { [[">=", [r, l].min], ["<", r.bump]] },
+      [ "<=", "=", 0 ] => ->(l, r) { [["<=", l]] },
+      [ "<=", "=", 1 ] => ->(l, r) { [["<=", l]] },
+      [ "<=", "!=", -1 ] => ->(l, r) { [["<", l]] },
+      [ "<=", "!=", 0 ] => ->(l, r) { [["<", l]] },
+      [ "<=", ">", -1 ] => ->(l, r) { [] },
+      [ "<=", ">", 0 ] => ->(l, r) { [] },
+      [ "<=", ">", 1 ] => ->(l, r) { [[">", r], ["<=", l]] },
+      [ "<=", "<", -1 ] => ->(l, r) { [["<=", l]] },
+      [ "<=", "<", 0 ] => ->(l, r) { [["<=", l]] },
+      [ "<=", "<", 1 ] => ->(l, r) { [["<", r]] },
+      [ "<=", ">=", -1 ] => ->(l, r) { [] },
+      [ "<=", ">=", 0 ] => ->(l, r) { [["=", l]] },
+      [ "<=", ">=", 1 ] => ->(l, r) { [[">=", r], ["<=", l]] },
+      [ "<=", "~>", ->(l, r) { r.bump > l } ] => ->(l, r) { [[">=", r], ["<", r.bump]] },
+      [ "<=", "~>", ->(l, r) { r.bump <= l } ] => ->(l, r) { [[">=", r], ["<=", l]] },
+      [ "~>", "=", nil ] => ->(l, r) { [[">=", [l, r].min], ["<", l.bump]] },
+      [ "~>", "!=", -1 ] => ->(l, r) { [[">=", l], ["<", l.bump], ["!=", r]] },
+      [ "~>", "!=", 0 ] => ->(l, r) { [[">", l], ["<", l.bump]] },
+      [ "~>", "!=", 1 ] => ->(l, r) { [[">=", l], ["<", l.bump], ["!=", r]] },
+      [ "~>", ">", -1 ] => ->(l, r) { [[">=", l], ["<", l.bump]] },
+      [ "~>", ">", 0 ] => ->(l, r) { [[">=", l], ["<", l.bump]] },
+      [ "~>", ">", 1 ] => ->(l, r) { [[">", r], ["<", l.bump]]},
+      [ "~>", "<", nil ] => ->(l, r) { [[">=", l], ["<", [r, l.bump].max]] },
+      [ "~>", ">=", nil ] => ->(l, r) { [[">=", [l, r].min], ["<", l.bump]] },
+      [ "~>", "<=", ->(l, r) { l.bump > r } ] => ->(l, r) { [[">=", l], ["<", l.bump]] },
+      [ "~>", "<=", ->(l, r) { l.bump <= r } ] => ->(l, r) { [[">=", l], ["<=", r]] },
+      [ "~>", "~>", nil ] => ->(l, r) { [[">=", [r, l].min], ["<", [r.bump, l.bump].max]] }
+#         Gem::Version.new(INF)
    }.freeze
 
    def | other_requirement
-      reqs_tmp = self.requirements | other_requirement.requirements
+      self.class.expand_requirements(self.requirements | other_requirement.requirements)
+   end
 
-      relas =
-         Gem::Requirement::OR_RELAS.map do |(op, prc)|
-            selected = reqs_tmp.map { |(rel, version)| rel == op && version || nil }.compact
+   def expand
+      self.class.expand_requirements(self.requirements)
+   end
 
-            prc.is_a?(Proc) && prc[selected] || selected.send(prc)
+   def self.expand_requirements requirements
+      reqs_in = []
+      res = requirements.dup
+
+      #binding.pry
+      while reqs_in != res do
+         reqs_in = res
+         reqs = reqs_in.dup
+         res = []
+
+         #binding.pry
+         while !reqs.empty? do
+            op1, ver1 = reqs.shift
+            op2, ver2 = reqs.shift || [op1, ver1]
+
+            prc =
+               Gem::Requirement::OR_RELAS.find do |((left, right, comp), _)|
+                  match = op1 == left && op2 == right &&
+                     case comp
+                     when NilClass
+                        true
+                     when Integer
+                        comp == (ver1 <=> ver2)
+                     when Proc
+                        comp[ver1, ver2]
+                     end
+               end
+
+            #binding.pry
+            res =
+               if prc
+                  res.concat(prc.last[ver1, ver2])
+               elsif reqs.empty?
+                  res.concat([[op1, ver1], [op2, ver2]])
+               else
+                  #binding.pry
+                  reqs.unshift([op2, ver2])
+                  res.concat([[op1, ver1]])
+               end
          end
+      end
 
-      b = [ relas[0], relas[2], relas[4], relas[6].begin ].compact.min
-      e = [ relas[3], relas[5], relas[6].end ].compact.max
-
-      more = ![2,4,6].all? {|x| relas[x] === nil }
-      less = ![3,5,6].all? {|x| relas[x] === nil }
-      bounds =
-         [ b && Gem::Requirement.new("#{more && ">" || ""}#{b != relas[2] && "=" || ""} #{b}") || nil,
-           e && Gem::Requirement.new("#{less && "<" || ""}#{e != relas[3] && "=" || ""} #{e}") || nil ].compact
-
-      nes = relas[1].select {|ver| bounds.all? {|b| b.satisfied_by?(ver) }}
-
-      reqs = bounds | nes
-
-      Gem::Requirement.new(reqs)
+      #binding.pry
+      Gem::Requirement.new(res.map {|x|x.join(" ")})
    end
 
    def merge other_requirement

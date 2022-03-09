@@ -28,11 +28,11 @@ BuildRequires: gem(gauntlet) >= 0
 %add_findreq_skiplist %ruby_gemslibdir/**/*
 %add_findprov_skiplist %ruby_gemslibdir/**/*
 %ruby_use_gem_dependency racc >= 1.5.1,racc < 2
-%ruby_use_gem_dependency parser = 3.0.1.1
 %ruby_alias_names parser,parse
 Requires:      gem(ast) >= 2.4.1 gem(ast) < 2.5
 Provides:      gem(parser) = 3.0.1.1
 
+%ruby_use_gem_version parser:3.0.1.1
 %ruby_on_build_rake_tasks build
 
 %description
