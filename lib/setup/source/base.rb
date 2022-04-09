@@ -1,7 +1,7 @@
 require 'setup/source'
 
 class Setup::Source::Base
-   OPTION_KEYS = %i(root replace_list aliases)
+   OPTION_KEYS = %i(source_file source_names replace_list aliases)
 
    DL_DIRS     = ->(s) { ".so.#{s.name}#{RbConfig::CONFIG['sitearchdir']}" }
    RI_DIRS     = ->(s) { [ s.default_ridir, 'ri' ] }
@@ -39,7 +39,9 @@ class Setup::Source::Base
       aliases: ->(o, name) { o.is_a?(Hash) && [ o[nil], o[name], o.values.map {|x|x.flatten}.select {|x|x.include?(name)}.map {|x|x.first}.flatten ].flatten.compact.uniq || o },
       version_replaces: true,
       gem_version_replace: true,
-      root: true,
+      source_file: true,
+      gemspec: true,
+      source_names: true,
       srcridirses: :name_or_default,
       srcincdirses: :name_or_default,
       srcextdirses: :name_or_default,
@@ -71,6 +73,7 @@ class Setup::Source::Base
    }
 
    attr_reader :options
+   attr_writer :replace_list, :source_names
 
    class << self
       def opts
@@ -132,11 +135,32 @@ class Setup::Source::Base
    end
 
    def root
-      options[:root]
+      @root ||= source_file && File.dirname(source_file) || Dir.pwd
+   end
+
+   def source_file
+      return @source_file if @source_file 
+
+      raise unless File.file?(options[:source_file])
+
+      @source_file = options[:source_file]
+   end
+
+   def source_names
+      @source_names ||= options[:source_names] || source_file && [File.basename(source_file)] || []
+   end
+
+   def replace_list
+      @replace_list ||= options[:replace_list] || {}
    end
 
    def dsl
-      @dsl ||= options[:dsl] || Setup::DSL.new(source: self)
+      @dsl ||= options[:dsl] ||
+         Setup::DSL.new(source_file,
+            spec: spec,
+            replace_list: replace_list,
+            skip_list: (options[:gem_skip_list] || []) | [self.name],
+            append_list: options[:gem_append_list])
    end
 
    def replace_list
@@ -194,44 +218,31 @@ class Setup::Source::Base
    end
 
    def to_h
-      options.merge(type: type)
+      options.merge(type: type, source_names: source_names)
    end
 
    def type
       self.class.to_s.split('::').last.downcase
    end
 
-   def required_rubygems_version
-      ">= 0"
+   def required_ruby
+      dsl.required_ruby
    end
 
    def required_ruby_version
-      Gem::Requirement.new(dsl&.instance_variable_get(:@ruby_version)&.engine_versions) || ">= 0"
+      dsl.required_ruby_version
    end
 
-   def required_ruby
-      dsl&.instance_variable_get(:@ruby_version)&.engine || "ruby"
-   end
-
-   def lockfile
-      @lockfile ||= (
-         root && File.join(root, 'Gemfile.lock') || Tempfile.create('Gemfile.lock').path)
+   def required_rubygems_version
+      dsl.required_rubygems_version
    end
 
    def definition
-      dsl&.dsl&.to_definition(lockfile, {})
+      dsl.definition
    end
 
    def deps groups_in = nil
-      groups = groups_in && ([ groups_in ].flatten.map do |g|
-            g == :runtime && (definition.groups - %i(development test)) || group
-         end.flatten) || definition.groups
-
-      definition.dependencies.select do |dep|
-         (dep.groups & groups).any? &&
-          dep.should_include? # &&
-         # (dep.autorequire || [ true ]).all? { |r| r }
-      end
+      dsl.deps_for(groups_in)
    end
 
    def has_name? name
@@ -260,8 +271,11 @@ class Setup::Source::Base
       end
    end
 
-   def dsl
-      @dsl ||= Setup::DSL.new(source: self, replace_list: replace_list)
+   def + other
+      self.replace_list = replace_list.merge(other.replace_list)
+      self.source_names = source_names | other.source_names
+
+      self
    end
 
    protected
@@ -314,7 +328,6 @@ class Setup::Source::Base
    end
 
    def initialize options_in = {}
-      @options = { root: Dir.pwd,
-                   replace_list: {} }.merge(options_in)
+      @options = { replace_list: {} }.merge(options_in)
    end
 end

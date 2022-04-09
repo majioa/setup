@@ -1,12 +1,25 @@
 require 'bundler/dependency'
 require 'tempfile'
-require 'yaml'
 
 require 'setup/source/base'
+require 'setup/loader'
+require 'setup/loader/pom'
+require 'setup/loader/rookbook'
+require 'setup/loader/cmake'
+require 'setup/loader/mast'
+require 'setup/loader/git-version-gen'
 
 class Setup::Source::Gem < Setup::Source::Base
+   extend ::Setup::Loader
+   extend ::Setup::Loader::Pom
+   extend ::Setup::Loader::Mast
+   extend ::Setup::Loader::Rookbook
+   extend ::Setup::Loader::Cmake
+   extend ::Setup::Loader::GitVersionGen
+
+   TYPE = 'Gem::Specification'
    BIN_IGNORES = %w(test)
-   OPTION_KEYS = %i(root spec version replace_list aliases)
+   OPTION_KEYS = %i(source_file source_names gemspec spec version replace_list aliases)
 
    EXE_DIRS = ->(s) { s.spec.bindir || s.exedir || nil }
    EXT_DIRS = ->(s) do
@@ -25,13 +38,23 @@ class Setup::Source::Gem < Setup::Source::Base
       spec: true,
    }
 
+   LOADERS = {
+      /\/pom.xml$/ => :pom,
+      /\/(cmake|CMakeLists.txt)$/ => :cmake,
+      /\/Rookbook.props$/ => :rookbook,
+      /\/GIT-VERSION-GEN$/ => :git_version_gen,
+      /\/MANIFEST$/ => :manifest,
+      /\/(#{Rake::Application::DEFAULT_RAKEFILES.join("|")})$/i => :app_file,
+      /\.gemspec$/i => :app_file,
+   }
+
    class << self
+      def log(text)
+         $stderr.puts(text)
+      end
+
       def load spec_in
-         if Gem::Version.new(Psych::VERSION) >= Gem::Version.new("4.0.0")
-            YAML.load(spec_in, aliases: true, permitted_classes: [Gem::Specification, Gem::Version, Gem::Dependency, Gem::Requirement, Symbol, OpenStruct])
-         else
-            YAML.load(spec_in)
-         end
+         Kernel.yaml_load(spec_in)
       end
 
       def spec_for options_in = {}
@@ -60,34 +83,50 @@ class Setup::Source::Gem < Setup::Source::Base
       end
 
       def search dir, options_in = {}
-         specs = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).map do |f|
-            Setup::Gemspec.gemspecs.map do |gemspec|
-               gemspec::RE =~ f && [ gemspec, f ] || nil
-            end
-         end.flatten(1).compact.sort_by do |(gemspec, _)|
-            Setup::Gemspec.gemspecs.index(gemspec)
-         end.map do |gemspec, f|
-            new_if_valid(gemspec.parse(f), { root: File.dirname(f) }.merge(options_in))
-         end.flatten(1).compact
+         specs = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).select {|f| File.file?(f) }.map do |f|
+            LOADERS.reduce(nil) { |res, (re, method_name)| res || re =~ f && [re, f] || nil }
+         end.compact.sort do |x,y|
+            c = LOADERS.keys.index(x.first) <=> LOADERS.keys.index(y.first)
 
-         specs.map { |x| x.name }.uniq.map do |name|
-            specs.sort_by { |s| s.version }.select { |spec| spec.name == name }.last
-         end
+            c == 0 && x.last <=> y.last || c
+         end.reduce({}) do |res, (re, f)|
+            load_result = send(LOADERS[re], f)
+
+            if load_result
+               gemspecs = load_result.objects.reject do |s|
+                  s.loaded_from && s.loaded_from !~ /#{dir}/
+               end.each {|x| x.loaded_from = f }
+               log(load_result.errlog)
+
+               res.merge({ f => gemspecs })
+            else
+               res
+            end
+         end.map do |(f, gemspecs)|
+            gemspecs.map do |gemspec|
+               new_if_valid(gemspec, { source_file: f }.merge(options_in))
+            end
+         end.flatten.compact
       end
 
       def new_if_valid spec, options_in = {}
-         if spec && spec.platform == 'ruby' && spec.version
+         if spec && spec.version && spec.platform == 'ruby' && spec.name !~ /\u0000/
+               # !($:&spec.full_require_paths).any? && !spec.full_require_paths.all? {|p| File.directory?(p) }
             self.new(source_options({ spec: spec }.merge(options_in)))
          end
       end
    end
 
    def gemfile
-      @gemfile ||= Setup::Source::Gemfile.new(
-         root: options[:root],
+      @gemfile ||= gemfile_name && Setup::Source::Gemfile.new(
+         source_file: File.join(root, gemfile_name),
          gem_version_replace: options[:gem_version_replace],
          gem_skip_list: dsl.deps.map(&:name),
-         gem_append_list: [ self.dep ])
+         gem_append_list: [ self.dep ]) || nil
+   end
+
+   def gemfile_name
+      source_names.find {|x| x =~ /gemfile/i } || raise
    end
 
    def dep
@@ -190,7 +229,11 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def rake
-      @rake ||= Setup::Rake.new(File.join(options[:root]))
+      @rake ||= Setup::Rake.new(File.join(root, Dir["{#{Rake::Application::DEFAULT_RAKEFILES.join(",")}}"].first))
+   end
+
+   def gemspec
+      @gemspec ||= options[:gemspec]
    end
 
    protected
@@ -205,7 +248,5 @@ class Setup::Source::Gem < Setup::Source::Base
 
    def initialize options_in = {}
       super
-
-      gemfile
    end
 end

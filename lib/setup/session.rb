@@ -156,9 +156,11 @@ module Setup
           $stdout = $stderr
 
           configuration.pre&.map do |task_name|
-            project.all_sources.each do |src|
-              if src.respond_to?(:rake) and src.rake.present?
-                src.rake.run_task(task_name)
+            project.stat_source_tree.each do |(_path, stated_sources)|
+              stated_sources.each do |(source, status)|
+                if status == :valid && source.respond_to?(:rake) and source.rake.present?
+                  source.rake.run_task(task_name)
+                end
               end
             end
           end

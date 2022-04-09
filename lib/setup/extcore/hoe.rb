@@ -1,0 +1,178 @@
+# Hoe based gemspec detection module
+# Sample gems are: hoe, racc, nokogiri, ruby_parser, oedipus_lex
+#
+class Hoe
+   DOC_FILTER = /CHANGELOG|LICENSE|README|\.rb$/i
+   PLUGINS = %w{rdoc hoe}
+   GROUPS = {
+      developer: :development,
+      development: :development,
+      runtime: :runtime
+   }
+
+   def initialize name
+      @spec ||= ::Gem::Specification.new
+      @spec.name = name
+   end
+
+   def spec
+      @spec
+   end
+
+   class << self
+      def plugin plugin
+         @plugins = plugins | [plugin.to_s]
+      end
+
+      def plugins
+         @plugins ||= ["hoe"]
+      end
+
+      def add_include_dirs lib
+         try_require(lib.split("/").find {|x| x =~ /[a-zA-Z]/ })
+      end
+
+      def try_require lib
+         require(lib)
+      rescue Exception
+      end
+
+      def plugin? name
+         @plugins.include?(name)
+      end
+
+      def perforce_ignore
+         []
+      end
+
+      def racc_flags
+         []
+      end
+
+      # definitors
+      def developer value, email
+         @spec.spec.authors << value
+         @spec.spec.email = [@spec.spec.email, email].compact.flatten
+      end
+
+      def license value
+         @spec.spec.licenses |= [value]
+      end
+
+      def require_ruby_version data
+         @spec.spec.required_ruby_version = data
+      end
+
+      def dependency name, dep, group_in = :runtime
+         group = GROUPS[group_in] || :runtime
+
+         @spec.spec.dependencies << Gem::Dependency.new(name, Gem::Requirement.new([dep]), group)
+      end
+
+      def spec_extras
+         @extras ||= {}
+      end
+
+      def extra_rdoc_files
+         @extra_rdoc_files ||= []
+      end
+
+      def extra_deps
+         @extra_deps ||= []
+      end
+
+      def extra_dev_deps
+         @extra_dev_deps ||= []
+      end
+
+      def clean_globs
+         @clean_globs ||= []
+      end
+
+      def readme_file= _file
+      end
+
+      def history_file= _file
+      end
+
+      def bad_plugins
+         []
+      end
+
+      # spec
+      def spec name = nil, &block
+         main
+
+         return @spec.spec if @spec
+
+         plugin("hoe")
+
+         @spec ||= self.new(name)
+
+         init(name)
+         @spec.instance_eval(&block)
+         post_init
+
+         @spec
+      rescue Exception => e
+         $stderr.puts("[#{e.class}]: #{e.message}\n\t#{e.backtrace.join("\n\t")}")
+
+         nil
+      end
+
+      def name
+         @spec&.spec&.name
+      end
+
+      def main
+         @main = TOPLEVEL_BINDING.eval('self')
+         @main.extend(Main)
+         @main.include(Main)
+      end
+
+      # autoload hoe modules folder and assign plugins
+      def init name
+         @spec.spec.files = IO.read('Manifest.txt').split("\n")
+         @spec.spec.extra_rdoc_files = @spec.spec.files.select { |f| DOC_FILTER =~ f }
+         @spec.spec.executables = @spec.spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
+         @spec.spec.bindir = 'bin'
+         history = Dir['History.*'].first
+         vline = IO.read(history).split("\n").find { |x| /^===/ =~ x }
+         /=== (?<version>[^ ]+)/ =~ vline
+         @spec.spec.version = version
+
+         Dir.glob(Dir.pwd + '/lib/hoe/*.rb').each { |x| require_relative(x) }
+         self.constants.map {|c| self.const_get(c) }.select {|x| x.is_a?(Module) }.each {|x| extend(x) }
+         if self.respond_to?("initialize_#{@spec.spec.name}")
+            send("initialize_#{@spec.spec.name}")
+         end
+      end
+
+      def post_init
+         @extras&.each { |key, value|
+           @spec.spec.send("#{key}=", value) }
+         @extra_dev_deps&.each do |(name, dep)|
+            dependency(name, dep, :development)
+         end
+         @extra_deps&.each do |(name, dep)|
+            dependency(name, dep, :runtime)
+         end
+         @spec.spec.extra_rdoc_files.concat(extra_rdoc_files)
+
+         @clean_globs&.each {|glob| Dir[glob].each {|file| FileUtils.rm_rf(file) }}
+
+         (@plugins & PLUGINS).each { |name| dependency(name, ">= 0", :development) }
+         @plugins.each { |name| try_require(name) }
+      end
+   end
+
+   module Main
+      def method_missing method_name, *args
+         if Hoe.respond_to?(method_name)
+            Hoe.send(method_name, *args)
+         else
+            super
+         end
+      end
+   end
+end

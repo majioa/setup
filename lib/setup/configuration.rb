@@ -420,7 +420,7 @@ module Setup
        erb = ERB.new(File.read(CONFIG_FILE))
        txt = erb.result(binding)
        if Gem::Version.new(Psych::VERSION) >= Gem::Version.new("4.0.0")
-          YAML.load(txt, aliases: true, permitted_classes: [Gem::Specification, Symbol])
+          YAML.load(txt, aliases: true, permitted_classes: [Gem::Specification, Symbol, Regexp, Pathname])
        else
           YAML.load(txt)
        end

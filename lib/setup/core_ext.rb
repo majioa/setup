@@ -1,4 +1,4 @@
-#=th
+#
 # Ruby Extensions
 #
 require 'bundler'
@@ -91,6 +91,8 @@ module Kernel
       'bones' => 'setup/extcore/bones',
       'echoe' => 'setup/extcore/echoe',
       'jeweler' => 'setup/extcore/jeweler',
+      'hoe' => 'setup/extcore/hoe',
+      'bundle/setup' => -> { true },
    }
 
    def config
@@ -111,22 +113,46 @@ module Kernel
 
    def require mod
       __setup_orig_require(mod)
-   rescue LoadError => e
+   rescue Exception => e
       if MODULES[mod]
-         __setup_orig_require(MODULES[mod])
+         if MODULES[mod].is_a?(Proc)
+            MODULES[mod][]
+         else
+            begin
+               __setup_orig_require(MODULES[mod])
+            rescue => e1
+               raise e, e1
+            end
+         end
       else
          raise e
+      end
+   end
+
+   def yaml_load text
+      if Gem::Version.new(Psych::VERSION) >= Gem::Version.new("4.0.0")
+         YAML.load(text, aliases: true, permitted_classes:
+            [Gem::Specification,
+             Gem::Version,
+             Gem::Dependency,
+             Gem::Requirement,
+             Symbol,
+             OpenStruct,
+             Time,
+             Date])
+      else
+         YAML.load(text)
       end
    end
 end
 
 module Bundler
    class Runtime
-      alias :__setup :setup
+#      alias :__setup :setup
 
-      def setup(*groups)
-         /(bundler\/setup.rb|Gemfile|Rakefile):/ !~ caller[0] && super || self
-      end
+#      def setup(*groups)
+#         /(bundler\/setup.rb|Gemfile|Rakefile):/ !~ caller[0] && super || self
+#      end
    end
 
    class << self
@@ -215,6 +241,12 @@ class String
          res || self.dup.sub!(re, char)
       end.to_s
    end
+
+   def constantize
+      self.split('::').reduce(Object) do |c, token|
+        token.empty? && c || c.const_get(token)
+      end
+   end
 end
 
 class Symbol
@@ -227,8 +259,57 @@ class Symbol
    end
 end
 
+class Hash
+   def deep_merge other, options_in = {}
+      return self if other.nil? or other.blank?
+
+      options = { mode: :append }.merge(options_in)
+
+      other_hash = other.is_a?(Hash) && other || { nil => other }
+      common_keys = self.keys & other_hash.keys
+      base_hash = (other_hash.keys - common_keys).reduce({}) do |res, key|
+         res[key] = other_hash[key]
+         res
+      end
+
+      self.reduce(base_hash) do |res, (key, value)|
+         new =
+         if common_keys.include?(key)
+            case value
+            when Hash, OpenStruct
+               value.deep_merge(other_hash[key])
+            when Array
+               value.concat([ other_hash[key] ].compact.flatten(1))
+            when NilClass
+               other_hash[key]
+            else
+               value_out =
+                  if options[:mode] == :append
+                     [other_hash[key], value].compact.flatten(1)
+                  elsif options[:mode] == :prepend
+                     [value, other_hash[key]].compact.flatten(1)
+                  else
+                     value
+                  end
+
+               if value_out.is_a?(Array) && options[:dedup]
+                  value_out.uniq
+               else
+                  value_out
+               end
+            end
+         else
+            value
+         end
+
+         res[key] = new
+         res
+      end
+   end
+end
+
 class Object
-   def self.const_get c
+   def self.const_get c, inherit = true
       super
    rescue Exception => e
       begin
@@ -237,6 +318,19 @@ class Object
       end
 
       super
+   end
+
+   def blank?
+      case self
+      when NilClass, FalseClass
+         true
+      when TrueClass
+         false
+      when Hash, Array
+         !self.any?
+      else
+         self.to_s == ""
+      end
    end
 end
 
@@ -255,42 +349,155 @@ class Gem::Requirement
    }.freeze
 
    OR_RELAS = { #:nodoc:
-      "="  =>  :min,
-      "!=" =>  :dup,
-      ">"  =>  :min,
-      "<"  =>  :max,
-      ">=" =>  :min,
-      "<=" =>  :max,
-      "~>" =>  lambda do |a|
-         ranges = a.map { |v| [v, v.bump] }.transpose
-         ranges[0]&.min...ranges[1]&.max
-      end
+      [ "=", ">=", nil ] => ->(l, r) { [[">=", [r, l].min]] },
+      [ "=", "<=", -1 ] => ->(l, r) { [["<=", r]] },
+      [ "=", "<=", 0 ] => ->(l, r) { [["<=", r]] },
+      [ "=", ">", 0 ] => ->(l, r) { [[">=", r]] },
+      [ "=", ">", 1 ] => ->(l, r) { [[">", r]] },
+      [ "=", "<", -1 ] => ->(l, r) { [["<", r]] },
+      [ "=", "<", 0 ] => ->(l, r) { [["<=", r]] },
+      [ "=", "=", 0 ] => ->(l, r) { [["=", l]] },
+      [ "=", "~>", nil ] => ->(l, r) { [[">=", [r, l].min], ["<", r.bump]] },
+      [ "!=", "=", -1 ] => ->(l, r) { [["=", r], ["!=", l]] },
+      [ "!=", "=", 0 ] => ->(l, r) { [] },
+      [ "!=", "=", 1 ] => ->(l, r) { [["=", r], ["!=", l]] },
+      [ "!=", "!=", 0 ] => ->(l, r) { [["!=", l]] },
+      [ "!=", ">", -1 ] => ->(l, r) { [[">", r]] },
+      [ "!=", ">", 0 ] => ->(l, r) { [[">", r]] },
+      [ "!=", ">", 1 ] => ->(l, r) { [[">", r], ["!=", l]] },
+      [ "!=", "<", -1 ] => ->(l, r) { [["<", r], ["!=", l]] },
+      [ "!=", "<", 0 ] => ->(l, r) { [["<", r]] },
+      [ "!=", "<", 1 ] => ->(l, r) { [["<", r]] },
+      [ "!=", ">=", -1 ] => ->(l, r) { [[">=", r]] },
+      [ "!=", ">=", 0 ] => ->(l, r) { [[">", r]] },
+      [ "!=", ">=", 1 ] => ->(l, r) { [[">=", r], ["!=", l]] },
+      [ "!=", "<=", -1 ] => ->(l, r) { [["<=", r], ["!=", l]] },
+      [ "!=", "<=", 0 ] => ->(l, r) { [["<", r]] },
+      [ "!=", "<=", 1 ] => ->(̀r, l) { [["<=", r]] },
+      [ "!=", "~>", -1 ] => ->(l, r) { [[">=", r], ["<", r.bump], ["!=", l]] },
+      [ "!=", "~>", 0 ] => ->(l, r) { [[">", r], ["<", r.bump]] },
+      [ "!=", "~>", 1 ] => ->(l, r) { [[">=", r], ["<", r.bump], ["!=", l]] },
+      [ ">", "=", 0 ] => ->(l, r) { [[">=", l]] },
+      [ ">", "=", 1 ] => ->(l, r) { [[">", l]] },
+      [ ">", "!=", 0 ] => ->(l, r) { [[">", l]] },
+      [ ">", "!=", 1 ] => ->(l, r) { [[">", l]] },
+      [ ">", ">", nil ] => ->(l, r) { [[">", [r, l].min]] },
+      [ ">", "<", 0 ] => ->(l, r) { [] },
+      [ ">", "<", 1 ] => ->(l, r) { [] },
+      [ ">", ">=", -1 ] => ->(l, r) { [[">", l]] },
+      [ ">", ">=", 0 ] => ->(l, r) { [[">=", r]] },
+      [ ">", ">=", 1 ] => ->(l, r) { [[">=", r]] },
+      [ ">", "<=", 0 ] => ->(l, r) { [] },
+      [ ">", "<=", 1 ] => ->(l, r) { [] },
+      [ ">", "~>", -1 ] => ->(l, r) { [[">", l], ["<", r.bump]] },
+      [ ">", "~>", 0 ] => ->(l, r) { [[">=", r], ["<", r.bump]] },
+      [ ">", "~>", 1 ] => ->(l, r) { [[">=", r], ["<", r.bump]] },
+      [ "<", "=", 0 ] => ->(l, r) { [["<=", l]] },
+      [ "<", "=", 1 ] => ->(l, r) { [["<", l]] },
+      [ "<", "!=", -1 ] => ->(l, r) { [["<", l]] },
+      [ "<", "!=", 0 ] => ->(l, r) { [["<", l]] },
+      [ "<", ">", -1 ] => ->(l, r) { [] },
+      [ "<", ">", 0 ] => ->(l, r) { [] },
+      [ "<", ">", 1 ] => ->(l, r) { [[">", r], ["<", l]] },
+      [ "<", "<", nil ] => ->(l, r) { [["<", [r, l].max]] },
+      [ "<", ">=", -1 ] => ->(l, r) { [] },
+      [ "<", ">=", 0 ] => ->(l, r) { [] },
+      [ "<", ">=", 1 ] => ->(l, r) { [[">=", r], ["<", l]] },
+      [ "<", "~>", nil ] => ->(l, r) { [[">=", r], ["<", [l, r.bump].max]] },
+      [ ">=", "=", 0 ] => ->(l, r) { [[">=", l]] },
+      [ ">=", "=", -1 ] => ->(l, r) { [[">=", l], ["=", r]] },
+      [ ">=", "!=", 0 ] => ->(l, r) { [[">", l]] },
+      [ ">=", "!=", 1 ] => ->(l, r) { [[">=", l]] },
+      [ ">=", ">", -1 ] => ->(l, r) { [[">=", l]] },
+      [ ">=", ">", 0 ] => ->(l, r) { [[">=", l]] },
+      [ ">=", ">", 1 ] => ->(l, r) { [[">", r]] },
+      [ ">=", "<", 0 ] => ->(l, r) { [] },
+      [ ">=", "<", 1 ] => ->(l, r) { [] },
+      [ ">=", ">=", nil ] => ->(l, r) { [[">=", [r, l].min]] },
+      [ ">=", "<=", 0 ] => ->(l, r) { [["=", l]] },
+      [ ">=", "<=", 1 ] => ->(l, r) { [] },
+      [ ">=", "~>", nil ] => ->(l, r) { [[">=", [r, l].min], ["<", r.bump]] },
+      [ "<=", "=", 0 ] => ->(l, r) { [["<=", l]] },
+      [ "<=", "=", 1 ] => ->(l, r) { [["<=", l]] },
+      [ "<=", "!=", -1 ] => ->(l, r) { [["<", l]] },
+      [ "<=", "!=", 0 ] => ->(l, r) { [["<", l]] },
+      [ "<=", ">", -1 ] => ->(l, r) { [] },
+      [ "<=", ">", 0 ] => ->(l, r) { [] },
+      [ "<=", ">", 1 ] => ->(l, r) { [[">", r], ["<=", l]] },
+      [ "<=", "<", -1 ] => ->(l, r) { [["<=", l]] },
+      [ "<=", "<", 0 ] => ->(l, r) { [["<=", l]] },
+      [ "<=", "<", 1 ] => ->(l, r) { [["<", r]] },
+      [ "<=", ">=", -1 ] => ->(l, r) { [] },
+      [ "<=", ">=", 0 ] => ->(l, r) { [["=", l]] },
+      [ "<=", ">=", 1 ] => ->(l, r) { [[">=", r], ["<=", l]] },
+      [ "<=", "~>", ->(l, r) { r.bump > l } ] => ->(l, r) { [[">=", r], ["<", r.bump]] },
+      [ "<=", "~>", ->(l, r) { r.bump <= l } ] => ->(l, r) { [[">=", r], ["<=", l]] },
+      [ "~>", "=", nil ] => ->(l, r) { [[">=", [l, r].min], ["<", l.bump]] },
+      [ "~>", "!=", -1 ] => ->(l, r) { [[">=", l], ["<", l.bump], ["!=", r]] },
+      [ "~>", "!=", 0 ] => ->(l, r) { [[">", l], ["<", l.bump]] },
+      [ "~>", "!=", 1 ] => ->(l, r) { [[">=", l], ["<", l.bump], ["!=", r]] },
+      [ "~>", ">", -1 ] => ->(l, r) { [[">=", l], ["<", l.bump]] },
+      [ "~>", ">", 0 ] => ->(l, r) { [[">=", l], ["<", l.bump]] },
+      [ "~>", ">", 1 ] => ->(l, r) { [[">", r], ["<", l.bump]]},
+      [ "~>", "<", nil ] => ->(l, r) { [[">=", l], ["<", [r, l.bump].max]] },
+      [ "~>", ">=", nil ] => ->(l, r) { [[">=", [l, r].min], ["<", l.bump]] },
+      [ "~>", "<=", ->(l, r) { l.bump > r } ] => ->(l, r) { [[">=", l], ["<", l.bump]] },
+      [ "~>", "<=", ->(l, r) { l.bump <= r } ] => ->(l, r) { [[">=", l], ["<=", r]] },
+      [ "~>", "~>", nil ] => ->(l, r) { [[">=", [r, l].min], ["<", [r.bump, l.bump].max]] }
    }.freeze
 
    def | other_requirement
-      reqs_tmp = self.requirements | other_requirement.requirements
+      self.class.expand_requirements(self.requirements | other_requirement.requirements)
+   end
 
-      relas =
-         Gem::Requirement::OR_RELAS.map do |(op, prc)|
-            selected = reqs_tmp.map { |(rel, version)| rel == op && version || nil }.compact
+   def expand
+      self.class.expand_requirements(self.requirements)
+   end
 
-            prc.is_a?(Proc) && prc[selected] || selected.send(prc)
+   def self.expand_requirements requirements
+      reqs_in = []
+      res = requirements.dup
+
+      #binding.pry
+      while reqs_in != res do
+         reqs_in = res
+         reqs = reqs_in.dup
+         res = []
+
+         #binding.pry
+         while !reqs.empty? do
+            op1, ver1 = reqs.shift
+            op2, ver2 = reqs.shift || [op1, ver1]
+
+            prc =
+               Gem::Requirement::OR_RELAS.find do |((left, right, comp), _)|
+                  match = op1 == left && op2 == right &&
+                     case comp
+                     when NilClass
+                        true
+                     when Integer
+                        comp == (ver1 <=> ver2)
+                     when Proc
+                        comp[ver1, ver2]
+                     end
+               end
+
+            #binding.pry
+            res =
+               if prc
+                  res.concat(prc.last[ver1, ver2])
+               elsif reqs.empty?
+                  res.concat([[op1, ver1], [op2, ver2]])
+               else
+                  #binding.pry
+                  reqs.unshift([op2, ver2])
+                  res.concat([[op1, ver1]])
+               end
          end
+      end
 
-      b = [ relas[0], relas[2], relas[4], relas[6].begin ].compact.min
-      e = [ relas[3], relas[5], relas[6].end ].compact.max
-
-      more = ![2,4,6].all? {|x| relas[x] === nil }
-      less = ![3,5,6].all? {|x| relas[x] === nil }
-      bounds =
-         [ b && Gem::Requirement.new("#{more && ">" || ""}#{b != relas[2] && "=" || ""} #{b}") || nil,
-           e && Gem::Requirement.new("#{less && "<" || ""}#{e != relas[3] && "=" || ""} #{e}") || nil ].compact
-
-      nes = relas[1].select {|ver| bounds.all? {|b| b.satisfied_by?(ver) }}
-
-      reqs = bounds | nes
-
-      Gem::Requirement.new(reqs)
+      #binding.pry
+      Gem::Requirement.new(res.map {|x|x.join(" ")})
    end
 
    def merge other_requirement
