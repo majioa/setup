@@ -135,7 +135,7 @@ class Setup::Source::Base
    end
 
    def root
-      @root ||= source_file && File.dirname(source_file) || Dir.pwd
+      @root ||= detect_root
    end
 
    def source_file
@@ -159,7 +159,7 @@ class Setup::Source::Base
          Setup::DSL.new(source_file,
             spec: spec,
             replace_list: replace_list,
-            skip_list: (options[:gem_skip_list] || []) | [self.name],
+            skip_list: (options[:gem_skip_list] || []) | [name],
             append_list: options[:gem_append_list])
    end
 
@@ -267,13 +267,14 @@ class Setup::Source::Base
 
    def trees &block
       GROUPS.map do |set|
-         yield(set, tree(set))
+         yield(set, send("#{set}tree"))
       end
    end
 
    def + other
       self.replace_list = replace_list.merge(other.replace_list)
       self.source_names = source_names | other.source_names
+      self.dsl.merge_in(other.dsl)
 
       self
    end
@@ -321,6 +322,10 @@ class Setup::Source::Base
 
          [ dir, files ]
       end.to_h
+   end
+
+   def detect_root
+      source_file && File.dirname(source_file) || Dir.pwd
    end
 
    def files kind, &block

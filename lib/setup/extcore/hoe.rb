@@ -9,6 +9,7 @@ class Hoe
       development: :development,
       runtime: :runtime
    }
+   DEFAULT_CONFIG = {}
 
    def initialize name
       @spec ||= ::Gem::Specification.new
@@ -77,6 +78,10 @@ class Hoe
          @extra_rdoc_files ||= []
       end
 
+      def extra_rdoc_files= files
+         extra_rdoc_files.concat(files)
+      end
+
       def extra_deps
          @extra_deps ||= []
       end
@@ -89,10 +94,23 @@ class Hoe
          @clean_globs ||= []
       end
 
-      def readme_file= _file
+      def readme_file= file
+         @readme_file = file
       end
 
-      def history_file= _file
+      def history_file= file
+         @history_file = file
+      end
+
+      def history_file
+         @history_file ||= Dir['{History,Changelog,HISTORY,CHANGELOG}*'].first
+      end
+
+      def readme_file
+         @readme_file ||= Dir['{README,Readme,readme}*'].first
+      end
+
+      def test_globs= _globs
       end
 
       def bad_plugins
@@ -136,10 +154,13 @@ class Hoe
          @spec.spec.extra_rdoc_files = @spec.spec.files.select { |f| DOC_FILTER =~ f }
          @spec.spec.executables = @spec.spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
          @spec.spec.bindir = 'bin'
-         history = Dir['History.*'].first
-         vline = IO.read(history).split("\n").find { |x| /^===/ =~ x }
-         /=== (?<version>[^ ]+)/ =~ vline
+
+         version = IO.read(history_file).split("\n").reduce(nil) { |res, x| res || /(===|##) (?<version>[^ ]+)/ =~ x && version }
          @spec.spec.version = version
+
+         description = IO.read(readme_file).split(/(===|##)/).reduce(nil) { |res, x| res || /^ Description(?<desc>.*)/m =~ x && desc }&.strip
+         @spec.spec.description ||= description
+         @spec.spec.summary ||= description
 
          Dir.glob(Dir.pwd + '/lib/hoe/*.rb').each { |x| require_relative(x) }
          self.constants.map {|c| self.const_get(c) }.select {|x| x.is_a?(Module) }.each {|x| extend(x) }

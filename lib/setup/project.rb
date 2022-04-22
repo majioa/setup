@@ -53,6 +53,9 @@ module Setup
 
     #
     def initialize options = {}
+      # pre-init require
+      $:.unshift(Dir.pwd)
+
       self.all_sources  = options.delete(:sources)
       @rootdir  = options.delete(:rootdir)
       @config   = options.delete(:config) || raise
@@ -77,13 +80,25 @@ module Setup
         # post create hook
         autoalias
         runtime
+
+        # fix paths
+        paths = ObjectSpace.each_object(Gem::Specification).map do |s|
+           path = s.full_gem_path rescue nil
+
+           s.require_paths.map do |x|
+              File.absolute_path?(x) && x || path && File.join(path, x) || nil
+           end
+        end.flatten.compact
+
+        $:.unshift(*paths) # $.replace(paths | $:)
     end
 
     def show_tree
        log("Source list are the following:")
-       stat_source_tree.each do |(path, stated_sources)|
+       stat_source_tree.each do |(path_in, stated_sources)|
           stated_sources.each do |(source, status)|
-          info = "#{STATUS_CHARS[status]} #{TYPE_CHARS[source.type.to_sym]}#{[source.name, source.version].compact.join(":")} [#{path}]"
+             path = File.join(path_in, File.basename(source.source_file))
+             info = "#{STATUS_CHARS[status]} #{TYPE_CHARS[source.type.to_sym]}#{[source.name, source.version].compact.join(":")} [#{path}]"
              log(info)
           end
        end
@@ -214,7 +229,7 @@ module Setup
     end
 
     def is_disabled? source
-      config.ignore_names.any? { |i| i === source.name }
+      config.ignore_path_tokens.any? { |t| /\/#{t}\// =~ source.source_file } || config.ignore_names.any? { |i| i === source.name }
     end
     #
     #

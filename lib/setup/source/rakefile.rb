@@ -10,6 +10,13 @@ class Setup::Source::Rakefile < Setup::Source::Base
       end
    end
 
+   def dsl
+      @dsl ||= Setup::DSL.new(source_file,
+                              replace_list: replace_list,
+                              skip_list: (options[:gem_skip_list] || []) | [self.name],
+                              append_list: options[:gem_append_list])
+   end
+
    def rake
       @rake ||= Setup::Rake.new(source_file)
    end

@@ -3,6 +3,7 @@ require 'tempfile'
 
 require 'setup/source/base'
 require 'setup/loader'
+require 'setup/loader/yaml'
 require 'setup/loader/pom'
 require 'setup/loader/rookbook'
 require 'setup/loader/cmake'
@@ -11,6 +12,7 @@ require 'setup/loader/git-version-gen'
 
 class Setup::Source::Gem < Setup::Source::Base
    extend ::Setup::Loader
+   extend ::Setup::Loader::YAML
    extend ::Setup::Loader::Pom
    extend ::Setup::Loader::Mast
    extend ::Setup::Loader::Rookbook
@@ -45,7 +47,7 @@ class Setup::Source::Gem < Setup::Source::Base
       /\/GIT-VERSION-GEN$/ => :git_version_gen,
       /\/MANIFEST$/ => :manifest,
       /\/(#{Rake::Application::DEFAULT_RAKEFILES.join("|")})$/i => :app_file,
-      /\.gemspec$/i => :app_file,
+      /\.gemspec$/i => [:app_file, :yaml],
    }
 
    class << self
@@ -84,13 +86,20 @@ class Setup::Source::Gem < Setup::Source::Base
 
       def search dir, options_in = {}
          specs = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).select {|f| File.file?(f) }.map do |f|
-            LOADERS.reduce(nil) { |res, (re, method_name)| res || re =~ f && [re, f] || nil }
+            LOADERS.reduce(nil) { |res, (re, _method_name)| res || re =~ f && [re, f] || nil }
          end.compact.sort do |x,y|
             c = LOADERS.keys.index(x.first) <=> LOADERS.keys.index(y.first)
 
             c == 0 && x.last <=> y.last || c
          end.reduce({}) do |res, (re, f)|
-            load_result = send(LOADERS[re], f)
+            load_result =
+               [LOADERS[re]].flatten.reduce(nil) do |res, method_name|
+                  next res if res
+
+                  result = send(method_name, f)
+
+                  result && result.objects.any? && result
+               end
 
             if load_result
                gemspecs = load_result.objects.reject do |s|
@@ -118,15 +127,15 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def gemfile
-      @gemfile ||= gemfile_name && Setup::Source::Gemfile.new(
-         source_file: File.join(root, gemfile_name),
+      @gemfile ||= Setup::Source::Gemfile.new(
+         source_file: gemfile_name && File.join(root, gemfile_name) || dsl.fake_gemfile,
          gem_version_replace: options[:gem_version_replace],
          gem_skip_list: dsl.deps.map(&:name),
-         gem_append_list: [ self.dep ]) || nil
+         gem_append_list: [ self.dep ])
    end
 
    def gemfile_name
-      source_names.find {|x| x =~ /gemfile/i } || raise
+      source_names.find {|x| x =~ /gemfile/i }
    end
 
    def dep
@@ -142,7 +151,10 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def version
-      spec && spec.version.to_s
+      version = spec&.version&.to_s || ""
+      parts = version.split(".")
+
+      (parts[0..2] + (parts[3..-1]&.map {|x| x.to_i <= 1024 && x || nil}&.compact || [])).join(".")
    end
 
    def gemspec_path
@@ -168,8 +180,25 @@ class Setup::Source::Gem < Setup::Source::Base
       @datatree ||= super { { '.' => spec.files } }
    end
 
+   def allfiles
+      @allfiles =
+         spec.require_paths.map {|x| File.absolute_path?(x) && x || File.join(x, '**', '*') }.map {|x| Dir[x] }.flatten |
+         spec.executables.map {|x| Dir[File.join(spec.bindir, x)] }.flatten |
+         spec.files
+   end
+
+   def allfiles_for list_in
+      list_in.map do |(key, list)|
+         [key, list & allfiles.map {|x| /^#{key}\/(?<rest>.*)/.match(x)&.[](:rest) }.compact ]
+      end.to_h
+   end
+
    def exttree
       @exttree ||= super
+   end
+
+   def testtree
+      @testtree ||= allfiles_for(super)
    end
 
    def exetree
@@ -237,6 +266,15 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    protected
+
+   def detect_root
+      if spec
+          files = Dir['**/**/*']
+          (spec.files - files).any? && super || Dir.pwd
+      else
+         super
+      end
+   end
 
    def extroots
       @extroots ||= extfiles.map { |extfile| File.dirname(extfile) }

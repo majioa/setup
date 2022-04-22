@@ -32,27 +32,6 @@ module Olddoc
 
          @config ||= YAML.load(IO.read(file))
       end
-
-#      def setup_pre git_version_gen
-#         IO.readlines("GIT-VERSION-FILE").each do |var|
-#            name, value = var.gsub(/(GIT_|\s+)/, '').split(/=/)
-#            ENV[name] = value
-#         end
-
-      # make documentaion
-      if File.directory?('Documentation')
-         `make -C Documentation`
-      end
-
-      if !File.exist?('.manifest') || !File.exist?('.gem-manifest')
-
-         files = Dir.glob("**/*", File::FNM_DOTMATCH).reject do |f|
-            /\/\.git/ =~ f || File.directory?(f)
-         end
-
-         File.open(File.join('.gem-manifest'), "w") { |f| f.puts files }
-         FileUtils.cp('.gem-manifest', '.manifest')
-      end
    end
 end
 

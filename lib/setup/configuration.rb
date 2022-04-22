@@ -90,6 +90,8 @@ module Setup
 
     option :'regard-names'  , :pick, 'regard sources with the specified comma-separated name list'
 
+    option :'ignore-path-tokens' , :pick, 'ignore sources with the specified comma-separated list of path tokens'
+
     option :shebang         , :pick, 'replace a shebang line for a newly installed executables ("",auto,env,ruby,<custom>)'
 
     option :use             , :pick, 'apply the following to the module options'
@@ -156,6 +158,24 @@ module Setup
 
     def use_gem_version_list
        @gem_version_replace
+    end
+
+    def ignore_path_tokens= value
+      @ignore_path_tokens =
+      if value.is_a?(String)
+        tokens = (value || '').split(/[,;:]/)
+        tokens.map(&:strip).select {|x| x.size > 0 }.map do |x|
+           m = /^\/(?<name>.*)\/?$/.match(x)
+
+           m && m[:name] && Regexp.new(m[:name]) || x
+        end
+      else
+        value
+      end
+    end
+
+    def ignore_path_tokens
+       @ignore_path_tokens || []
     end
 
     def ignore_names= value

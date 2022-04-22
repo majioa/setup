@@ -125,6 +125,9 @@ class Echoe
       /v(?<version>[^ ]+)\. / =~ vline
       spec.version = version || "0.0"
       spec.rubygems_version = ">= 1.2"
+      Dir.chdir('bin') do
+         spec.executables = Dir['*']
+      end if File.directory?('bin')
       yield(self)
    end
 end

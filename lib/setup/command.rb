@@ -311,6 +311,11 @@ module Setup
         configuration.version_replace = val
       end
 
+      # ignore path token list
+      parser.on('--ignore-path-tokens LIST', 'Ignore sources by a token contained in its path, which is specified in the comma-separated list') do |val|
+        configuration.ignore_path_tokens = val
+      end
+
       # ignore name list
       parser.on('--ignore-names LIST', 'Ignore sources by a name specified in the comma-separated list') do |val|
         configuration.ignore_names = val

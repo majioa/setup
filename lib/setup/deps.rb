@@ -11,7 +11,7 @@ class Setup::Deps
       'bin' => {
          proc { |target| target.public_executables.any? }          => proc { |this, target| this.deps_ruby_exec(target) },
          proc { |target| target.source.exefiles.any? &&
-                         target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_dyno(target.source, 'bin') },
+                         target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_dyno(target.source, 'bin', :dsl) },
       },
       'doc' => {
          proc { |target| target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_dyno(target.source, 'doc') },
@@ -67,10 +67,11 @@ class Setup::Deps
    end
 
    ## deps
-   def deps_gem_dsl dsl
+   def deps_gem_dsl dsl, set = 'lib'
+      deps = set == 'bin' && dsl.runtime_deps(:gemfile) || dsl.runtime_deps(:gemspec)
       list = []
 
-      dsl.runtime_deps.each do |dep|
+      deps.each do |dep|
          self.class.to_rpm(dep.requirement).map do |a, b|
             list << "gem(#{dep.name}) #{a} #{b}"
          end
@@ -85,7 +86,9 @@ class Setup::Deps
    end
 
    def deps_ruby_version
-      "ruby(#{RbConfig::CONFIG['ruby_version']})"
+      # TODO enable when fix for new version ruby rebuld
+      #"ruby(#{RbConfig::CONFIG['ruby_version']})"
+      ""
    end
 
    def deps_gem source
@@ -102,7 +105,7 @@ class Setup::Deps
       root = project.config.dep_sources[set]
       name = (root[source.name] || root[nil]).first
       if name == 'auto'
-         kind == :dsl && deps_gem_dsl(source.dsl) || deps_gem(source)
+         kind == :dsl && deps_gem_dsl(source.dsl, set) || deps_gem(source)
       else
          project.select_source(name).map do |source|
             deps_gem_dsl(source.dsl)

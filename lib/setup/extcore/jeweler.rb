@@ -34,13 +34,13 @@ class Jeweler
       protected
 
       def initialize
-         @data = OpenStruct.new
+         @data ||= OpenStruct.new
 
          yield(self)
 
          @spec =
             Gem::Specification.new do |g|
-               os.each_pair do |name, value|
+               @data.each_pair do |name, value|
                   if g.respond_to?("#{name}=")
                      g.send("#{name}=", value)
                   elsif g.respond_to?("#{name}")
@@ -50,6 +50,8 @@ class Jeweler
                g.files ||= Dir["**/*"] - excludes
                g.version ||= version
             end
+      rescue => e
+         $stderr.puts("[#{e.class}]: #{e.message}\n\t#{e.backtrace.join("\n\t")}")
       end
 
       def method_missing name_in, *args

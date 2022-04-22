@@ -6,9 +6,15 @@ require 'setup'
 
 # DSL service for Setup.rb.
 class Setup::DSL
-   # class TooManyGemspecsError < StandardError; end
-
-   DEFAULT_GROUP_NAME = :development
+   # group to kind mapping
+   GROUP_MAPPING = {
+      default: :development,
+      development: :development,
+      test: :development,
+      debug: :development,
+      production: :runtime,
+      true => :runtime,
+   }
 
    # attributes
    attr_reader :source_file, :replace_list, :skip_list, :append_list, :spec
@@ -22,7 +28,7 @@ class Setup::DSL
    end
 
    def gemfile
-      gemfiles.first
+      gemfiles.first || original_gemfile || fake_gemfile
    end
 
    def original_gemfile
@@ -37,6 +43,14 @@ class Setup::DSL
       gemfile = Dir[File.join(File.dirname(source_file), '{Gemfile,gemfile}')].first
 
       gemfile && Pathname.new(gemfile) || nil
+   end
+
+   def fake_gemfile
+      @fake_gemfile = Tempfile.create('Gemfile').path
+
+      Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", @fake_gemfile
+
+      @fake_gemfile
    end
 
    def dsl
@@ -56,9 +70,8 @@ class Setup::DSL
                 Errno::ENOENT,
                 ::Gem::InvalidSpecificationException => e
 
-            Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", Tempfile.create('Gemfile').path
             dsl = Bundler::Dsl.new
-            dsl.instance_variable_set(:@gemfiles, [Pathname.new(ENV["BUNDLE_GEMFILE"])])
+            dsl.instance_variable_set(:@gemfiles, [Pathname.new(fake_gemfile)])
             dsl.to_definition(Tempfile.create('Gemfile.lock').path, {})
             Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", nil
 
@@ -84,8 +97,8 @@ class Setup::DSL
          end
    end
 
-   def original_deps_for groups_in = nil
-      groups = defined_groups_of(groups_in)
+   def original_deps_for kinds_in = nil
+      groups = defined_groups_for(kinds_in)
 
       original_deps.select do |dep|
          (dep.groups & groups).any? &&
@@ -98,22 +111,47 @@ class Setup::DSL
       @original_deps ||= definition.dependencies
    end
 
-   def runtime_deps
-      deps_but(original_deps_for(:runtime))
+   def gemspecs
+      dsl.gemspecs | [spec].compact
    end
 
-   def defined_groups_of groups_in = nil
-      groups_in && ([ groups_in ].flatten.map do |g|
-            g == :runtime && (definition.groups - %i(development test)) || group
-         end.flatten) || definition.groups
+   def extracted_gemspec_deps
+      gemspecs.map do |gs|
+         gs.dependencies.select {|dep|dep.runtime?}
+      end.flatten
+   end
+
+   def runtime_deps kind = :gemspec
+      if kind == :gemspec
+         deps_but(extracted_gemspec_deps)
+      else
+         deps_but(original_deps_for(:runtime))
+      end
+   end
+
+   def defined_groups_for kinds_in = nil
+      no_groups =
+         [kinds_in].compact.flatten.map do |k|
+            GROUP_MAPPING.map do |(g, k_in)|
+               k_in != k && g || nil
+            end.compact
+         end.flatten
+
+      definition.groups - no_groups
    end
 
    def deps
-      deps_but(original_deps)
+      deps_but(original_deps) | gemspec_deps
    end
 
-   def deps_for groups_in = nil
-      deps_but(original_deps_for(groups_in))
+   def gemspec_deps
+      gemspecs.map do |gs|
+         Gem::Dependency.new(gs.name, Gem::Requirement.new(["= #{gs.version}"]), :development)
+      end
+   end
+
+   def deps_for kinds_in = nil
+      deps_but(original_deps_for(kinds_in)) | gemspec_deps
    end
 
    def ruby

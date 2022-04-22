@@ -12,29 +12,22 @@ module Setup
             @argv = args
             @original_config = RbConfig::CONFIG.dup
             @original_makeconfig = RbConfig::MAKEFILE_CONFIG.dup
-            #@oargv = ARGV.dup
             RbConfig::MAKEFILE_CONFIG["configure_args"] = args.join(" ")
             require 'mkmf'
             RbConfig::CONFIG["srcdir"] = RbConfig::MAKEFILE_CONFIG["srcdir"] = '.'
 
             init_mkmf(RbConfig::MAKEFILE_CONFIG, RbConfig::CONFIG)
-            # $0.replace(File.join(File.dirname(extfile), "fake"))
          end
 
          def configure
-            #ARGV.replace(@argv)
-            #binding.pry
-            load(File.basename(@extfile))
+            load(File.join('.', File.basename(@extfile)))
 
-            # module_eval("load('#{File.basename(extfile)}')")
             @config = RbConfig::CONFIG.dup
             @makeconfig = RbConfig::MAKEFILE_CONFIG.dup
          rescue SystemExit
          rescue Exception => e
             $stderr.puts("[#{e.class}]> #{e.message}\t\n#{e.backtrace.join("\t\n")}")
          ensure
-            # $0.replace(cmd)
-            #ARGV.replace(@oargv)
             RbConfig::CONFIG.replace(@original_config)
             RbConfig::MAKEFILE_CONFIG.replace(@original_makeconfig)
          end
@@ -44,7 +37,7 @@ module Setup
     #
     def configure
       @configurations =
-        project.sources.map do |source|
+        project.valid_sources.map do |source|
           source.exttree.map do |dir_in, extfiles|
             extfiles.map do |extfile|
               Dir.chdir(File.join(source.root, dir_in, File.dirname(extfile))) do
@@ -60,7 +53,7 @@ module Setup
     def make
       chrpath_path = `which chrpath`.strip
 
-      project.sources.each do |source|
+      project.valid_sources.each do |source|
         source.exttree.each do |dir_in, extfiles|
           extfiles.each do |extfile|
             dir = File.join(source.root, dir_in, File.dirname(extfile))
@@ -92,7 +85,7 @@ module Setup
 
     #
     def clean
-      project.sources.each do |source|
+      project.valid_sources.each do |source|
         source.exttree.each do |dir_in, extfiles|
           extfiles.each do |extfile|
             Dir.chdir(File.join(source.root, dir_in, File.dirname(extfile))) do
