@@ -1,10 +1,30 @@
-require 'rubygems'
+require 'bundler/dependency'
 require 'tempfile'
 require 'date'
 
+require 'setup/source/base'
+require 'setup/log'
+require 'setup/loader'
+require 'setup/loader/yaml'
+require 'setup/loader/pom'
+require 'setup/loader/rookbook'
+require 'setup/loader/cmake'
+require 'setup/loader/mast'
+require 'setup/loader/git-version-gen'
+
 class Setup::Source::Gem < Setup::Source::Base
+   extend ::Setup::Loader
+   extend ::Setup::Loader::YAML
+   extend ::Setup::Loader::Pom
+   extend ::Setup::Loader::Mast
+   extend ::Setup::Loader::Rookbook
+   extend ::Setup::Loader::Cmake
+   extend ::Setup::Loader::GitVersionGen
+   extend ::Setup::Log
+
+   TYPE = 'Gem::Specification'
    BIN_IGNORES = %w(test)
-   OPTION_KEYS = %i(rootdir spec version replace_list aliases)
+   OPTION_KEYS = %i(source_file source_names gemspec spec version replace_list aliases)
 
    EXE_DIRS = ->(s) { s.spec.bindir || s.exedir || nil }
    EXT_DIRS = ->(s) do
@@ -17,8 +37,20 @@ class Setup::Source::Gem < Setup::Source::Base
    LIB_DIRS = ->(s) { s.require_pure_paths }
    DOCSRC_DIRS = ->(s) { s.require_pure_paths }
 
+   INC_FILTER  = ->(s, f, dir) { s.spec.files.include?(File.join(dir, f)) }
+
    OPTIONS_IN = {
       spec: true,
+   }
+
+   LOADERS = {
+      /\/pom.xml$/ => :pom,
+      /\/(cmake|CMakeLists.txt)$/ => :cmake,
+      /\/Rookbook.props$/ => :rookbook,
+      /\/GIT-VERSION-GEN$/ => :git_version_gen,
+      /\/MANIFEST$/ => :manifest,
+      /\/(#{Rake::Application::DEFAULT_RAKEFILES.join("|")})$/i => :app_file,
+      /\.gemspec$/i => [:app_file, :yaml],
    }
 
    attr_reader :gem_version_replace
@@ -42,34 +74,43 @@ class Setup::Source::Gem < Setup::Source::Base
       end
 
       def search dir, options_in = {}
-         sources = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).map do |f|
-            Setup::Gemspec.gemspecs.map do |gemspec|
-               gemspec::RE =~ f && [ gemspec, f ] || nil
-            end
-         end.flatten(1).compact.sort_by do |(gemspec, _)|
-            Setup::Gemspec.gemspecs.index(gemspec)
-         end.map do |gemspec, f|
-            specs = gemspec.parse(f)
-            [ specs ].flatten.compact.map {|s| [s,f] }
-         end.flatten(1).map do |spec, f|
-            new_if_valid(spec, options_in.merge(rootdir: File.dirname(f)))
-         end.compact
+         specs = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).select {|f| File.file?(f) }.map do |f|
+            LOADERS.reduce(nil) { |res, (re, _method_name)| res || re =~ f && [re, f] || nil }
+         end.compact.sort do |x,y|
+            c = LOADERS.keys.index(x.first) <=> LOADERS.keys.index(y.first)
 
-         sources.map { |x| x.name }.uniq.map do |name|
-           # Sort by firstly version, the newer is moved forward,
-           # then rootdir size, the closer to root folder is moved forward
-           # then keep found order
-           sources.select { |s| s.name == name }.sort do |x, y|
-             r = y.version <=> x.version
-             r == 0 &&
-               (x.rootdir.size > y.rootdir.size && -1 ||
-                x.rootdir.size < y.rootdir.size && 1) || r
-           end.first
-         end
+            c == 0 && x.last <=> y.last || c
+         end.reduce({}) do |res, (re, f)|
+            load_result =
+               [LOADERS[re]].flatten.reduce(nil) do |res, method_name|
+                  next res if res
+
+                  result = send(method_name, f)
+
+                  result && result.objects.any? && result
+               end
+
+            if load_result
+               gemspecs = load_result.objects.reject do |s|
+                  s.loaded_from && s.loaded_from !~ /#{dir}/
+               end.each {|x| x.loaded_from = f }
+               log(load_result.errlog)
+
+               res.merge({ f => gemspecs })
+            else
+               res
+            end
+         end.map do |(f, gemspecs)|
+            gemspecs.map do |gemspec|
+               new_if_valid(gemspec, { source_file: f }.to_os.merge(options_in))
+            end
+         end.flatten.compact
       end
 
       def new_if_valid spec, options_in = {}
-         if spec && spec.version && spec.platform == 'ruby'
+         # TODO move validation to space/project
+         if spec && spec.version && spec.platform == 'ruby' && spec.name !~ /\u0000/
+               # && !($:&spec.full_require_paths).any? && !spec.full_require_paths.all? {|p| File.directory?(p) }
             self.new(source_options(options_in.merge(spec: spec)))
          end
       end
@@ -77,14 +118,18 @@ class Setup::Source::Gem < Setup::Source::Base
 
    def gemfile
       @gemfile ||= Setup::Source::Gemfile.new({
-         rootdir: rootdir,
+         source_file: gemfile_name && File.join(rootdir, gemfile_name) || dsl.fake_gemfile,
          gem_version_replace: gem_version_replace,
-         gem_skip_list: dsl.deps.map(&:name),
+         gem_skip_list: dsl.deps.map(&:name) | [name],
          gem_append_list: [ self.dep ]}.to_os)
    end
 
+   def gemfile_name
+      source_names.find {|x| x =~ /gemfile/i }
+   end
+
    def dep
-      Gem::Dependency.new(name, Gem::Requirement.new(["~> #{version}"]), :runtime)
+      Bundler::Dependency.new(name, Gem::Requirement.new(["~> #{version}"]), options: { type: :runtime })
    end
 
    def fullname
@@ -107,7 +152,10 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def version
-      spec.version.to_s
+      version = spec&.version&.to_s || ""
+      parts = version.split(".")
+
+      (parts[0..2] + (parts[3..-1]&.map {|x| x.to_i <= 1024 && x || nil}&.compact || [])).join(".")
    end
 
    def gemspec_path
@@ -126,10 +174,6 @@ class Setup::Source::Gem < Setup::Source::Base
       end
    end
 
-   def dsl
-      @dsl ||= Setup::DSL.new(source: self, replace_list: replace_list)
-   end
-
    # tree
 
    def datatree
@@ -137,8 +181,25 @@ class Setup::Source::Gem < Setup::Source::Base
       @datatree ||= super { { '.' => spec.files } }
    end
 
+   def allfiles
+      @allfiles =
+         spec.require_paths.map {|x| File.absolute_path?(x) && x || File.join(x, '**', '*') }.map {|x| Dir[x] }.flatten |
+         spec.executables.map {|x| Dir[File.join(spec.bindir, x)] }.flatten |
+         spec.files
+   end
+
+   def allfiles_for list_in
+      list_in.map do |(key, list)|
+         [key, list & allfiles.map {|x| /^#{key}\/(?<rest>.*)/.match(x)&.[](:rest) }.compact ]
+      end.to_h
+   end
+
    def exttree
       @exttree ||= super
+   end
+
+   def testtree
+      @testtree ||= allfiles_for(super)
    end
 
    def exetree
@@ -153,7 +214,7 @@ class Setup::Source::Gem < Setup::Source::Base
 
    def docs
       # TODO make docs to docdir with lib/.rb replace to .ri
-      #require 'pry';binding.pry
+      #require 'pry';binding.ry
       (!spec.rdoc_options.blank? && [ default_ridir ] || files(:lib)) | spec.extra_rdoc_files
    end
 
@@ -203,13 +264,29 @@ class Setup::Source::Gem < Setup::Source::Base
          paths.any? && paths || ['lib'])
    end
 
+   def rake
+      @rake ||= Setup::Rake.new(File.join(rootdir, Dir["{#{Rake::Application::DEFAULT_RAKEFILES.join(",")}}"].first))
+   end
+
    # Default group
    def group
       "Development/Ruby"
    end
 
+   def summaries
+      localize(spec.summary) || aliased {|s| s.localize(s.summary) } || descriptions
+   end
+
    def descriptions
-      OpenStruct.new(Setup::I18n.default_locale => spec.description)
+      localize(spec.description) || aliased {|s| localize(s.description) }
+   end
+
+   def aliased &block
+      aliases.reduce(nil) {|res, a| res || a != self && block[a] }
+   end
+
+   def localize text
+      text && OpenStruct.new(Setup::I18n.default_locale => text)
    end
 
    # Default prefix "gem" for gem names
@@ -218,7 +295,7 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def uri
-      spec.homepage
+      spec.homepage || aliased_uri
    end
 
    def vcs
@@ -239,6 +316,15 @@ class Setup::Source::Gem < Setup::Source::Base
 
    protected
 
+   def detect_root
+      if spec
+          files = Dir['**/**/*']
+          (spec.files - files).any? && super || Dir.pwd
+      else
+         super
+      end
+   end
+
    def extroots
       @extroots ||= extfiles.map { |extfile| File.dirname(extfile) }
    end
@@ -247,7 +333,7 @@ class Setup::Source::Gem < Setup::Source::Base
       @exedir ||= if_exist('exe')
    end
 
-   #
+   # system
    def initialize options_in = {}
       super
 
@@ -257,6 +343,12 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def method_missing name, *args
-      spec.respond_to?(name) && spec.send(name, *args) || super
+      if /^aliased_(?<method>.*)/ =~ name
+         aliased {|a| a.send(method, *args) }
+      elsif spec.respond_to?(name)
+         spec.send(name, *args)
+      else
+         super
+      end
    end
 end

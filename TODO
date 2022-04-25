@@ -39,6 +39,7 @@ gem-ascii85 - capital name
 
 gem-lemon update stable ver to unstable
 gem-compass - multi gem deps in build requiers (sass), embedded gem = instead of >=, markdown extension for readme, false absent README.md generated in spec
+license-scout - README lost
 
 gettext-setup - invalid ruby_alias_names when genspec
 async-rspec - blank description
@@ -47,6 +48,16 @@ gem-nokogiri - crop changelog, fix gem deps on the file  (example for mini_porti
 prometheus-client - invalid dep tags when is in available list
 ruby-rc4 - ruby isnt prefix, leads to ruby-ruby-rc4
 facets - new spec invalid type dependencies runtime  instead devel
-ffi - git describe --tags command to fix in gemspec
+ffi - 1. git describe --tags command to fix in gemspec; 2. update to 1.15.5 add the wrnog tag
 passenger - minon require list check, because when rebuild spec it losts some things
-
+digest-crc - lost rake task on update to 0.6.4
+io-event - erroneous update form event
+idn-ruby - can't detect extension
+net-http-persistent - invalid update to 4.0.1
+hoe-bunder - crop long patch number for v.5.0
+oj - expand and crop summary when update to 3.13.11
+hoe-travis - lost description on update
+ruby-shadow - lost license on update unlicense replace with specified default + license replace list args
+unf_ext - invalid dep ruby_use_gem_dependency
+rdoc - update to new version break generate a valid new spec if the gem in available gem list adding unnecesary tag
+hiredis - invalid ruby_use_gem_dependency when generated updated spec

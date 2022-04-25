@@ -92,6 +92,7 @@ module Kernel
       'echoe' => 'setup/extcore/echoe',
       'jeweler' => 'setup/extcore/jeweler',
       'hoe' => 'setup/extcore/hoe',
+      'bundle/setup' => -> { true },
    }
 
    def config
@@ -112,22 +113,49 @@ module Kernel
 
    def require mod
       __setup_orig_require(mod)
-   rescue LoadError => e
+   rescue LoadError
+      Setup::Space.system_path_check
+      __setup_orig_require(mod)
+   rescue Exception => e
       if MODULES[mod]
-         __setup_orig_require(MODULES[mod])
+         if MODULES[mod].is_a?(Proc)
+            MODULES[mod][]
+         else
+            begin
+               __setup_orig_require(MODULES[mod])
+            rescue => e1
+               raise e, e1
+            end
+         end
       else
          raise e
+      end
+   end
+
+   def yaml_load text
+      if Gem::Version.new(Psych::VERSION) >= Gem::Version.new("4.0.0")
+         YAML.load(text, aliases: true, permitted_classes:
+            [Gem::Specification,
+             Gem::Version,
+             Gem::Dependency,
+             Gem::Requirement,
+             Symbol,
+             OpenStruct,
+             Time,
+             Date])
+      else
+         YAML.load(text)
       end
    end
 end
 
 module Bundler
    class Runtime
-      alias :__setup :setup
+#      alias :__setup :setup
 
-      def setup(*groups)
-         /(bundler\/setup.rb|Gemfile|Rakefile):/ !~ caller[0] && super || self
-      end
+#      def setup(*groups)
+#         /(bundler\/setup.rb|Gemfile|Rakefile):/ !~ caller[0] && super || self
+#      end
    end
 
    class << self
@@ -235,8 +263,10 @@ class Symbol
 end
 
 class Hash
-   def deep_merge other
-      return self if other.nil? or other == {}
+   def deep_merge other, options_in = {}
+      return self if other.nil? or other.blank?
+
+      options = { mode: :append }.merge(options_in)
 
       other_hash = other.is_a?(Hash) && other || { nil => other }
       common_keys = self.keys & other_hash.keys
@@ -256,7 +286,20 @@ class Hash
             when NilClass
                other_hash[key]
             else
-               [ value, other_hash[key] ].compact.flatten(1)
+               value_out =
+                  if options[:mode] == :append
+                     [other_hash[key], value].compact.flatten(1)
+                  elsif options[:mode] == :prepend
+                     [value, other_hash[key]].compact.flatten(1)
+                  else
+                     value
+                  end
+
+               if value_out.is_a?(Array) && options[:dedup]
+                  value_out.uniq
+               else
+                  value_out
+               end
             end
          else
             value
@@ -345,8 +388,20 @@ class OpenStruct
       res
    end
 
-   def deep_merge other_in
+   # +deep_merge+ deeply merges the Open Struct hash structure with the +other_in+ enumerating it key by key.
+   # +options+ are the options to change behaviour of the method. It allows two keys: :mode, and :dedup
+   # :mode key can be :append, :prepend, or :replace, defaulting to :append, when mode is to append, it combines duplicated
+   # keys' values into an array, when :prepend it prepends an other value before previously stored one unlike for :append mode,
+   # when :replace it replace duplicate values with a last ones.
+   # :dedup key can be true, or false. It allows to deduplicate values when appending or prepending values.
+   # Examples:
+   #    open_struct.deep_merge(other_open_struct)
+   #    open_struct.deep_merge(other_open_struct, :prepend)
+   #
+   def deep_merge other_in, options_in = {}
       return self if other_in.nil? or other_in.blank?
+
+      options = { mode: :append }.merge(options_in)
 
       other =
          if other_in.is_a?(OpenStruct)
@@ -362,13 +417,26 @@ class OpenStruct
             if res.table.keys.include?(key)
                case value
                when Hash, OpenStruct
-                  value.deep_merge(res[key])
+                  value.deep_merge(res[key], options)
                when Array
-                  value.concat([ res[key] ].compact.flatten(1))
+                  value.concat([res[key]].compact.flatten(1))
                when NilClass
                   res[key]
                else
-                  [ value, res[key] ].compact.flatten(1)
+                  value_out =
+                     if options[:mode] == :append
+                        [res[key], value].compact.flatten(1)
+                     elsif options[:mode] == :prepend
+                        [value, res[key]].compact.flatten(1)
+                     else
+                        value
+                     end
+
+                  if value_out.is_a?(Array) && options[:dedup]
+                     value_out.uniq
+                  else
+                     value_out
+                  end
                end
             else
                value

@@ -1,13 +1,36 @@
 require 'rubygems'
 
 require 'setup/version'
+require 'setup/log'
 
 class Setup::Space
+   include Setup::Log
+
    class InvalidSpaceFileError < StandardError; end
 
    TYPES = {
       sources: Setup::Source
    }
+
+   STATES = {
+      invalid: ->(_, source, _) { !source.valid? },
+      disabled: ->(space, source, _) { space.is_disabled?(source) },
+      duplicated: ->(_, _, dup) { dup },
+   }
+
+   TYPE_CHARS = {
+      gem: '*',
+      gemfile: '&',
+      rakefile: '^',
+   }
+
+   STATUS_CHARS = {
+      invalid: 'X',
+      disabled: '-',
+      duplicated: '=',
+      valid: 'V',
+   }
+
 
    Gem.load_yaml
 
@@ -157,15 +180,21 @@ class Setup::Space
    end
 
    def is_regarded? source
-      !ignored_names.any? { |i| i === source.name }
+      regarded_names.any? {|i| i === source.name } ||
+         !ignored_names.any? {|i| i === source.name } &&
+         !ignored_path_tokens.any? {|t| /\/#{t}\// =~ source.source_file }
    end
 
    def ignored_names
-      @ignored_names ||= (read_attribute(:ignored_names) || []) - regarded_names
+      @ignored_names ||= (read_attribute(:ignored_names) || [])
    end
 
    def regarded_names
       @regarded_names ||= read_attribute(:regarded_names) || []
+   end
+
+   def ignored_path_tokens
+      @ignored_path_tokens ||= (read_attribute(:ignored_path_tokens) || [])
    end
 
    def spec_type
@@ -197,6 +226,11 @@ class Setup::Space
       gen_spec(value)
    end
 
+   def is_disabled? source
+      options.ignored_path_tokens.any? { |t| /\/#{t}\// =~ source.source_file } ||
+         options.ignored_names.any? { |i| i === source.name }
+   end
+
    protected
 
    def gen_spec spec_in = nil
@@ -207,9 +241,9 @@ class Setup::Space
             spec_pre
          elsif spec_pre.is_a?(String)
             YAML.load(spec_pre)
-         elsif options.spec_file
+         elsif options&.spec_file
             Setup::Spec.load_from(IO.read(options.spec_file))
-         elsif @spec_type || options.spec_type
+         elsif @spec_type || options&.spec_typae
             Setup::Spec.find(@spec_type || options.spec_type).new
          end
 
@@ -223,6 +257,61 @@ class Setup::Space
    def initialize state_in = {}, options = {}
       @options = (options || {}).to_os
       @state = (state_in || {}).to_os
+
+      show_tree
+   end
+
+   def show_tree
+      log("Sources:")
+      stat_source_tree.each do |(path_in, stated_sources)|
+         stated_sources.each do |(source, status)|
+            path = File.join(path_in, File.basename(source.source_file)) if source.source_file
+            stat = [STATUS_CHARS[status], TYPE_CHARS[source.type.to_sym]].join(" ")
+            namever = [source.name, source.version].compact.join(":")
+            info = "#{stat}#{namever} [#{path}]"
+
+            log(info)
+         end
+      end
+   end
+
+   # returns all the sources with their statuses, and sorted by a its rootdir value
+   #
+   def stat_sources &block
+      @stat_sources =
+         sources.group_by { |x| x.name }.map do |(name, v)|
+            # aliasing
+            v.each {|x| x.alias_to(v) }
+
+            # statusing
+            v.sort do |x,y|
+               c0 = Setup::Source::TYPES.keys.index(x.class.to_s.to_sym) <=> Setup::Source::TYPES.keys.index(y.class.to_s.to_sym)
+               c1 = c0 == 0 && y.version <=> x.version || c0
+
+               c1 == 0 && x.rootdir.size <=> y.rootdir.size || c1
+            end.map.with_index do |source, index|
+               [source, source_status(source, index > 0)]
+            end
+         end.flatten(1).sort_by {|(x, _)| x.rootdir.size }.each do |(source, status)|
+            block[source, status] if block_given?
+         end
+   end
+
+   # returns source tree, and sorted, and then grouped by a its rootdir value
+   #
+   def stat_source_tree
+      @stat_source_tree ||=
+         stat_sources.group_by {|(x, _)| x.rootdir }.map do |(path, sources)|
+            [File.join('.', path[rootdir.size..-1]), sources]
+         end.to_h
+   end
+
+   # returns status for the source for the project
+   #
+   def source_status source, dup
+      %i(valid duplicated disabled invalid).reduce() do |res, status|
+         STATES[status][self, source, dup] && status || res
+      end
    end
 
    def context
@@ -233,14 +322,16 @@ class Setup::Space
       value =
          instance_variable_get(:"@#{method}") ||
          (spec.send(method) rescue nil) ||
-         options[method] ||
-         spec&.options[method.to_s] ||
+         options&.[](method) ||
+         spec&.options&.[](method.to_s) ||
 
       instance_variable_set(:"@#{method}", value || super)
    end
 
    class << self
       def load_from! state_in = Dir[".space"].first, options = {}
+         system_path_check # TODO required to generate spec rubocop
+
          state = case state_in
          when IO, StringIO
             YAML.load(state_in.readlines.join(""))
@@ -260,6 +351,19 @@ class Setup::Space
          load_from!(state_in, options)
       rescue InvalidSpaceFileError
          @@space[nil] = new(nil, options)
+      end
+
+      def system_path_check
+         # fix paths
+         paths = ObjectSpace.each_object(Gem::Specification).map do |s|
+            path = s.full_gem_path rescue nil
+
+            s.require_paths.map do |x|
+               File.absolute_path?(x) && x || path && File.join(path, x) || nil
+            end
+         end.flatten.compact
+
+         $:.unshift(*paths) # $.replace(paths | $:)
       end
    end
 end

@@ -12,6 +12,7 @@ class Setup::CLI
       ignored_names: [],
       regarded_names: [],
       aliased_names: [],
+      ignored_path_tokens: [],
       spec_file: nil,
       maintainer_name: nil,
       maintainer_email: nil,
@@ -47,7 +48,7 @@ class Setup::CLI
                end
             end
 
-            opts.on("-A", "--alias-names=LIST", Array, "Source names comma-separated alias list") do |list|
+            opts.on("-A", "--alias-names=[LIST]", Array, "Source names comma-separated alias list") do |list|
                options.aliased_names << list.compact
             end
 
@@ -59,6 +60,11 @@ class Setup::CLI
                options.spec_file = file
             end
 
+            opts.on("-i", "--ignore-path-tokens=[LIST]", Array, "Ignore sources by a contained i
+n its path token, and passed as a comma-separated list") do |list|
+               options.ignored_path_tokens.concat(list.compact)
+            end
+
             opts.on("--maintainer-name=NAME", String, "Name of the maintainer to use on spec generation") do |name|
                options.maintainer_name = name
             end
@@ -67,7 +73,7 @@ class Setup::CLI
                options.maintainer_email = email
             end
 
-            opts.on("--devel-dep-setup=[TYPE]", %i(include skip), "Apply setup type for devel dependencies to use with, defaulting to 'include'") do |type|
+            opts.on("--devel-dep-setup=<TYPE>", %i(include skip), "Apply setup type for devel dependencies to use with, defaulting to 'include'") do |type|
                options.devel_dep_setup = type
             end
 
@@ -75,8 +81,8 @@ class Setup::CLI
                options.available_gem_list = YAML.load(IO.read(file))
             end
 
-            opts.on("-V", "--use-gem-version=GEM_VERSION", String, "Gem version pair to forcely use in the setup") do |gem_version|
-               hash = gem_version.split(",").map {|gv| gv.split(":") }.to_h
+            opts.on("-V", "--use-gem-version=[LIST]", Array, "Comma separated gem version pair list to forcely use in the setup") do |gem_version|
+               hash = gem_version.map {|gv| gv.split(":") }.to_h
                options.use_gem_version_list = options.use_gem_version_list.merge(hash)
             end
 

@@ -1,25 +1,15 @@
+# used in digest-crc gem as an extension compiler
+#
 require 'setup/loader'
 
 class Setup::Rake
    extend ::Setup::Loader
 
-   TYPE = 'Jeweler::Tasks'
+   class InvalidRakefileError < StandardError; end
+
+   TYPE = 'Rake::Application'
 
    attr_reader :app, :rakefile
-
-   def load
-      stdout = $stdout
-      $stdout = $stderr
-
-      pre = ObjectSpace.each_object(Gem::Specification).to_a.map(&:__id__)
-      self.class.load(rakefile)
-   rescue Exception => e
-      warn(e.message)
-   ensure
-      @@specs = ObjectSpace.each_object(Gem::Specification).reject { |t| pre.include?(t.__id__) }.uniq { |s| s.name }
-      $stderr = $stdout
-      $stdout = stdout
-   end
 
    def blank?
       !@app
@@ -34,34 +24,23 @@ class Setup::Rake
    end
 
    def run_task task_name
+      Rake.instance_variable_set(:@application, @app)
       @app&.invoke_task(task_name)
    rescue Exception => e
       warn "#{e.class}: #{e.message}\n\t#{e.backtrace.join("\n\t")}"
-      #require 'pry';binding.pry
    end
 
-   def initialize rakedir
-      @rakefile =
-         ::Rake::Application::DEFAULT_RAKEFILES.map do |f|
-            File.join(rakedir, f)
-         end.find do |f|
-            File.file?(f)
-         end
+   def initialize rakefile
+      raise InvalidRakefileError unless File.file?(rakefile)
 
-      if rakefile
-         @app = load
-      end
+      @rakefile = rakefile
+      @app = self.class.load(rakefile)
    end
 
    class << self
       def load rakefile
-         mm = app_file(rakefile) do |_|
-            app = Rake.instance_variable_get(:@application)
-            Rake.instance_variable_set(:@application, nil)
-            app
-         end
-
-         mm.objects.first
+         Rake.instance_variable_set(:@application, nil)
+         app_file(rakefile).objects.first
       end
    end
 end

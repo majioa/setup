@@ -1,3 +1,6 @@
+# Bones based gemspec detection module
+# Sample gems are: bones, loquacious, little-plugger
+#
 module Bones
    class Config
       class Gem
@@ -123,9 +126,9 @@ module Bones
 end
 
 module Kernel
-   def Bones name = nil, &prc
-      # require 'pry';binding.pry
-      include Bones::Methods
+   def Bones name = nil
       yield
    end
 end
+
+include Bones::Methods

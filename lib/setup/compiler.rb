@@ -8,7 +8,7 @@ module Setup
     #
     #
     def configure
-      project.sources.each do |source|
+      project.valid_sources.each do |source|
         source.exttree.each do |dir_in, extfiles|
           extfiles.each do |extfile|
             Dir.chdir(File.join(source.root, dir_in, File.dirname(extfile))) do
@@ -23,10 +23,11 @@ module Setup
     def make
       chrpath_path = `which chrpath`.strip
 
-      project.sources.each do |source|
+      project.valid_sources.each do |source|
         source.exttree.each do |dir_in, extfiles|
           extfiles.each do |extfile|
             dir = File.join(source.root, dir_in, File.dirname(extfile))
+            headers = Dir.glob("*/**/*.{h,hpp}")
 
             Dir.chdir(dir) do
               puts "[#{dir}]$ make #{config.makeprog}"
@@ -51,7 +52,7 @@ module Setup
 
     #
     def clean
-      project.sources.each do |source|
+      project.valid_sources.each do |source|
         source.exttree.each do |dir_in, extfiles|
           extfiles.each do |extfile|
             Dir.chdir(File.join(source.root, dir_in, File.dirname(extfile))) do

@@ -145,7 +145,7 @@ module Setup::RpmSpecCore
 
    def _summaries value_in
       source_name = source&.name
-      summaries_in = @host && host.summaries || { "" => of_source(:summary) } || []
+      summaries_in = @host && host.summaries || of_source(:summaries) || {}.to_os
 
       Setup::I18n.defaulted_locales.map do |locale_in|
          locale = locale_in.blank? && Setup::I18n.default_locale || locale_in
@@ -176,7 +176,7 @@ module Setup::RpmSpecCore
    def _descriptions value_in
       source_name = of_source(:name)
       summaries_in = @host && summaries || { "": of_source(:summary)&.match("(.*?)[\.,-_\s]+$")&.[](1) }
-      descriptions_in = @host && host.descriptions || { "": of_source(:description) || of_source(:summary)}
+      descriptions_in = @host && host.descriptions || of_source(:descriptions) || of_source(:summaries) || {}.to_os
 
       Setup::I18n.defaulted_locales.map do |locale|
          sum = t(:"spec.rpm.#{self.kind}.description", locale: locale, binding: binding)

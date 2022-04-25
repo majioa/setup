@@ -5,6 +5,8 @@ module Setup::Loader
    module Certain
       include(Rake::DSL)
 
+      attr_reader :object_hash, :object_ids
+
       def store_object_hash type_hash
          object_hash =
             type_hash.map do |(klass, types)|
@@ -20,12 +22,12 @@ module Setup::Loader
             end.to_h
 
          if @object_hash
-            @object_hash = object_hash.map do |(k, oh)|
-               [k, oh - @object_hash[k]]
+            @object_ids = object_hash.map do |(k, oh)|
+               [k, oh.map {|h| h.__id__ } - @object_hash[k].map {|h| h.__id__ }]
             end.to_h
-         else
-            @object_hash = object_hash
          end
+
+         @object_hash = object_hash
       end
 
       def load_file file, type_hash
@@ -34,17 +36,21 @@ module Setup::Loader
          # also named module is required instead of anonymous one to allow root level defined methods access
          store_object_hash(type_hash)
 
-         Dir.chdir(File.dirname(file)) do
-            load(File.basename(file), true)
+         begin
+            Dir.chdir(File.dirname(file)) do
+               load(File.basename(file), true)
+            end
+         rescue Exception => e
+            raise e
+         ensure
+            store_object_hash(type_hash)
          end
 
-         store_object_hash(type_hash)
+         self
+      rescue Exception => e
+         $stderr.puts("[#{e.class}]: #{e.message}\n\t#{e.backtrace.join("\n\t")}")
 
          self
-      end
-
-      def object_hash
-         @object_hash
       end
    end
 
@@ -71,7 +77,7 @@ module Setup::Loader
    end
 
    def mods
-      @mods ||= {}
+      @@mods ||= {}
    end
 
    def load_file file
@@ -88,13 +94,15 @@ module Setup::Loader
 
       mod = module_eval(mod_code)
       mod.load_file(file, type_hash)
+      $stdout.rewind
+      $stderr.rewind
       log = $stdout.readlines
       errlog = $stderr.readlines
 
-      OpenStruct.new(mod: mod, log: log, errlog: errlog, object_hash: mod.object_hash)
+      OpenStruct.new(mod: mod, log: log, errlog: errlog, object_hash: mod.object_hash, diff_ids: mod.object_ids)
    rescue Exception => e
       warn(e.message)
-      OpenStruct.new(objects: [])
+      OpenStruct.new(mod: mod, object_hash: {}, log: log, errlog: errlog, diff_ids: [])
    ensure
       $stderr = stderr
       $stdout = stdout
@@ -104,11 +112,11 @@ module Setup::Loader
       mods[file] ||= load_file(file)
 
       mod = mods[file].dup
-      objects = mod.object_hash&.fetch(self, []) || []
+      objects = mod.diff_ids[self]&.map {|id| ObjectSpace._id2ref(id) }
       if block_given?
          objects = [yield(objects)].flatten.compact
       end
-      mod.objects = objects
+      mod.objects = objects || []
 
       mod
    end

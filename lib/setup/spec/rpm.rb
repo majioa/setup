@@ -268,22 +268,34 @@ class Setup::Spec::Rpm
    end
 
    def state_kind
-      @state_kind ||= options.main_source.is_a?(Setup::Source::Gem) && :lib || :app
+      @state_kind ||= options.main_source.is_a?(Setup::Source::Gem) && "lib" || state['file_list'].blank? && "app" || pre_name&.kind
    end
 
-   def state_sources
-      packages = [ self ] | (of_state(:secondaries) || of_default(:secondaries))
+   def default_state_kind
+      "app"
+   end
+
+   # +assign_state_sources+ infers all the unassigned state to convert to sources main and secondaries from the state
+   def assign_state_to_sources sources
+      packages = [ self ] | of_state(:secondaries)
 
       packages.map do |package|
+         #   binding.pry
          package.options&.main_source ||
-            #case package.of_state(:name)&.kind || package.state_kind.to_s
-            case package.pre_name&.kind || package.state_kind.to_s
+            case package.state_kind || package.name.kind || default_state_kind
             when "lib"
                spec = Gem::Specification.new do |s|
                   s.name = package.name.autoname
-                  s.version = package.state["version"] || package.source.version
-                  s.summary = package.state["summaries"]&.[]("") || package.source.summary
+                  s.version, s.summary =
+                     if package.state
+                        [ package.state["version"], package.state["summaries"]&.[]("") ]
+                     elsif package.source
+                        [ package.source.version, package.source.summary ]
+                     else
+                        [ package.version, package.summaries&.[]("") ]
+                     end
                end
+               #   binding.pry
 
                Setup::Source::Gem.new({"spec" => spec})
             when "app"
@@ -291,7 +303,43 @@ class Setup::Spec::Rpm
                #   package.of_state(:name) ||
                #   rootdir && rootdir.split("/").last
                name = package.pre_name
-               # binding.pry
+
+               Setup::Source::Gemfile.new({
+                  "rootdir" => rootdir,
+                  "name" => name.to_s,
+                  "version" => of_options(:version) || of_state(:version)
+               })
+            end
+      end.compact
+   end
+
+   def state_sources
+      packages = [ self ] | (of_state(:secondaries) || of_default(:secondaries))
+
+      packages.map do |package|
+         # binding.pry
+         package.options&.main_source ||
+            case package.state_kind || package.name.kind || default_state_kind
+            when "lib"
+               spec = Gem::Specification.new do |s|
+                  s.name = package.name.autoname
+                  s.version, s.summary =
+                     if package.state
+                        [ package.state["version"], package.state["summaries"]&.[]("") ]
+                     elsif package.source
+                        [ package.source.version, package.source.summary ]
+                     else
+                        [ package.version, package.summaries&.[]("") ]
+                     end
+               end
+               #   binding.pry
+
+               Setup::Source::Gem.new({"spec" => spec})
+            when "app"
+               #name = package.of_options(:name) ||
+               #   package.of_state(:name) ||
+               #   rootdir && rootdir.split("/").last
+               name = package.pre_name
 
                Setup::Source::Gemfile.new({
                   "rootdir" => rootdir,

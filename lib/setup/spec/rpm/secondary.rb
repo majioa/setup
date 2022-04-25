@@ -129,7 +129,12 @@ class Setup::Spec::Rpm::Secondary
    def state_kind
       return @state_kind if @state_kind
 
-      @state_kind ||= options.source.is_a?(Setup::Source::Gem) && :lib || :app
+      binding.pry
+      @state_kind ||= options.source.is_a?(Setup::Source::Gem) && "lib" || file_list.blank? && "app" || pre_name&.kind
+   end
+
+   def default_state_kind
+      "app"
    end
 
    def kind

@@ -6,12 +6,17 @@ require 'setup'
 
 # DSL service for Setup.rb.
 class Setup::DSL
-   # class TooManyGemspecsError < StandardError; end
-
-   DEFAULT_GROUP_NAME = :development
+   # group to kind mapping
+   GROUP_MAPPING = {
+      default: :development,
+      development: :development,
+      test: :development,
+      production: :runtime,
+      true => :runtime,
+   }
 
    # attributes
-   attr_reader :source, :replace_list, :skip_list, :append_list
+   attr_reader :source_file, :replace_list, :skip_list, :append_list, :spec
 
    def gemfiles
       return @gemfiles if @gemfiles
@@ -22,23 +27,42 @@ class Setup::DSL
    end
 
    def gemfile
-      gemfiles.first
+      gemfiles.first || original_gemfile || fake_gemfile
    end
 
    def original_gemfile
-      @original_gemfile ||= Pathname.new(File.join(source.rootdir, 'Gemfile'))
+      @original_gemfile ||= is_source_gemfile && Pathname.new(source_file) || find_gemfile
+   end
+
+   def is_source_gemfile
+      source_file =~ /Gemfile$/i
+   end
+
+   def find_gemfile
+      gemfile = source_file && Dir[File.join(File.dirname(source_file), '{Gemfile,gemfile}')].first
+
+      gemfile && Pathname.new(gemfile) || nil
+   end
+
+   def fake_gemfile
+      @fake_gemfile = Tempfile.create('Gemfile').path
+
+      Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", @fake_gemfile
+
+      @fake_gemfile
    end
 
    def dsl
       @dsl ||= (
          begin
             dsl =
-               Dir.chdir(source.rootdir) do
+               Dir.chdir(File.dirname(source_file)) do
                   dsl = Bundler::Dsl.new
                   dsl.eval_gemfile(original_gemfile)
                   dsl
                end
          rescue LoadError,
+                TypeError,
                 Bundler::GemNotFound,
                 Bundler::GemfileNotFound,
                 Bundler::VersionConflict,
@@ -46,10 +70,9 @@ class Setup::DSL
                 Errno::ENOENT,
                 ::Gem::InvalidSpecificationException => e
 
-            Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", Tempfile.new('Gemfile').path
             dsl = Bundler::Dsl.new
-            dsl.instance_variable_set(:@gemfiles, [Pathname.new(ENV["BUNDLE_GEMFILE"])])
-            dsl.to_definition(Tempfile.new('Gemfile.lock').path, {})
+            dsl.instance_variable_set(:@gemfiles, [Pathname.new(fake_gemfile)])
+            dsl.to_definition(Tempfile.create('Gemfile.lock').path, {})
             Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", nil
 
             dsl
@@ -60,29 +83,83 @@ class Setup::DSL
       @edsl ||= (
          begin
             edsl = dsl.dup
-            edsl.dependencies = deps_but(dsl.dependencies, replace_list, skip_list, append_list)
+            edsl.dependencies = deps_but(dsl.dependencies)
             edsl
          end)
    end
 
    def definition
-      @definition ||= edsl.to_definition(Tempfile.new.path, {})
+      @definition ||=
+         Dir.mktmpdir do
+            FileUtils.touch("Gemfile")
+
+            edsl.to_definition("./Gemfile", {})
+         end
+   end
+
+   def original_deps_for kinds_in = nil
+      groups = defined_groups_for(kinds_in)
+
+      original_deps.select do |dep|
+         (dep.groups & groups).any? &&
+          dep.should_include? # &&
+         # (dep.autorequire || [ true ]).all? { |r| r }
+      end
+   end
+
+   def original_deps
+      @original_deps ||= definition.dependencies
+   end
+
+   def gemspecs
+      dsl.gemspecs | [spec].compact
+   end
+
+   def extracted_gemspec_deps
+      gemspecs.map do |gs|
+         gs.dependencies.select {|dep|dep.runtime?}
+      end.flatten
+   end
+
+   def runtime_deps kind = :gemspec
+      if kind == :gemspec
+         deps_but(extracted_gemspec_deps)
+      else
+         deps_but(original_deps_for(:runtime))
+      end
+   end
+
+   def defined_groups_for kinds_in = nil
+      no_groups =
+         [kinds_in].compact.flatten.map do |k|
+            GROUP_MAPPING.map do |(g, k_in)|
+               k_in != k && g || nil
+            end.compact
+         end.flatten
+
+      definition.groups - no_groups
    end
 
    def deps
-      deps_but(source.deps(:runtime), replace_list, skip_list, append_list)
+      deps_but(original_deps) | gemspec_deps
    end
 
-   def all_deps
-      deps_but(source.deps, replace_list, skip_list, append_list)
+   def gemspec_deps
+      gemspecs.map do |gs|
+         Gem::Dependency.new(gs.name, Gem::Requirement.new(["= #{gs.version}"]), :development)
+      end
+   end
+
+   def deps_for kinds_in = nil
+      deps_but(original_deps_for(kinds_in)) | gemspec_deps
    end
 
    def ruby
-      { type: source.required_ruby, version: source.required_ruby_version }
+      { type: required_ruby, version: required_ruby_version }
    end
 
    def rubygems
-      { version: source.required_rubygems_version }
+      { version: required_rubygems_version }
    end
 
    def valid?
@@ -90,8 +167,8 @@ class Setup::DSL
    end
 
    def to_ruby
-      spec = source.spec.dup
-      spec.dependencies.replace(deps_but(source.deps, replace_list, skip_list, append_list))
+      spec = self.spec.dup
+      spec.dependencies.replace(deps_but(original_deps))
       spec.to_ruby
    end
 
@@ -115,9 +192,36 @@ class Setup::DSL
       end.join("\n")
    end
 
+   def required_rubygems_version
+      ">= 0"
+   end
+
+   def required_ruby_version
+      @required_ruby_version ||= Gem::Requirement.new(dsl.instance_variable_get(:@ruby_version)&.engine_versions) || ">= 0"
+   end
+
+   def required_ruby
+      @required_ruby ||= dsl.instance_variable_get(:@ruby_version)&.engine || "ruby"
+   end
+
+   def merge_in other_dsl
+      if original_gemfile.to_s != other_dsl.original_gemfile.to_s
+         hodeps = other_dsl.original_deps.map {|dep| [dep.name, dep] }.to_h
+         original_deps.map {|dep| [dep.name, dep] }.to_h.deep_merge(hodeps).values.map do |dep|
+            if dep.is_a?(Array)
+               dep.reduce { |res, dep_in| res.merge(dep_in) }
+            else
+               dep
+            end
+         end
+      end
+
+      self
+   end
+
    protected
 
-   def deps_but deps, replace_list, skip_list, append_list
+   def deps_but deps
       deps.map do |dep|
          next if skip_list.include?(dep.name)
 
@@ -125,15 +229,19 @@ class Setup::DSL
             s || name == dep.name && req
          end
 
-         new_req && Bundler::Dependency.new(dep.name, Gem::Requirement.new([new_req]), options: { "type" => dep.type }) || dep
+         new_req && Bundler::Dependency.new(dep.name, Gem::Requirement.new([new_req]), "type" => dep.type) || dep
       end.compact | append_list
    end
 
    #
-   def initialize source: raise, replace_list: nil, skip_list: nil, append_list: nil
-      @source = source
-      @replace_list = replace_list || {}
-      @skip_list = skip_list || []
-      @append_list = append_list || []
+   def initialize source_file, options = {}
+#      binding.pry
+#      raise unless File.file?(source_file)
+
+      @source_file = source_file
+      @spec = options[:spec]
+      @replace_list = options[:replace_list] || {}
+      @skip_list = options[:skip_list] || []
+      @append_list = options[:append_list] || []
    end
 end

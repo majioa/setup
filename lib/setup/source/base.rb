@@ -1,7 +1,7 @@
 require 'setup/source'
 
 class Setup::Source::Base
-   OPTION_KEYS = %i(rootdir replace_list aliases)
+   OPTION_KEYS = %i(source_file source_names replace_list aliases)
 
    DL_DIRS     = ->(s) { ".so.#{s.name}#{RbConfig::CONFIG['sitearchdir']}" }
    RI_DIRS     = ->(s) { [ s.default_ridir, 'ri' ] }
@@ -36,10 +36,12 @@ class Setup::Source::Base
    GROUPS = constants.select { |c| c =~ /_DIRS/ }.map { |c| c.to_s.sub('_DIRS', '').downcase }
 
    OPTIONS_IN = {
-      aliases: ->(o, name) { o.is_a?(Hash) && [ o[nil], o[name] ].flatten.compact.uniq || o },
+      aliases: ->(o, name) { o.is_a?(Hash) && [ o[nil], o[name], o.values.map {|x|x.flatten}.select {|x|x.include?(name)}.map {|x|x.first}.flatten ].flatten.compact.uniq || o },
       version_replaces: true,
       gem_version_replace: true,
-      rootdir: :rootdir_or_default,
+      source_file: ->(file, _name) { file.is_a?(String) && File.file?(file) && file || nil },
+      gemspec: true,
+      source_names: true,
       name: true,
       version: true,
       "source-ri-folder-lists": :name_or_default,
@@ -72,7 +74,8 @@ class Setup::Source::Base
       "source-state-folders": true,
    }
 
-   attr_reader :rootdir
+   attr_reader :options, :source_file
+   attr_writer :replace_list, :source_names
 
    class << self
       def opts
@@ -166,12 +169,25 @@ class Setup::Source::Base
       end
    end
 
+   def rootdir
+      @rootdir ||= detect_root
+   end
+
+   def source_names
+      @source_names ||= options[:source_names] || source_file && [File.basename(source_file)] || []
+   end
+
    def dsl
-      @dsl ||= options[:dsl] || Setup::DSL.new(source: self)
+      @dsl ||= options[:dsl] ||
+         Setup::DSL.new(source_file,
+            spec: spec,
+            replace_list: replace_list,
+            skip_list: (options[:gem_skip_list] || []) | [name],
+            append_list: options[:gem_append_list])
    end
 
    def replace_list
-      @gem_version_replace
+      @gem_version_replace ||= {}
    end
 
    def aliases
@@ -225,44 +241,31 @@ class Setup::Source::Base
    end
 
    def to_os
-      options.merge(type: type)
+      options.merge(type: type, source_names: source_names)
    end
 
    def type
       self.class.to_s.split('::').last.downcase
    end
 
-   def required_rubygems_version
-      ">= 0"
+   def required_ruby
+      dsl.required_ruby
    end
 
    def required_ruby_version
-      Gem::Requirement.new(dsl&.instance_variable_get(:@ruby_version)&.engine_versions) || ">= 0"
+      dsl.required_ruby_version
    end
 
-   def required_ruby
-      dsl&.instance_variable_get(:@ruby_version)&.engine || "ruby"
-   end
-
-   def lockfile
-      @lockfile ||= (
-         rootdir && File.join(rootdir, 'Gemfile.lock') || Tempfile.new('Gemfile.lock').path)
+   def required_rubygems_version
+      dsl.required_rubygems_version
    end
 
    def definition
-      dsl&.dsl&.to_definition(lockfile, true)
+      dsl.definition
    end
 
    def deps groups_in = nil
-      groups = groups_in && ([ groups_in ].flatten.map do |g|
-            g == :runtime && (definition.groups - %i(development test)) || group
-         end.flatten) || definition.groups
-
-      definition.dependencies.select do |dep|
-         (dep.groups & groups).any? &&
-          dep.should_include? # &&
-         # (dep.autorequire || [ true ]).all? { |r| r }
-      end
+      dsl.deps_for(groups_in)
    end
 
    def has_name? name
@@ -287,7 +290,7 @@ class Setup::Source::Base
 
    def trees &block
       GROUPS.map do |set|
-         yield(set, tree(set))
+         yield(set, send("#{set}tree"))
       end
    end
 
@@ -321,6 +324,22 @@ class Setup::Source::Base
       []
    end
 
+   def + other
+      self.replace_list = replace_list.merge(other.replace_list)
+      self.source_names = source_names | other.source_names
+      self.dsl.merge_in(other.dsl)
+
+      self
+   end
+
+   def aliases
+      @aliases ||= []
+   end
+
+   def alias_to *sources
+      @aliases = aliases | sources.flatten
+   end
+
    protected
 
    def exedir
@@ -341,6 +360,7 @@ class Setup::Source::Base
 
    def tree kind, &block
       re_in = self.class.const_get("#{kind.upcase}_RE") rescue nil
+      prc = self.class.const_get("#{kind.upcase}_FILTER") rescue nil
       re = re_in.is_a?(Proc) && re_in[self] || re_in || /.*/
 
       tree_in = send("#{kind}dirs").map do |dir|
@@ -355,7 +375,7 @@ class Setup::Source::Base
       tree_in.map do |dir, files_in|
          files = Dir.chdir(File.join(rootdir, dir)) do
             files_in.select do |file|
-               re =~ file && File.file?(file)
+               re =~ file && File.file?(file) && (!prc || prc[self, file, dir])
             end
          end
 
@@ -363,6 +383,10 @@ class Setup::Source::Base
 
          [ dir, files ]
       end.to_h
+   end
+
+   def detect_root
+      source_file && File.dirname(source_file) || Dir.pwd
    end
 
    def files kind, &block

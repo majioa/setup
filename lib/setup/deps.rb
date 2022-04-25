@@ -11,7 +11,7 @@ class Setup::Deps
       'bin' => {
          proc { |target| target.public_executables.any? }          => proc { |this, target| this.deps_ruby_exec(target) },
          proc { |target| target.source.exefiles.any? &&
-                         target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_dyno(target.source, 'bin') },
+                         target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_dyno(target.source, 'bin', :dsl) },
       },
       'doc' => {
          proc { |target| target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_dyno(target.source, 'doc') },
@@ -67,18 +67,19 @@ class Setup::Deps
    end
 
    ## deps
-   def deps_gem_dsl dsl
+   def deps_gem_dsl dsl, set = 'lib'
+      deps = set == 'bin' && dsl.runtime_deps(:gemfile) || dsl.runtime_deps(:gemspec)
       list = []
 
-      dsl.deps.each do |dep|
+      deps.each do |dep|
          self.class.to_rpm(dep.requirement).map do |a, b|
-            list << "ruby-gem(#{dep.name}) #{a} #{b}"
+            list << "gem(#{dep.name}) #{a} #{b}"
          end
       end
 
-      ruby = dsl.ruby[:type]
-      ruby_version = dsl.ruby[:version]
-      rubygems_version = dsl.rubygems[:version]
+      ruby = dsl.required_ruby
+      ruby_version = dsl.required_ruby_version
+      rubygems_version = dsl.required_rubygems_version
 
       list << self.class.to_rpm(ruby_version).map { |a, b| "#{ruby} #{a} #{b}" }
       list << "rubygems #{rubygems_version}"
@@ -102,7 +103,7 @@ class Setup::Deps
       root = project.config.dep_sources[set]
       name = (root[source.name] || root[nil]).first
       if name == 'auto'
-         kind == :dsl && deps_gem_dsl(source.dsl) || deps_gem(source)
+         kind == :dsl && deps_gem_dsl(source.dsl, set) || deps_gem(source)
       else
          project.select_source(name).map do |source|
             deps_gem_dsl(source.dsl)

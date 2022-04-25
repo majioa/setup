@@ -78,9 +78,6 @@ Feature: Spec actor
    Scenario: Apply the Spec actor to setup for ucf gem and old Ruby Policy 1.0 setup
       Given blank space
       When developer locks the time to "21.04.2021"
-      And he sets the space option "rootdir" to fixture "turn"
-      And he sets the space option "maintainer_name" to "Pavel Skrylev"
-      And he sets the space option "maintainer_email" to "majioa@altlinux.org"
       And he sets the space options as:
          | options               | value                             |
          | rootdir               | features/fixtures/turn            |
@@ -90,3 +87,24 @@ Feature: Spec actor
          | maintainer_email      | majioa@altlinux.org               |
       And he applies "spec" actor to the setup
       Then he acquires an "turn" fixture spec for the setup
+
+   @policy2_0 @gem_change
+   Scenario: Apply the Spec actor to setup for ruby-gnome2 gemset and Ruby Policy pre 2.0 setup
+      - expand %summary in descriptions
+      - pickup core version from common versions of submodules
+      - proper detection of host rpm name line ruby-gnome2 not to rename to gem-gnome2
+      - autoskip packages when they lost gemspecs like ruby-gnome2 *-no-gi packages or gem-vte
+      Given blank space
+      And a spec from fixture "ruby-gnome2"
+      When developer locks the time to "09.03.2022"
+      And he sets the space options as:
+         | options               | value                             |
+         | rootdir               | features/fixtures/ruby-gnome2     |
+         | available_gem_list    | {minitest: 5.14.0}                |
+         | spec_type             | rpm                               |
+         | maintainer_name       | Pavel Skrylev                     |
+         | maintainer_email      | majioa@altlinux.org               |
+      And he loads the spec into the space
+      And he applies "spec" actor to the setup
+      Then he acquires an "ruby-gnome2" fixture spec for the setup
+

@@ -1,6 +1,15 @@
+# Hoe based gemspec detection module
+# Sample gems are: hoe, racc, nokogiri, ruby_parser, oedipus_lex
+#
 class Hoe
    DOC_FILTER = /CHANGELOG|LICENSE|README|\.rb$/i
    PLUGINS = %w{rdoc hoe}
+   GROUPS = {
+      developer: :development,
+      development: :development,
+      runtime: :runtime
+   }
+   DEFAULT_CONFIG = {}
 
    def initialize name
       @spec ||= ::Gem::Specification.new
@@ -13,7 +22,32 @@ class Hoe
 
    class << self
       def plugin plugin
-        @plugins ||= [@plugins].compact.flatten | [plugin.to_s]
+         @plugins = plugins | [plugin.to_s]
+      end
+
+      def plugins
+         @plugins ||= ["hoe"]
+      end
+
+      def add_include_dirs lib
+         try_require(lib.split("/").find {|x| x =~ /[a-zA-Z]/ })
+      end
+
+      def try_require lib
+         require(lib)
+      rescue Exception
+      end
+
+      def plugin? name
+         @plugins.include?(name)
+      end
+
+      def perforce_ignore
+         []
+      end
+
+      def racc_flags
+         []
       end
 
       # definitors
@@ -30,12 +64,61 @@ class Hoe
          @spec.spec.required_ruby_version = data
       end
 
-      def dependency name, dep, group = :runtime
+      def dependency name, dep, group_in = :runtime
+         group = GROUPS[group_in] || :runtime
+
          @spec.spec.dependencies << Gem::Dependency.new(name, Gem::Requirement.new([dep]), group)
       end
 
+      def spec_extras
+         @extras ||= {}
+      end
+
+      def extra_rdoc_files
+         @extra_rdoc_files ||= []
+      end
+
+      def extra_rdoc_files= files
+         extra_rdoc_files.concat(files)
+      end
+
+      def extra_deps
+         @extra_deps ||= []
+      end
+
+      def extra_dev_deps
+         @extra_dev_deps ||= []
+      end
+
+      def clean_globs
+         @clean_globs ||= []
+      end
+
+      def readme_file= file
+         @readme_file = file
+      end
+
+      def history_file= file
+         @history_file = file
+      end
+
+      def history_file
+         @history_file ||= Dir['{History,Changelog,HISTORY,CHANGELOG}*'].first
+      end
+
+      def readme_file
+         @readme_file ||= Dir['{README,Readme,readme}*'].first
+      end
+
+      def test_globs= _globs
+      end
+
+      def bad_plugins
+         []
+      end
+
       # spec
-      def spec name = nil
+      def spec name = nil, &block
          main
 
          return @spec.spec if @spec
@@ -45,13 +128,18 @@ class Hoe
          @spec ||= self.new(name)
 
          init(name)
-         yield if block_given?
+         @spec.instance_eval(&block)
+         post_init
 
-         @spec.spec
+         @spec
+      rescue Exception => e
+         $stderr.puts("[#{e.class}]: #{e.message}\n\t#{e.backtrace.join("\n\t")}")
+
+         nil
       end
 
       def name
-         @spec.spec.name
+         @spec&.spec&.name
       end
 
       def main
@@ -64,23 +152,48 @@ class Hoe
       def init name
          @spec.spec.files = IO.read('Manifest.txt').split("\n")
          @spec.spec.extra_rdoc_files = @spec.spec.files.select { |f| DOC_FILTER =~ f }
-         vline = IO.read('History.rdoc').split("\n").find { |x| /^===/ =~ x }
-         /=== (?<version>[^ ]+)/ =~ vline
+         @spec.spec.executables = @spec.spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
+         @spec.spec.bindir = 'bin'
+
+         version = IO.read(history_file).split("\n").reduce(nil) { |res, x| res || /(===|##) (?<version>[^ ]+)/ =~ x && version }
          @spec.spec.version = version
+
+         description = IO.read(readme_file).split(/(===|##)/).reduce(nil) { |res, x| res || /^ Description(?<desc>.*)/m =~ x && desc }&.strip
+         @spec.spec.description ||= description
+         @spec.spec.summary ||= description
 
          Dir.glob(Dir.pwd + '/lib/hoe/*.rb').each { |x| require_relative(x) }
          self.constants.map {|c| self.const_get(c) }.select {|x| x.is_a?(Module) }.each {|x| extend(x) }
-         send("initialize_#{@spec.spec.name}")
-
-         (@plugins & PLUGINS).each do |name|
-            dependency(name, ">= 0", :development)
+         if self.respond_to?("initialize_#{@spec.spec.name}")
+            send("initialize_#{@spec.spec.name}")
          end
+      end
+
+      def post_init
+         @extras&.each { |key, value|
+           @spec.spec.send("#{key}=", value) }
+         @extra_dev_deps&.each do |(name, dep)|
+            dependency(name, dep, :development)
+         end
+         @extra_deps&.each do |(name, dep)|
+            dependency(name, dep, :runtime)
+         end
+         @spec.spec.extra_rdoc_files.concat(extra_rdoc_files)
+
+         @clean_globs&.each {|glob| Dir[glob].each {|file| FileUtils.rm_rf(file) }}
+
+         (@plugins & PLUGINS).each { |name| dependency(name, ">= 0", :development) }
+         @plugins.each { |name| try_require(name) }
       end
    end
 
    module Main
       def method_missing method_name, *args
-         Hoe.send(method_name, *args)
+         if Hoe.respond_to?(method_name)
+            Hoe.send(method_name, *args)
+         else
+            super
+         end
       end
    end
 end

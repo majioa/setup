@@ -15,17 +15,20 @@ module ::Setup::Source
             TYPES.map do |(name, const)|
                kls = self.const_get(const)
                kls.respond_to?(:search) && kls.search(dir, options) || []
-            end.flatten | [ self::Fake.new({ rootdir: dir }.to_os) ]
+            end.flatten | [ self::Fake.new({ source_file: File.join(dir, '.fake') }.to_os) ]
 
          sources_pre.group_by do |source|
             source.rootdir
          end.map do |_a, sources_in|
-            sources_in_pre = sources_in.sort_by do |source_in|
-               TYPES.values.index(source_in.class.to_s)
-            end
+            ina = sources_in.select {|s| TYPES.keys[-1] == s.class.to_s.split("::").last.downcase.to_sym }
 
-            sources_in_pre.select do |source_in_pre|
-               source_in_pre.class == sources_in_pre.first.class
+            TYPES.keys.reverse[1..-1].reduce(ina) do |res, kind|
+               selected =
+                  sources_in.select do |s|
+                     TYPES.keys[TYPES.keys.index(kind)] == s.class.to_s.split("::").last.downcase.to_sym
+                  end
+
+               selected.any? && selected.map {|v| ([v] | res).reduce(&:+) } || res
             end
          end.flatten
       end

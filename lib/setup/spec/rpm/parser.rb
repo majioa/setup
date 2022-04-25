@@ -10,13 +10,23 @@ class Setup::Spec::Rpm::Parser
       version: {
          non_contexted: true,
          regexp: /Version:\s+([^\s]+)/i,
-         parse_func: :parse_version
+         parse_func: :parse_version,
+         mode: :replace
       },
-      epoch: /Epoch:\s+([^\s]+)/i,
-      release: /Release:\s+([^\s]+)/i,
+      epoch: {
+         non_contexted: true,
+         regexp: /Epoch:\s+([^\s]+)/i,
+         mode: :replace
+      },
+      release: {
+         non_contexted: true,
+         regexp: /Release:\s+([^\s]+)/i,
+         mode: :replace
+      },
       summaries: {
          regexp: /Summary(?:\(([^\s:]+)\))?:\s+([^\s].+)/i,
-         parse_func: :parse_summary
+         parse_func: :parse_summary,
+         mode: :replace
       },
       licenses: {
          non_contexted: true,
@@ -49,61 +59,61 @@ class Setup::Spec::Rpm::Parser
       },
       build_requires: {
          non_contexted: true,
-         regexp: /BuildRequires:\s*([^#]+)/i,
+         regexp: /^BuildRequires:\s*([^#]+)/i,
          parse_func: :parse_dep
       },
       obsoletes: {
-         regexp: /Obsoletes:\s*([^#]+)/i,
+         regexp: /^Obsoletes:\s*([^#]+)/i,
          parse_func: :parse_dep
       },
       provides: {
-         regexp: /Provides:\s*([^#]+)/i,
+         regexp: /^Provides:\s*([^#]+)/i,
          parse_func: :parse_dep
       },
       requires: {
-         regexp: /Requires:\s*([^#]+)/i,
+         regexp: /^Requires:\s*([^#]+)/i,
          parse_func: :parse_dep
       },
       conflicts: {
-         regexp: /Conflicts:\s*([^#]+)/i,
+         regexp: /^Conflicts:\s*([^#]+)/i,
          parse_func: :parse_dep
       },
       descriptions: {
-         regexp: /%description\s*([^\s].*)?/i,
+         regexp: /^%description\s*([^\s].*)?/i,
          parse_func: :parse_description
       },
       secondaries: {
          non_contexted: true,
-         regexp: /%package\s+(.+)/i,
+         regexp: /^%package\s+(.+)/i,
          parse_func: :parse_secondary
       },
       prep: {
          non_contexted: true,
-         regexp: /%prep/i,
+         regexp: /^%prep/i,
          parse_func: :parse_plain_section
       },
       build: {
          non_contexted: true,
-         regexp: /%build/i,
+         regexp: /^%build/i,
          parse_func: :parse_plain_section
       },
       install: {
          non_contexted: true,
-         regexp: /%install/i,
+         regexp: /^%install/i,
          parse_func: :parse_plain_section
       },
       check: {
          non_contexted: true,
-         regexp: /%check/i,
+         regexp: /^%check/i,
          parse_func: :parse_plain_section
       },
       file_list: {
-         regexp: /%files\s*([^\s].*)?/i,
+         regexp: /^%files\s*([^\s].*)?/i,
          parse_func: :parse_file_list
       },
       changes: {
          non_contexted: true,
-         regexp: /%changelog/i,
+         regexp: /^%changelog/i,
          parse_func: :parse_changes
       },
       context: {
@@ -177,6 +187,7 @@ class Setup::Spec::Rpm::Parser
       reflown = reeval(flow, opts)
       rematched = match.to_a.map { |x| x.is_a?(String) && reeval(x, opts) || x }
       value = method(parse_func)[rematched, reflown, opts, context]
+      mode = data.is_a?(Hash) && data[:mode] || :append
       copts = !non_contexted && context[:name] && opts["secondaries"].find do |sec|
       #binding.pry
          sec.name == Setup::Spec::Rpm::Name.parse(
@@ -199,15 +210,18 @@ class Setup::Spec::Rpm::Parser
       when Array
          copts[key] | [ value.is_a?(Hash) && value.to_os || value ].flatten
       when Hash, OpenStruct
-         copts[key].deep_merge(value)
+         copts[key].deep_merge(value, { mode: mode })
       else
-         if copts[key] == value
+         # binding.pry
+         if mode == :replace || copts[key] == value
             value
-         else
+         elsif mode == :append
             [copts[key], value]
+         elsif mode == :prepend
+            [value, copts[key]]
          end
       end
-      #binding.pry
+      # binding.pry
 
       opts
    end
@@ -286,7 +300,7 @@ class Setup::Spec::Rpm::Parser
       context.replace(parse_context_line(match[1], opts))
       name = Setup::Spec::Rpm::Name.parse(context[:name], support_name: opts["name"], aliases: aliased_names(opts))
 
-      [ { "name" => name }.to_os ]
+      [ { "name" => name, "version" => opts["version"], "release" => opts["release"], "summaries" => opts["summaries"] }.to_os ]
    end
 
    def parse_description match, flow, opts, context

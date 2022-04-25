@@ -1,6 +1,4 @@
-module Setup::Gemspec::Mast
-   RE = /MANIFEST/
-
+module Setup::Loader::Mast
    PROPS = {
       name: :name,
       version: :version,
@@ -37,16 +35,19 @@ module Setup::Gemspec::Mast
       end
    }
 
-   class << self
-      def parse file
-         spec = nil
-         dir = File.dirname(file)
-         file1 = File.join(dir, "meta", "package")
-         file2 = File.join(dir, "meta", "profile")
+   def manifest file
+      spec = nil
+      dir = File.dirname(file)
+      file1 = File.join(dir, "meta", "package")
+      file2 = File.join(dir, "meta", "profile")
 
-         if File.file?(file1) && File.file?(file2)
+      if File.file?(file1) && File.file?(file2)
+         spec=
             Gem::Specification.new do |s|
-               data = YAML.load(IO.read(file1)).merge(YAML.load(IO.read(file2))).merge("manifest" => IO.read("MANIFEST").split("\n"))
+              data = Kernel.yaml_load(IO.read(file1)).merge(
+                     Kernel.yaml_load(IO.read(file2))).merge(
+                        "manifest" => IO.read("MANIFEST").split("\n"))
+
                PROPS.each do |name, value_in|
                   value =
                      case value_in
@@ -76,9 +77,16 @@ module Setup::Gemspec::Mast
                   end
                end
             end
-         end
-      rescue Exception => e
-         $stderr.puts "WARN [#{e.class}]: #{e.message}"
+
+         file = Tempfile.new(spec.name)
+         file.puts(spec.to_ruby)
+         file.close
+         res = app_file(file.path)
+         file.unlink
+         res
       end
+   rescue Exception => e
+        binding.pry
+      $stderr.puts "WARN [#{e.class}]: #{e.message}"
    end
 end
