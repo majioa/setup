@@ -1,5 +1,6 @@
 require 'bundler/dependency'
 require 'tempfile'
+require 'date'
 
 require 'setup/source/base'
 require 'setup/loader'
@@ -51,10 +52,6 @@ class Setup::Source::Gem < Setup::Source::Base
    }
 
    class << self
-      def log(text)
-         $stderr.puts(text)
-      end
-
       def load spec_in
          Kernel.yaml_load(spec_in)
       end
@@ -85,13 +82,17 @@ class Setup::Source::Gem < Setup::Source::Base
       end
 
       def search dir, options_in = {}
-         specs = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).select {|f| File.file?(f) }.map do |f|
+         files = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).select {|f| File.file?(f) }.map do |f|
             LOADERS.reduce(nil) { |res, (re, _method_name)| res || re =~ f && [re, f] || nil }
          end.compact.sort do |x,y|
             c = LOADERS.keys.index(x.first) <=> LOADERS.keys.index(y.first)
 
             c == 0 && x.last <=> y.last || c
-         end.reduce({}) do |res, (re, f)|
+         end
+
+         debug("Found source file list: " + files.map {|(_, x)| x }.join("\n\t"))
+
+         specs = files.reduce({}) do |res, (re, f)|
             load_result =
                [LOADERS[re]].flatten.reduce(nil) do |res, method_name|
                   next res if res
@@ -105,7 +106,8 @@ class Setup::Source::Gem < Setup::Source::Base
                gemspecs = load_result.objects.reject do |s|
                   s.loaded_from && s.loaded_from !~ /#{dir}/
                end.each {|x| x.loaded_from = f }
-               log(load_result.errlog)
+               debug("load messages:\n\t" + load_result.log.join("\n\t")) if !load_result.log.blank?
+               debug("Load errors:\n\t" + load_result.errlogjoin("\n\t")) if !load_result.errlog.blank?
 
                res.merge({ f => gemspecs })
             else

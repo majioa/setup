@@ -100,7 +100,7 @@ module Setup
       end
 
       # This ensures we are in a project directory.
-      rootdir = session.project.rootdir
+      # rootdir = session.project.rootdir
 
       print_header
 
@@ -115,7 +115,7 @@ module Setup
       end
 
       begin
-        session.__send__(task)
+        session.apply(task)
       rescue Error => err
         raise err if $DEBUG
         $stderr.puts $!.message
@@ -274,6 +274,7 @@ module Setup
 
       parser.on("-q", "--quiet", "Suppress output") do
         session.quiet = true
+        configuration.new_options.log_level = :none
       end
 
       parser.on("-f", "--force", "Force operation") do
@@ -381,6 +382,18 @@ module Setup
             !v.empty? && (v + ["0"])[0..1] || nil
          end.compact.to_h
          configuration.use_gem_version_list = configuration.use_gem_version_list.merge(hash)
+      end
+
+      parser.on("--debug-io=[FILE|NAME|BLANK|DASH]", String, "IO for debug level. Value is file name, or --/stderr for stderr, or -/stdout for stdout, or blank to disable") do |str|
+         configuration.new_options.debug_io = str
+      end
+
+      parser.on("--info-io=[FILE|NAME|BLANK|DASH]", String, "IO for info level. Value is file name, or --/stderr for stderr, or -/stdout for stdout, or blank to disable") do |str|
+         configuration.new_options.info_io = str
+      end
+
+      parser.on("-v", "--verbose=[LEVEL]", String, "Run verbosely with levels: none, error, warn, info, or debug") do |v|
+         configuration.new_options.log_level = v
       end
 
       parser.separator ""

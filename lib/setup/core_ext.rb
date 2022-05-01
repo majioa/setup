@@ -332,6 +332,10 @@ class Object
          self.to_s == ""
       end
    end
+
+   def to_os
+      OpenStruct.new(self.to_h.map {|(x, y)| [x.to_s, y] }.to_h)
+   end
 end
 
 class Gem::Requirement

@@ -116,7 +116,7 @@ module Bones
 
    class << self
       def config
-         @vonfig ||= Bones::Config.new
+         @config ||= Bones::Config.new
       end
 
       def spec

@@ -1,6 +1,9 @@
 require 'setup/source'
+require 'setup/log'
 
 class Setup::Source::Base
+   extend ::Setup::Log
+
    OPTION_KEYS = %i(source_file source_names replace_list aliases)
 
    DL_DIRS     = ->(s) { ".so.#{s.name}#{RbConfig::CONFIG['sitearchdir']}" }

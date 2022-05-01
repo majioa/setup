@@ -4,7 +4,7 @@
 module Setup::Loader::GitVersionGen
    def git_version_gen execfile
       IO.popen(execfile) do |io|
-         log(io.readlines)
+         debug(io.readlines)
       end
 
       dir = File.dirname(execfile)

@@ -388,6 +388,29 @@ module Setup
     end
 
     #
+    def new_options
+       @new_options ||= {
+      rootdir: Dir.pwd,
+      spec_type: "rpm",
+      ignored_names: [],
+      regarded_names: [],
+      aliased_names: [],
+      ignored_path_tokens: [],
+      spec_file: nil,
+      maintainer_name: nil,
+      maintainer_email: nil,
+      available_gem_list: {},
+      devel_dep_setup: :include,
+      use_gem_version_list: {}.to_os,
+      log_level: :info,
+      warn_io: 'stderr',
+      error_io: 'stderr',
+      info_io: 'stderr',
+      debug_io: 'stderr'
+   }.to_os
+
+    end
+
     def options
       #(class << self ; self ; end).options
       self.class.options
@@ -397,6 +420,7 @@ module Setup
 
     # New ConfigTable
     def initialize(values={})
+      setup
       initialize_metaconfig
       initialize_defaults
       initialize_environment
@@ -407,6 +431,10 @@ module Setup
       yield(self) if block_given?
     end
 
+    def setup
+        io_names = Setup::Log::DEFAULT_IO_NAMES.merge(%i(error warn info debug).map {|k| [k, new_options["#{k}_io"]]}.to_h)
+        Setup::Log.setup(new_options.log_level.to_sym, io_names)
+    end
     #
     def initialize_metaconfig
       if File.exist?(META_CONFIG_FILE)

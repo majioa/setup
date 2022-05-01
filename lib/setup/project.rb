@@ -2,6 +2,7 @@ require 'bundler/shared_helpers'
 require 'bundler/runtime'
 
 require 'setup'
+require 'setup/log'
 
 module Setup
 
@@ -30,6 +31,8 @@ module Setup
   # As of v5.1.0, Setup.rb no longer recognizes the VERSION file
   #
   class Project
+    include Setup::Log
+    
        STATES = {
           invalid: ->(_, source, _) { !source.valid? },
           disabled: ->(space, source, _) { space.is_disabled?(source) },
@@ -46,7 +49,7 @@ module Setup
           invalid: 'X',
           disabled: '-',
           duplicated: '=',
-          valid: 'V', 
+          valid: 'V',
        }
 
      attr_reader :config, :version_replaces
@@ -80,32 +83,17 @@ module Setup
         # post create hook
         autoalias
         runtime
-
-        # fix paths
-        paths = ObjectSpace.each_object(Gem::Specification).map do |s|
-           path = s.full_gem_path rescue nil
-
-           s.require_paths.map do |x|
-              File.absolute_path?(x) && x || path && File.join(path, x) || nil
-           end
-        end.flatten.compact
-
-        $:.unshift(*paths) # $.replace(paths | $:)
     end
 
     def show_tree
-       log("Source list are the following:")
+       info("Source list are the following:")
        stat_source_tree.each do |(path_in, stated_sources)|
           stated_sources.each do |(source, status)|
              path = File.join(path_in, File.basename(source.source_file))
-             info = "#{STATUS_CHARS[status]} #{TYPE_CHARS[source.type.to_sym]}#{[source.name, source.version].compact.join(":")} [#{path}]"
-             log(info)
+             info_in = "#{STATUS_CHARS[status]} #{TYPE_CHARS[source.type.to_sym]}#{[source.name, source.version].compact.join(":")} [#{path}]"
+             info(info_in)
           end
        end
-    end
-
-    def log text
-       $stderr.puts text
     end
 
     # The name of the package, used to install docs in system doc/ruby-{name}/ location.
@@ -254,7 +242,7 @@ module Setup
         flags = File::FNM_CASEFOLD
       else
         flags = flags.to_i
-      end      
+      end
       Dir.glob(File.join(rootdir, glob), flags).first
     end
 
@@ -289,7 +277,11 @@ module Setup
          ObjectSpace.each_object(Setup::Source::Base).select { |x| x.name == name }
       end
 
-      # Returns an install target
+   # +targets+ returns an install target list for the sources
+   #
+   # space.targets #=> [ <#Setup::Target::Gem...>, ... ]
+   #
+   # TODO move to target actor
       def targets
          @targets ||= (
             valid_sources.map do |source|

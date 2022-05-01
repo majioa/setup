@@ -84,6 +84,11 @@ module Setup
       configuration.compilable? && project.compilable?
     end
 
+    def apply task
+      configuration.setup
+      __send__(task)
+    end
+
     # #  S E T U P  T A S K S  # #
 
     # Run all tasks in sequence.

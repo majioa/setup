@@ -1,9 +1,14 @@
-require 'setup'
 require 'rake'
 
+require 'setup'
+require 'setup/log'
+
 module Setup::Loader
+   include Setup::Log
+
    module Certain
-      include(Rake::DSL)
+      include Setup::Log
+      include Rake::DSL
 
       attr_reader :object_hash, :object_ids
 
@@ -35,22 +40,50 @@ module Setup::Loader
          # main space methods, see Rakefile of racc gem
          # also named module is required instead of anonymous one to allow root level defined methods access
          store_object_hash(type_hash)
+         value = nil
 
          begin
+            push
             Dir.chdir(File.dirname(file)) do
-               load(File.basename(file), true)
+               _file = File.basename(file).untaint
+               code = File.read(file, mode: 'r:UTF-8:-')
+               code.untaint
+
+               value =
+                  begin
+                     # evaluation required not to lost loaded object,
+                     # the instance_eval is used in favor of eval to avoid lost predefined vars
+                     # like for chef-utils gem
+                     instance_eval(code, _file)
+                  rescue Exception
+                     # thrown for setup gem
+                     load(File.basename(file), true)
+                  end
             end
          rescue Exception => e
             raise e
          ensure
+            debug("value: #{value.inspect}")
+            pop
             store_object_hash(type_hash)
          end
 
          self
       rescue Exception => e
-         $stderr.puts("[#{e.class}]: #{e.message}\n\t#{e.backtrace.join("\n\t")}")
+         debug("[#{e.class}]: #{e.message}\n\t#{e.backtrace.join("\n\t")}")
 
          self
+      end
+
+      def push
+         @paths = $:.dup
+         debug("Stored paths are: " + @paths.join("\n\t"))
+      end
+
+      def pop
+         debug("Subtract paths: " + ($: - @paths).join("\n\t"))
+         $:.replace($: | @paths)
+         debug("Replaced paths with: " + $:.join("\n\t"))
       end
    end
 
@@ -81,6 +114,7 @@ module Setup::Loader
    end
 
    def load_file file
+      debug("Loading file: #{file}")
       stdout = $stdout
       stderr = $stderr
       $stdout = $stderr = Tempfile.new('loader')
@@ -102,6 +136,7 @@ module Setup::Loader
       OpenStruct.new(mod: mod, log: log, errlog: errlog, object_hash: mod.object_hash, diff_ids: mod.object_ids)
    rescue Exception => e
       warn(e.message)
+
       OpenStruct.new(mod: mod, object_hash: {}, log: log, errlog: errlog, diff_ids: [])
    ensure
       $stderr = stderr
@@ -113,6 +148,10 @@ module Setup::Loader
 
       mod = mods[file].dup
       objects = mod.diff_ids[self]&.map {|id| ObjectSpace._id2ref(id) }
+
+      debug("Object ids for '#{file}' are: #{mod.diff_ids[self].inspect}")
+      debug("Objects for '#{file}' are: #{objects.inspect}")
+
       if block_given?
          objects = [yield(objects)].flatten.compact
       end
