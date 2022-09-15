@@ -137,10 +137,10 @@ Conflicts:     <%= dep %>
 %doc <%= secondary.readme %>
 <% end -%>
 <% if secondary.is_lib? -%>
-%ruby_gemspecdir/<%= secondary.name %>-<%= secondary.version %>.gemspec
-%ruby_gemslibdir/<%= secondary.name %>-<%= secondary.version %>
+%ruby_gemspecdir/<%= secondary.source&.name || secondary.name %>-<%= secondary.version %>.gemspec
+%ruby_gemslibdir/<%= secondary.source&.name || secondary.name %>-<%= secondary.version %>
 <% if secondary.has_compilables? -%>
-%ruby_gemsextdir/<%= secondary.name %>-<%= secondary.version %>
+%ruby_gemsextdir/<%= secondary.source&.name || secondary.name %>-<%= secondary.version %>
 <% end -%>
 <% end -%>
 <% if secondary.is_exec? -%>
@@ -152,7 +152,7 @@ Conflicts:     <%= dep %>
 <% if secondary.spec.is_same_source?(secondary.source) -%>
 %ruby_gemdocdir
 <% else -%>
-%ruby_gemsdocdir/<%= secondary.source&.name %>-<%= secondary.version %>
+%ruby_gemsdocdir/<%= secondary.source&.name || secondary.name %>-<%= secondary.version %>
 <% end -%>
 <% end -%>
 <% if secondary.is_devel? -%>

@@ -1,3 +1,7 @@
+-----
+fix:
+lost runtime deps
+---
 - add disable source (for ruby-rubygems-update)
 - add return to common space on load (for ruby-rails)
 - add doc compilation only over included lib files
@@ -61,3 +65,11 @@ ruby-shadow - lost license on update unlicense replace with specified default + 
 unf_ext - invalid dep ruby_use_gem_dependency
 rdoc - update to new version break generate a valid new spec if the gem in available gem list adding unnecesary tag
 hiredis - invalid ruby_use_gem_dependency when generated updated spec
+
+glu,glut,kpeg - development deps, merge them correct
+data-objects - main source valid detection
+
+fix build dep for ruby-gnome2 -> gem-cairo-devel -> gem-poppler(ruby-gnome2)
+
+?raindrops
+

@@ -258,19 +258,26 @@ class Setup::Space
       @options = (options || {}).to_os
       @state = (state_in || {}).to_os
 
+      setup_log
       show_tree
    end
 
+   # init log
+   def setup_log
+      ios = DEFAULT_IO_NAMES.merge(%i(error warn info debug).map {|k| [k, options["#{k}_io"]]}.to_h)
+      Setup::Log.setup(options.log_level.to_sym, ios)
+   end
+
    def show_tree
-      log("Sources:")
+      info("Sources:")
       stat_source_tree.each do |(path_in, stated_sources)|
          stated_sources.each do |(source, status)|
             path = File.join(path_in, File.basename(source.source_file)) if source.source_file
             stat = [STATUS_CHARS[status], TYPE_CHARS[source.type.to_sym]].join(" ")
             namever = [source.name, source.version].compact.join(":")
-            info = "#{stat}#{namever} [#{path}]"
+            info_in = "#{stat}#{namever} [#{path}]"
 
-            log(info)
+            info(info_in)
          end
       end
    end
@@ -330,7 +337,7 @@ class Setup::Space
 
    class << self
       def load_from! state_in = Dir[".space"].first, options = {}
-         system_path_check # TODO required to generate spec rubocop
+#         system_path_check # TODO required to generate spec rubocop
 
          state = case state_in
          when IO, StringIO
@@ -351,19 +358,6 @@ class Setup::Space
          load_from!(state_in, options)
       rescue InvalidSpaceFileError
          @@space[nil] = new(nil, options)
-      end
-
-      def system_path_check
-         # fix paths
-         paths = ObjectSpace.each_object(Gem::Specification).map do |s|
-            path = s.full_gem_path rescue nil
-
-            s.require_paths.map do |x|
-               File.absolute_path?(x) && x || path && File.join(path, x) || nil
-            end
-         end.flatten.compact
-
-         $:.unshift(*paths) # $.replace(paths | $:)
       end
    end
 end

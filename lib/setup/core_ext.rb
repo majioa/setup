@@ -113,9 +113,6 @@ module Kernel
 
    def require mod
       __setup_orig_require(mod)
-   rescue LoadError
-      Setup::Space.system_path_check
-      __setup_orig_require(mod)
    rescue Exception => e
       if MODULES[mod]
          if MODULES[mod].is_a?(Proc)

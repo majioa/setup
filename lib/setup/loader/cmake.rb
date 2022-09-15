@@ -3,9 +3,9 @@
 #
 module Setup::Loader::Cmake
    def cmake file
-      log = `cmake .`
-      $stderr.puts(log)
+      log_in = `cmake .`
+      debug(log_in)
    rescue Errno::ENOENT
-      $stderr.puts "[setup.rb] -> Error: cmake is required to properly detect the gem"
+      error "Error: cmake is required to properly detect the gem"
    end
 end

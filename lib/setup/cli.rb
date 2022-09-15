@@ -1,11 +1,15 @@
 require 'optparse'
 require 'ostruct'
+require 'yaml'
 
 require 'setup'
 require 'setup/space'
 require 'setup/actor'
+require 'setup/log'
 
 class Setup::CLI
+   include Setup::Log
+
    DEFAULT_OPTIONS = {
       rootdir: Dir.pwd,
       spec_type: "rpm",
@@ -19,6 +23,11 @@ class Setup::CLI
       available_gem_list: {},
       devel_dep_setup: :include,
       use_gem_version_list: {}.to_os,
+      log_level: :info,
+      warn_io: 'stderr',
+      error_io: 'stderr',
+      info_io: 'stdout',
+      debug_io: 'stderr'
    }.to_os
 
    def option_parser
@@ -60,8 +69,7 @@ class Setup::CLI
                options.spec_file = file
             end
 
-            opts.on("-i", "--ignore-path-tokens=[LIST]", Array, "Ignore sources by a contained i
-n its path token, and passed as a comma-separated list") do |list|
+            opts.on("-i", "--ignore-path-tokens=[LIST]", Array, "Ignore sources by a contained in its path token, and passed as a comma-separated list") do |list|
                options.ignored_path_tokens.concat(list.compact)
             end
 
@@ -77,8 +85,12 @@ n its path token, and passed as a comma-separated list") do |list|
                options.devel_dep_setup = type
             end
 
-            opts.on("-g", "--available-gem-list-file=FILE", String, "Path to a YAML-formatted file with the list of available gems to replace in dependencies") do |file|
+            opts.on("-g", "--available-gem-list-file=[FILE]", String, "Path to a YAML-formatted file with the list of available gems to replace in dependencies") do |file|
                options.available_gem_list = YAML.load(IO.read(file))
+            end
+
+            opts.on("--debug-io=[FILE|IO| |-|--]", String, "IO for debug level. Value is file name, or --/stderr for stderr, or -/stdout for stdout, or blank to disable") do |str|
+               options.debug_io = str
             end
 
             opts.on("-V", "--use-gem-version=[LIST]", Array, "Comma separated gem version pair list to forcely use in the setup") do |gem_version|
@@ -86,8 +98,8 @@ n its path token, and passed as a comma-separated list") do |list|
                options.use_gem_version_list = options.use_gem_version_list.merge(hash)
             end
 
-            opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
-               options[:verbose] = v
+            opts.on("-v", "--verbose=[LEVEL]", String, "Run verbosely with levels: none, error, warn, info, or debug") do |v|
+               options.log_level = v
             end
 
             opts.on("-h", "--help", "This help") do |v|
@@ -143,6 +155,10 @@ n its path token, and passed as a comma-separated list") do |list|
       end.map do |action_name, actor|
          actor.apply_to(space)
       end
+   rescue SystemExit
+   rescue Exception => e
+      binding.pry
+      error("[#{e.class}]: #{e.message}\n\t#{e.backtrace.join("\n\t")}")
    end
 
    def initialize argv = nil

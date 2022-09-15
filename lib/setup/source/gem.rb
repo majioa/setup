@@ -3,7 +3,6 @@ require 'tempfile'
 require 'date'
 
 require 'setup/source/base'
-require 'setup/log'
 require 'setup/loader'
 require 'setup/loader/yaml'
 require 'setup/loader/pom'
@@ -14,23 +13,20 @@ require 'setup/loader/git-version-gen'
 
 class Setup::Source::Gem < Setup::Source::Base
    extend ::Setup::Loader
-   extend ::Setup::Loader::YAML
+   extend ::Setup::Loader::Yaml
    extend ::Setup::Loader::Pom
    extend ::Setup::Loader::Mast
    extend ::Setup::Loader::Rookbook
    extend ::Setup::Loader::Cmake
    extend ::Setup::Loader::GitVersionGen
-   extend ::Setup::Log
 
    TYPE = 'Gem::Specification'
    BIN_IGNORES = %w(test)
-   OPTION_KEYS = %i(source_file source_names gemspec spec version replace_list aliases)
+   OPTION_KEYS = %i(source_file source_names gemspec spec version replace_list aliases alias_names)
 
    EXE_DIRS = ->(s) { s.spec.bindir || s.exedir || nil }
    EXT_DIRS = ->(s) do
-      s.spec.extensions.select do |file|
-         /extconf\.rb$/ =~ file
-      end.map do |file|
+      s.spec.extensions.map do |file|
          File.dirname(file)
       end.uniq
    end
@@ -58,10 +54,23 @@ class Setup::Source::Gem < Setup::Source::Base
    Gem.load_yaml
 
    class << self
+      def load spec_in
+         Kernel.yaml_load(spec_in)
+      end
+
       def spec_for options_in = {}
          spec_in = options_in["spec"]
-         spec = spec_in.is_a?(String) && YAML.load(spec_in) || spec_in
-         if options_in["version-replaces"] && version = options_in["version-replaces"][spec.name]
+         spec = spec_in.is_a?(String) && load(spec_in) || spec_in
+         version =
+            if options_in[:version_replaces] && options_in[:version_replaces][spec.name]
+               options_in[:version_replaces][spec.name]
+            elsif options_in[:gem_version_replace] && !options_in[:gem_version_replace].empty?
+               prever = options_in[:gem_version_replace].find {|(n,v)| n == spec.name }&.last
+               /([=><]+\s*)?(?<version>.*)/ =~ prever
+               version
+            end
+
+         if version
             spec.version = Gem::Version.new(version)
          end
          spec.require_paths = options_in["source-lib-folders"] if options_in["source-lib-folders"]
@@ -74,13 +83,17 @@ class Setup::Source::Gem < Setup::Source::Base
       end
 
       def search dir, options_in = {}
-         specs = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).select {|f| File.file?(f) }.map do |f|
+         files = Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH).select {|f| File.file?(f) }.map do |f|
             LOADERS.reduce(nil) { |res, (re, _method_name)| res || re =~ f && [re, f] || nil }
          end.compact.sort do |x,y|
             c = LOADERS.keys.index(x.first) <=> LOADERS.keys.index(y.first)
 
             c == 0 && x.last <=> y.last || c
-         end.reduce({}) do |res, (re, f)|
+         end
+
+         debug("Found source file list: " + files.map {|(_, x)| x }.join("\n\t"))
+
+         specs = files.reduce({}) do |res, (re, f)|
             load_result =
                [LOADERS[re]].flatten.reduce(nil) do |res, method_name|
                   next res if res
@@ -93,8 +106,9 @@ class Setup::Source::Gem < Setup::Source::Base
             if load_result
                gemspecs = load_result.objects.reject do |s|
                   s.loaded_from && s.loaded_from !~ /#{dir}/
-               end.each {|x| x.loaded_from = f }
-               log(load_result.errlog)
+               end.each {|x| x.loaded_from = f }.compact
+               debug("load messages:\n\t" + load_result.log.join("\n\t")) if !load_result.log.blank?
+               debug("Load errors:\n\t" + load_result.errlog.join("\n\t")) if !load_result.errlog.blank?
 
                res.merge({ f => gemspecs })
             else
@@ -102,25 +116,18 @@ class Setup::Source::Gem < Setup::Source::Base
             end
          end.map do |(f, gemspecs)|
             gemspecs.map do |gemspec|
-               new_if_valid(gemspec, { source_file: f }.to_os.merge(options_in))
+               # new_if_valid(gemspec, { source_file: f }.to_os.merge(options_in))
+               self.new(source_options(options_in.merge(spec: gemspec, source_file: f)))
             end
          end.flatten.compact
-      end
-
-      def new_if_valid spec, options_in = {}
-         # TODO move validation to space/project
-         if spec && spec.version && spec.platform == 'ruby' && spec.name !~ /\u0000/
-               # && !($:&spec.full_require_paths).any? && !spec.full_require_paths.all? {|p| File.directory?(p) }
-            self.new(source_options(options_in.merge(spec: spec)))
-         end
       end
    end
 
    def gemfile
       @gemfile ||= Setup::Source::Gemfile.new({
-         source_file: gemfile_name && File.join(rootdir, gemfile_name) || dsl.fake_gemfile,
+         source_file: gemfile_name && File.join(rootdir, gemfile_name) || dsl.fake_gemfile_path,
          gem_version_replace: gem_version_replace,
-         gem_skip_list: dsl.deps.map(&:name) | [name],
+         gem_skip_list: [],# dsl.deps.map(&:name) | [name],
          gem_append_list: [ self.dep ]}.to_os)
    end
 
@@ -136,15 +143,25 @@ class Setup::Source::Gem < Setup::Source::Base
       [ name, version ].compact.join('-')
    end
 
-   def spec
-      return @spec if @spec.is_a?(Gem::Specification)
+   def original_spec
+      return @original_spec if @original_spec.is_a?(Gem::Specification)
 
-      @spec =
-         if @spec.is_a?(String)
-            YAML.load(@spec)
+      @original_spec =
+         if @original_spec.is_a?(String)
+            YAML.load(@original_spec)
          else
-            Gem::Specification.new
+            self.class.spec_for(options)
          end
+   end
+
+   def spec
+      return @spec if @spec
+
+      if aliases.any?
+         @spec ||= aliases.reduce(original_spec) { |spec, als| spec.merge(als.original_spec) }
+      else
+         original_spec
+      end
    end
 
    def name
@@ -159,33 +176,37 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def gemspec_path
-      gemspec_file = Tempfile.new('gem.')
-      gemspec_file.puts(dsl.to_ruby)
-      gemspec_file.rewind
-      gemspec_file.path
+      if @gemspec_file ||= Tempfile.create('gemspec.')
+         @gemspec_file.puts(dsl.to_ruby)
+         @gemspec_file.rewind
+      end
+
+      @gemspec_path ||= @gemspec_file.path
    end
 
    def gemfile_path
       if gemfile.dsl.valid?
-         gemfile_file = Tempfile.new('Gemfile.')
-         gemfile_file.puts(gemfile.dsl.to_gemfile)
-         gemfile_file.rewind
-         gemfile_file.path
+         if @gemfile_file ||= Tempfile.create('Gemfile.')
+            @gemfile_file.puts(gemfile.dsl.to_gemfile)
+            @gemfile_file.rewind
+         end
+
+         @gemfile_path ||= @gemfile_file.path
       end
    end
 
    # tree
-
    def datatree
       # TODO deep_merge
       @datatree ||= super { { '.' => spec.files } }
    end
 
    def allfiles
-      @allfiles =
+      @allfiles = (
          spec.require_paths.map {|x| File.absolute_path?(x) && x || File.join(x, '**', '*') }.map {|x| Dir[x] }.flatten |
          spec.executables.map {|x| Dir[File.join(spec.bindir, x)] }.flatten |
          spec.files
+      )
    end
 
    def allfiles_for list_in
@@ -230,7 +251,8 @@ class Setup::Source::Gem < Setup::Source::Base
    # Returns true when name of the gem is set.
    #
    def valid?
-      !name.nil?
+      !name.nil? && spec.version && spec.platform == 'ruby' && spec.name !~ /\u0000/
+      # && !($:&spec.full_require_paths).any? && !spec.full_require_paths.all? {|p| File.directory?(p) }
    end
 
    def compilable?
@@ -279,6 +301,10 @@ class Setup::Source::Gem < Setup::Source::Base
 
    def descriptions
       localize(spec.description) || aliased {|s| localize(s.description) }
+   end
+
+   def aliased_locks
+      @aliased_locks ||= {}
    end
 
    def aliased &block
@@ -337,18 +363,31 @@ class Setup::Source::Gem < Setup::Source::Base
    def initialize options_in = {}
       super
 
-      @spec = self.class.spec_for(options_in)
+      # @original_spec = self.class.spec_for(options_in)
 
       gemfile
    end
 
+   def with_lock &block
+      if !aliased_locks[name]
+         aliased_locks[name] = true
+         block[]
+         aliased_locks[name] = false
+      end
+   end
+      
+
    def method_missing name, *args
       if /^aliased_(?<method>.*)/ =~ name
-         aliased {|a| a.send(method, *args) }
+         with_lock { aliased {|a| a.send(method, *args) } }
       elsif spec.respond_to?(name)
          spec.send(name, *args)
       else
          super
       end
+   rescue NoMethodError
+   rescue
+     binding.pry
+
    end
 end

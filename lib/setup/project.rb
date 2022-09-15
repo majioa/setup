@@ -2,6 +2,7 @@ require 'bundler/shared_helpers'
 require 'bundler/runtime'
 
 require 'setup'
+require 'setup/log'
 
 module Setup
 
@@ -30,6 +31,8 @@ module Setup
   # As of v5.1.0, Setup.rb no longer recognizes the VERSION file
   #
   class Project
+    include Setup::Log
+
        STATES = {
           invalid: ->(_, source, _) { !source.valid? },
           disabled: ->(space, source, _) { space.is_disabled?(source) },
@@ -53,6 +56,9 @@ module Setup
 
     #
     def initialize options = {}
+      # pre-init require
+      $:.unshift(Dir.pwd)
+
       self.all_sources  = options.delete(:sources)
       @rootdir  = options.delete(:rootdir)
       @config   = options.delete(:config) || raise
@@ -80,17 +86,14 @@ module Setup
     end
 
     def show_tree
-       log("Source list are the following:")
-       stat_source_tree.each do |(path, stated_sources)|
+       info("Source list are the following:")
+       stat_source_tree.each do |(path_in, stated_sources)|
           stated_sources.each do |(source, status)|
-          info = "#{STATUS_CHARS[status]} #{TYPE_CHARS[source.type.to_sym]}#{[source.name, source.version].compact.join(":")} [#{path}]"
-             log(info)
+             path = File.join(path_in, File.basename(source.source_file))
+             info_in = "#{STATUS_CHARS[status]} #{TYPE_CHARS[source.type.to_sym]}#{[source.name, source.version].compact.join(":")} [#{path}]"
+             info(info_in)
           end
        end
-    end
-
-    def log text
-       $stderr.puts text
     end
 
     # The name of the package, used to install docs in system doc/ruby-{name}/ location.
@@ -135,15 +138,22 @@ module Setup
     #
     def stat_sources &block
        @stat_sources =
-          sources.group_by { |x| x.name }.map do |(name, v)|
-             v.sort do |x,y|
-                c0 = Setup::Source::KINDS.index(x.class.to_s.to_sym) <=> Setup::Source::KINDS.index(y.class.to_s.to_sym)
-                c1 = c0 == 0 && y.version <=> x.version || c0
+          sources.group_by do |x|
+             [source.name, source.version].compact.join(":")
+          end.map do |(full_name, v)|
+             sorten =
+                v.sort do |x,y|
+                   c0 = Setup::Source::KINDS.index(x.class.to_s.to_sym) <=> Setup::Source::KINDS.index(y.class.to_s.to_sym)
+                   c1 = c0 == 0 && y.version <=> x.version || c0
 
-                c1 == 0 && x.root.size <=> y.root.size || c1
-             end.map.with_index do |source, index|
-                [source, source_status(source, index > 0)]
-             end
+                   c1 == 0 && x.root.size <=> y.root.size || c1
+                end.map.with_index do |source, index|
+                   [source, source_status(source, index > 0)]
+                end
+
+             sorten[1..-1].each { |x| sorten.first.alias_to(x) }
+
+             sorten
           end.flatten(1).sort_by {|(x, _)| x.root.size }.each do |(source, status)|
              block[source, status] if block_given?
           end
@@ -153,7 +163,7 @@ module Setup
     #
     def all_sources= value
        @sources = value&.map do |source_in|
-          source_in[:aliases] = source_in[:aliases] | (config&.aliases || [])
+          source_in[:alias_names] = source_in[:alias_names] | (config&.aliases || [])
           case source_in.delete(:type)
           when 'rakefile'
              new_source(Setup::Source::Rakefile, source_in)
@@ -214,7 +224,7 @@ module Setup
     end
 
     def is_disabled? source
-      config.ignore_names.any? { |i| i === source.name }
+      config.ignore_path_tokens.any? { |t| /\/#{t}\// =~ source.source_file } || config.ignore_names.any? { |i| i === source.name }
     end
     #
     #

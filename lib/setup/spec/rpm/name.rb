@@ -87,7 +87,7 @@ class Setup::Spec::Rpm::Name
    end
 
    def autoname
-      name&.gsub(/[\._]/, "-")
+      name&.downcase&.gsub(/[\._]/, "-")
    end
 
    def autosuffix

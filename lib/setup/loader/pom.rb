@@ -15,7 +15,7 @@ module Setup::Loader::Pom
       re_V = /(?<klass>[^\"\'\(\s]+)::VERSION/
       match = re_V.match(IO.read(specfile).split("\n").grep(re_V).first.to_s)
       if match
-         match[:klass]
+         klass = match[:klass]
          version = `xmllint pom.xml --xpath "/*[name()='project']/*[name()='version']/text()"`.strip
          if version != ""
             modtext = "module #{klass};VERSION = '#{version}';end"

@@ -1,7 +1,10 @@
 require 'setup/source'
+require 'setup/log'
 
 class Setup::Source::Base
-   OPTION_KEYS = %i(source_file source_names replace_list aliases)
+   extend ::Setup::Log
+
+   OPTION_KEYS = %i(source_file source_names replace_list aliases alias_names)
 
    DL_DIRS     = ->(s) { ".so.#{s.name}#{RbConfig::CONFIG['sitearchdir']}" }
    RI_DIRS     = ->(s) { [ s.default_ridir, 'ri' ] }
@@ -23,7 +26,7 @@ class Setup::Source::Base
    RI_RE       = /\.ri$/
    INC_RE      = /\.(h|hpp)$/
    MAN_RE      = /\.[1-8](.ronn)?$/
-   EXT_RE      = /\bextconf.rb$/
+   EXT_RE      = /\b(.*\.rb|rakefile(\.rb)?)$/i
    DATA_RE     = ->(s) do
          dirs = s.extdirs | s.libdirs | s.appdirs | s.exedirs |
             s.confdirs | s.testdirs | s.mandirs | s.supdirs |
@@ -37,6 +40,7 @@ class Setup::Source::Base
 
    OPTIONS_IN = {
       aliases: ->(o, name) { o.is_a?(Hash) && [ o[nil], o[name], o.values.map {|x|x.flatten}.select {|x|x.include?(name)}.map {|x|x.first}.flatten ].flatten.compact.uniq || o },
+      alias_names: ->(o, name) { o.is_a?(Hash) && [ o[nil], o[name], o.values.map {|x|x.flatten}.select {|x|x.include?(name)}.map {|x|x.first}.flatten ].flatten.compact.uniq || o },
       version_replaces: true,
       gem_version_replace: true,
       source_file: ->(file, _name) { file.is_a?(String) && File.file?(file) && file || nil },
@@ -190,8 +194,8 @@ class Setup::Source::Base
       @gem_version_replace ||= {}
    end
 
-   def aliases
-      @aliases
+   def alias_names
+      @alias_names ||= options[:alias_names] || []
    end
 
    # dirs
@@ -269,7 +273,7 @@ class Setup::Source::Base
    end
 
    def has_name? name
-      self.name == name || aliases && aliases.include?(name)
+      self.name == name || alias_names.include?(name)
    end
 
    def if_file file

@@ -117,6 +117,10 @@ class Hoe
          []
       end
 
+      def rdoc_locations
+         []
+      end
+
       # spec
       def spec name = nil, &block
          main
@@ -155,18 +159,38 @@ class Hoe
          @spec.spec.executables = @spec.spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
          @spec.spec.bindir = 'bin'
 
-         version = IO.read(history_file).split("\n").reduce(nil) { |res, x| res || /(===|##) (?<version>[^ ]+)/ =~ x && version }
+         version = IO.read(history_file).split("\n").reduce(nil) { |res, x| res || /(=+|#+) v?(?<version>[^ ]+)/ =~ x && version }
          @spec.spec.version = version
 
-         description = IO.read(readme_file).split(/(===|##)/).reduce(nil) { |res, x| res || /^ Description(?<desc>.*)/m =~ x && desc }&.strip
-         @spec.spec.description ||= description
-         @spec.spec.summary ||= description
+         readme = IO.read(readme_file)
+         description = readme.split(/(=+|#+)/).reduce(nil) { |res, x| res || /^ Description:?(?<desc>.*)/im =~ x && desc }&.strip
 
-         Dir.glob(Dir.pwd + '/lib/hoe/*.rb').each { |x| require_relative(x) }
+         @spec.spec.description ||= description
+         @spec.spec.summary ||= description.to_s.split(/[.(!]/).first
+
+         /code ::(?<url>.*)|^\* (?<url>http.*)/ =~ readme
+         @spec.spec.metadata["source_code_uri"] = url&.strip
+
+         if /home ::(?<url>.*)|^\* (?<url>http.*)/ =~ readme
+            @spec.spec.homepage = url.strip
+            @spec.spec.metadata["homepage_uri"] = url.strip
+            @spec.spec.metadata["source_code_uri"] ||= /github.com|bitbucket.com/ =~ url && url.strip || nil
+         end
+         dependency("rdoc", ">= 4.0", :development) if @spec.spec.files.grep(/.rdoc$/).any? || /rdoc ::/ =~ readme
+
+         Dir.glob(Dir.pwd + '/lib/hoe/*.rb').each do |x|
+            begin
+               require_relative(x)
+            rescue Exception
+               nil
+            end
+         end
          self.constants.map {|c| self.const_get(c) }.select {|x| x.is_a?(Module) }.each {|x| extend(x) }
          if self.respond_to?("initialize_#{@spec.spec.name}")
             send("initialize_#{@spec.spec.name}")
          end
+      rescue Exception
+         binding.pry
       end
 
       def post_init

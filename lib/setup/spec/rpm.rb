@@ -553,8 +553,7 @@ class Setup::Spec::Rpm
             source.licenses
          end.flatten.uniq
 
-         #binding.pry
-      list.blank? && value_in || list
+      !list.blank? && list || value_in.blank? && ["Unlicense"] || value_in
    end
 
    def state_changed?

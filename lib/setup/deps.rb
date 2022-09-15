@@ -17,8 +17,10 @@ class Setup::Deps
          proc { |target| target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_dyno(target.source, 'doc') },
       },
       'devel' => {
-         proc { |target| target.source.inctree.any? &&
-                         target.source.is_a?(Setup::Source::Gem) } => proc { |this, target| this.deps_dyno(target.source, 'devel') },
+         proc { |target|
+            target.source.is_a?(Setup::Source::Gem) &&
+           (target.source.inctree.any? ||
+            target.source.dsl.original_deps.any?) }                => proc { |this, target| this.deps_dyno(target.source, 'devel', :dsl) },
       }
    }
 
@@ -68,7 +70,16 @@ class Setup::Deps
 
    ## deps
    def deps_gem_dsl dsl, set = 'lib'
-      deps = set == 'bin' && dsl.runtime_deps(:gemfile) || dsl.runtime_deps(:gemspec)
+      deps =
+         case set
+         when 'bin'
+            dsl.runtime_deps(:gemfile)
+         when 'devel'
+            dsl.development_deps(:gemspec)
+         else
+            dsl.runtime_deps(:gemspec)
+         end
+
       list = []
 
       deps.each do |dep|
@@ -81,12 +92,18 @@ class Setup::Deps
       ruby_version = dsl.required_ruby_version
       rubygems_version = dsl.required_rubygems_version
 
-      list << self.class.to_rpm(ruby_version).map { |a, b| "#{ruby} #{a} #{b}" }
-      list << "rubygems #{rubygems_version}"
+      if /lib|bin/ =~ set
+         list << self.class.to_rpm(ruby_version).map { |a, b| "#{ruby} #{a} #{b}" }
+         list << "rubygems #{rubygems_version}"
+      end
+
+      list
    end
 
    def deps_ruby_version
-      "ruby(#{RbConfig::CONFIG['ruby_version']})"
+      # TODO enable when fix for new version ruby rebuld
+      #"ruby(#{RbConfig::CONFIG['ruby_version']})"
+      ""
    end
 
    def deps_gem source

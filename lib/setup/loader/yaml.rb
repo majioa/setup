@@ -1,7 +1,7 @@
 # yaml gemspec generator based
 # example: "lemon" gem
 #
-module Setup::Loader::YAML
+module Setup::Loader::Yaml
    def yaml file
       spec = Gem::Specification.from_yaml(IO.read(file))
 
