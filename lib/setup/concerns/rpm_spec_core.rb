@@ -328,7 +328,7 @@ module Setup::RpmSpecCore
    end
 
    def variables
-      @variables ||= context.dup.delete("__macros").to_os
+      @variables ||= context.__macros
    end
 
    def render_deps deps_in

@@ -125,7 +125,7 @@ class Setup::Spec::Rpm::Parser
          non_contexted: true,
          parse_func: :parse_comment
       }
-   }
+   }.to_os(hash: true)
 
    def source source_in
       if source_in.respond_to?(:readlines)
@@ -137,57 +137,56 @@ class Setup::Spec::Rpm::Parser
    end
 
    def parse source_in, options = {}
-      context = {}
-      state_in = { "context" => { "__options" => options.to_os } }
-      matched = {}
+      context = {}.to_os
+      state_in = { "context" => { "__options" => options.to_os }}.to_os(hash: true)
+      matched = {}.to_os
       match = nil
 
       state = source(source_in).reduce(state_in) do |state, line|
-         SCHEME.find do |(key, rule)|
+         SCHEME.find do |key, rule|
             match = rule.is_a?(Regexp) && rule.match(line) ||
-                    rule.is_a?(Hash) && rule[:regexp] && rule[:regexp].match(line)
+                    rule.is_a?(OpenStruct) && rule[:regexp] && rule[:regexp].match(line)
 
-            # binding.pry
             if match
-               if matched[:name]
-                  if matched[:name] != key
+               if matched.name
+                  if matched.name != key
                      store_value(state, matched[:match], matched[:name], matched[:flow], context)
-                     matched = { name: key.to_s, flow: "", match: match }
+                     matched = { name: key.to_s, flow: "", match: match }.to_os
                   end
                else
-                  matched = { name: key.to_s, flow: "", match: match }
+                  matched = { name: key.to_s, flow: "", match: match }.to_os
                end
             end
          end
 
-         if matched
-            if matched[:flow]
-               matched[:flow] << line + "\n"
+         if matched.name
+            if matched.flow
+               matched.flow << line + "\n"
             else
-               matched[:flow] = line + "\n"
+               matched.flow = line + "\n"
             end
          else
-            matched = { name: "comment", flow: line + "\n", match: [] }
+            matched = { name: "comment", flow: line + "\n", match: [] }.to_os
          end
 
          state
       end
 
-      store_value(state, matched[:match], matched[:name], matched[:flow], context)
+      store_value(state, matched.match, matched.name, matched.flow, context)
 
       #binding.pry
       state
    end
 
    def store_value opts, match, key, flow, context
-      data = SCHEME[key.to_sym]
-      rule = data.is_a?(Hash) && data[:rule] || data
-      parse_func = data.is_a?(Hash) && data[:parse_func] || :parse_default
-      non_contexted = data.is_a?(Hash) && data[:non_contexted]
+      data = SCHEME[key]
+      rule = data.is_a?(OpenStruct) && data[:rule] || data
+      parse_func = data.is_a?(OpenStruct) && data[:parse_func] || :parse_default
+      non_contexted = data.is_a?(OpenStruct) && data[:non_contexted]
       reflown = reeval(flow, opts)
       rematched = match.to_a.map { |x| x.is_a?(String) && reeval(x, opts) || x }
       value = method(parse_func)[rematched, reflown, opts, context]
-      mode = data.is_a?(Hash) && data[:mode] || :append
+      mode = data.is_a?(OpenStruct) && data[:mode] || :append
       copts = !non_contexted && context[:name] && opts["secondaries"].find do |sec|
       #binding.pry
          sec.name == Setup::Spec::Rpm::Name.parse(
@@ -208,9 +207,9 @@ class Setup::Spec::Rpm::Parser
       when NilClass
          value
       when Array
-         copts[key] | [ value.is_a?(Hash) && value.to_os || value ].flatten
-      when Hash, OpenStruct
-         copts[key].deep_merge(value, { mode: mode })
+         copts[key] | [ value.is_a?(OpenStruct) && value || value ].flatten
+      when OpenStruct
+         copts[key].deep_merge(value, mode: mode)
       else
          # binding.pry
          if mode == :replace || copts[key] == value
@@ -235,7 +234,6 @@ class Setup::Spec::Rpm::Parser
             aliases: aliased_names(opts))
       end
    end
-
 
    def reeval flow, opts
       opts.deep_merge(opts["context"]).reduce(flow) do |reflown, (name, value)|
@@ -318,9 +316,9 @@ class Setup::Spec::Rpm::Parser
 
    def parse_context match, *_
       if match[1]
-         { "__macros" => { match[1] => match[4] || "#{match[2]} #{match[3]}" }}
+         { "__macros" => { match[1] => match[4] || "#{match[2]} #{match[3]}" }}.to_os(hash: true)
       else
-         { match[2] => match[3] }
+         { match[2] => match[3] }.to_os
       end
    end
 

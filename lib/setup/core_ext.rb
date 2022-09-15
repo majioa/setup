@@ -333,12 +333,27 @@ class Object
       end
    end
 
-   def to_os
-      OpenStruct.new(self.to_h.map {|(x, y)| [x.to_s, y] }.to_h)
+   def to_os hash: false, array: false
+      value = self.to_h.map do |(x, y_in)|
+        y =
+           if hash && y_in.is_a?(Hash) || array && y_in.is_a?(Array)
+              y_in.to_os(hash: hash, array: array)
+           else
+              y_in
+           end
+
+        [x.to_s, y]
+      end.to_h
+
+      OpenStruct.new(value)
    end
 end
 
 class OpenStruct
+   def to_os
+      self
+   end
+
    def merge_to other
       OpenStruct.new(other.to_h.merge(self.to_h))
    end
@@ -385,6 +400,18 @@ class OpenStruct
       res
    end
 
+   def find &block
+      select(&block).first
+   end
+
+   def replace new_os
+      self.to_h.keys.each {|x| self[x] = nil }
+
+      new_os.to_os.each {|x, v| self[x] = v }
+
+      self
+   end
+
    # +deep_merge+ deeply merges the Open Struct hash structure with the +other_in+ enumerating it key by key.
    # +options+ are the options to change behaviour of the method. It allows two keys: :mode, and :dedup
    # :mode key can be :append, :prepend, or :replace, defaulting to :append, when mode is to append, it combines duplicated
@@ -413,8 +440,10 @@ class OpenStruct
          res[key] =
             if res.table.keys.include?(key)
                case value
-               when Hash, OpenStruct
-                  value.deep_merge(res[key], options)
+               when Hash
+                  value.deep_merge(res[key].to_h, options)
+               when OpenStruct
+                  value.deep_merge(res[key].to_os, options)
                when Array
                   value.concat([res[key]].compact.flatten(1))
                when NilClass
