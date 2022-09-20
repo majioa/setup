@@ -388,7 +388,7 @@ module Setup
          configuration.new_options.debug_io = str
       end
 
-      parser.on("--info-io=[FILE|NAME|BLANK|DASH]", String, "IO for info level. Value is file name, or --/stderr for stderr, or -/stdout for stdout, or blank to disable") do |str|
+      parser.on("--info-io=[FILE|NAME|BLANK|DASH]", "IO for info level. Value is file name, or --/stderr for stderr, or -/stdout for stdout, or blank to disable") do |str|
          configuration.new_options.info_io = str
       end
 

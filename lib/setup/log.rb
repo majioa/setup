@@ -72,6 +72,6 @@ module Setup::Log
          end.to_h
       end
 
-      at_exit { @@ios.values.each {|v| v.close if v.is_a?(File) } }
+      at_exit { Setup::Log.ios.values.each {|v| v.close if v.is_a?(File) }}
    end
 end

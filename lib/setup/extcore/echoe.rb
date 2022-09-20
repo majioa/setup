@@ -52,7 +52,11 @@ class Echoe
    end
 
    def spec
-      @spec ||= ::Gem::Specification.new
+      specs.last
+   end
+
+   def specs
+      @@specs ||= []
    end
    
    def rubyforge_name= _name
@@ -117,7 +121,12 @@ class Echoe
 
    DOC_FILTER = /CHANGELOG|LICENSE|README|\.rb$/i
 
+   def new_spec
+      specs << ::Gem::Specification.new
+   end
+
    def initialize name
+      new_spec
       spec.name = name
       spec.files = IO.read('Manifest').split("\n")
       spec.extra_rdoc_files = spec.files.select { |f| DOC_FILTER =~ f }

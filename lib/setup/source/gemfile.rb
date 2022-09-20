@@ -11,10 +11,12 @@ class Setup::Source::Gemfile < Setup::Source::Base
    end
 
    def gemfile_path
-      gemspec_file = Tempfile.create('Gemfile.')
-      gemspec_file.puts(dsl.to_gemfile)
-      gemspec_file.rewind
-      gemspec_file.path
+      if !@gemspec_file && @gemspec_file = Tempfile.create('Gemfile.')
+         @gemspec_file.puts(dsl.to_gemfile)
+         @gemspec_file.close
+      end
+
+      @gemspec_file.path
    end
 
    def dsl

@@ -6,14 +6,13 @@ require 'shellwords'
 require 'setup'
 require 'setup/core_ext'
 require 'setup/constants'
-require 'setup/project'
 
 module Setup
 
   # Stores platform information and general install settings.
   #
   class Configuration
-     attr_reader :project
+    attr_reader :project
 
     # Ruby System Configuration
     RBCONFIG  = ::RbConfig::CONFIG
@@ -596,7 +595,7 @@ module Setup
     end
 
     def project= value
-       @project ||= value && Setup::Project.new({config: self}.merge(value.merge(value.delete(:options))))
+      @project = value
     end
 
     #
@@ -969,7 +968,7 @@ module Setup
 
     # Save configuration.
     def save_config_with project
-      @project = project
+      @project = project.to_h
       out = to_yaml
       dir = File.dirname(CONFIG_FILE)
       unless File.exist?(dir)

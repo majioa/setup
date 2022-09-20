@@ -4,9 +4,9 @@ require 'setup/log'
 class Setup::Source::Base
    extend ::Setup::Log
 
-   OPTION_KEYS = %i(source_file source_names replace_list aliases)
+   OPTION_KEYS = %i(source_file source_names replace_list aliases alias_names)
 
-   DL_DIRS     = ->(s) { ".so.#{s.name}#{RbConfig::CONFIG['sitearchdir']}" }
+   DL_DIRS     = ->(s) { ".so.#{s.name}#{RbConfig::CONFIG['vendorarchdir']}" }
    RI_DIRS     = ->(s) { [ s.default_ridir, 'ri' ] }
    INC_DIRS    = %w(ext)
    EXT_DIRS    = %w(ext)
@@ -26,7 +26,7 @@ class Setup::Source::Base
    RI_RE       = /\.ri$/
    INC_RE      = /\.(h|hpp)$/
    MAN_RE      = /\.[1-8](.ronn)?$/
-   EXT_RE      = /\bextconf.rb$/
+   EXT_RE      = /\b(.*\.rb|rakefile(\.rb)?)$/i
    DATA_RE     = ->(s) do
          dirs = s.extdirs | s.libdirs | s.appdirs | s.exedirs |
             s.confdirs | s.testdirs | s.mandirs | s.supdirs |
@@ -40,6 +40,7 @@ class Setup::Source::Base
 
    OPTIONS_IN = {
       aliases: ->(o, name) { o.is_a?(Hash) && [ o[nil], o[name], o.values.map {|x|x.flatten}.select {|x|x.include?(name)}.map {|x|x.first}.flatten ].flatten.compact.uniq || o },
+      alias_names: ->(o, name) { o.is_a?(Hash) && [ o[nil], o[name], o.values.map {|x|x.flatten}.select {|x|x.include?(name)}.map {|x|x.first}.flatten ].flatten.compact.uniq || o },
       version_replaces: true,
       gem_version_replace: true,
       source_file: true,
@@ -170,8 +171,8 @@ class Setup::Source::Base
       options[:gem_version_replace]
    end
 
-   def aliases
-      options[:aliases]
+   def alias_names
+      @alias_names ||= options[:alias_names] || []
    end
 
    # dirs
@@ -249,7 +250,7 @@ class Setup::Source::Base
    end
 
    def has_name? name
-      self.name == name || aliases && aliases.include?(name)
+      self.name == name || alias_names.include?(name)
    end
 
    def if_file file
@@ -282,6 +283,14 @@ class Setup::Source::Base
       self
    end
 
+   def aliases
+      @aliases ||= []
+   end
+
+   def alias_to *sources
+      @aliases = aliases | sources.flatten
+   end
+
    protected
 
    def exedir
@@ -300,14 +309,24 @@ class Setup::Source::Base
       end.flatten.compact.select { |file| if_dir(file) }
    end
 
+   def list_in_dir dir
+      Dir.chdir(File.join(root, dir)) { Dir.glob('**/**/*') }
+   rescue Errno::ENOENT
+      []
+   end
+
+   def chdir dir, &block
+      Dir.chdir(File.join(root, dir), &block)
+   rescue Errno::ENOENT
+      []
+   end
+
    def tree kind, &block
       re_in = self.class.const_get("#{kind.upcase}_RE") rescue nil
       prc = self.class.const_get("#{kind.upcase}_FILTER") rescue nil
       re = re_in.is_a?(Proc) && re_in[self] || re_in || /.*/
 
-      tree_in = send("#{kind}dirs").map do |dir|
-         [ dir, Dir.chdir(File.join(root, dir)) { Dir.glob('**/**/*') } ]
-      end.to_h
+      tree_in = send("#{kind}dirs").map { |dir| [ dir, list_in_dir(dir) ]}.to_h
 
       if block_given?
          # TODO deep_merge
@@ -315,7 +334,7 @@ class Setup::Source::Base
       end
 
       tree_in.map do |dir, files_in|
-         files = Dir.chdir(File.join(root, dir)) do
+         files = chdir(dir) do
             files_in.select do |file|
                re =~ file && File.file?(file) && (!prc || prc[self, file, dir])
             end

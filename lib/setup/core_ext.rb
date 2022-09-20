@@ -533,3 +533,17 @@ class Gem::Requirement
       Gem::Requirement.new(reqs)
    end
 end
+
+class Dir
+   class << self
+      alias :__system_brackets :[]
+
+      def dir_cache
+         @@dir_cache ||= {}
+      end
+
+      def [] *args, base: nil, sort: true
+         dir_cache[[Dir.pwd, args.first]] ||= __system_brackets(*args, base: base)
+      end
+   end
+end

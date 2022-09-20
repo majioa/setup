@@ -36,9 +36,7 @@ class Setup::Target::Gem
    end
 
    def dldir
-      arch = [ ::Gem.platforms.last.cpu, ::Gem.platforms.last.os ].join('-')
-
-      File.join(home, 'extensions', arch, ::Gem.extension_api_version, source.fullname)
+      File.join(source.spec.extensions_dir, source.fullname)
    end
 
    def confdir
@@ -46,7 +44,7 @@ class Setup::Target::Gem
    end
 
    def ridir
-      File.join(home, 'doc', source.fullname, 'ri')
+      source.spec.ri_dir
    end
 
    def specdir

@@ -4,6 +4,8 @@ module Setup::Source
    KINDS = %i(Gem Gemfile Rakefile)
 
    class << self
+      # returns all the found sources with their statuses, and sorted by their root value
+      #
       def search dir, options = {}
          KINDS.map do |const|
             self.const_get(const).search(dir, options)

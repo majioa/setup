@@ -87,6 +87,12 @@ module Setup
       end
     end
 
+    def chdir dir, &block
+       Dir.chdir(dir, &block)
+    rescue
+       nil
+    end
+
     # Install for kind
     def _install kind
       io.puts "* {#{kind}} ->" unless quiet?
@@ -97,7 +103,7 @@ module Setup
         target.source.send("#{kind}tree").each do |dir, files|
           target_dir = is_external && target.send("#{kind}dir") || File.join(target.send("#{kind}dir"), dir)
 
-          Dir.chdir(File.join(target.source.root, dir)) do
+          chdir(File.join(target.source.root, dir)) do
             io.puts "  % #{target.source.name} < #{dir}" unless quiet?
 
             novel_install_files(files, target_dir, options.merge(mode: 0755))
@@ -139,7 +145,7 @@ module Setup
                   }
                   doc = Ronn::Document.new(file, opts)
                   output = doc.convert('roff')
-                  tmp = Tempfile.new
+                  tmp = Tempfile.create
                   tmp.write(output)
                   tmp.rewind
                   novel_install_files([ tmp.path ], File.join(target.mandir, File.dirname(file)), options.merge(mode: 0644, as: file.gsub('.ronn', '')))

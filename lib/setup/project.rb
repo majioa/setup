@@ -55,20 +55,20 @@ module Setup
      attr_reader :config, :version_replaces
 
     #
-    def initialize options = {}
+    def initialize config, options = {}
       # pre-init require
       $:.unshift(Dir.pwd)
 
-      self.all_sources  = options.delete(:sources)
+      self.stat_sources = options.delete(:sources_hash)
       @rootdir  = options.delete(:rootdir)
-      @config   = options.delete(:config) || raise
+      @config   = config
       @options  = options
 
       @name     = root_source&.name
       @version  = root_source&.version
       @loadpath = ['lib']
 
-        show_tree
+        show_tree if Setup::Log.ios[:info]
 
         if file = find('.setup/name')
           @name = File.read(file).strip
@@ -87,12 +87,10 @@ module Setup
 
     def show_tree
        info("Source list are the following:")
-       stat_source_tree.each do |(path_in, stated_sources)|
-          stated_sources.each do |(source, status)|
-             path = File.join(path_in, File.basename(source.source_file))
-             info_in = "#{STATUS_CHARS[status]} #{TYPE_CHARS[source.type.to_sym]}#{[source.name, source.version].compact.join(":")} [#{path}]"
-             info(info_in)
-          end
+       stat_sources.each do |(source, status)|
+          path = File.join(source.root, File.basename(source.source_file))
+          info_in = "#{STATUS_CHARS[status]} #{TYPE_CHARS[source.type.to_sym]}#{[source.name, source.version].compact.join(":")} [#{path}]"
+          info(info_in)
        end
     end
 
@@ -118,7 +116,7 @@ module Setup
 
     def to_h
        {
-          sources: sources.map {|x| x.to_h },
+          sources_hash: stat_sources.map {|(x, y)| [x.to_h, y] },
           options: options,
           rootdir: rootdir
        }
@@ -128,60 +126,59 @@ module Setup
        config.gem_version_replace.first.last
     end
 
-    # Returns list of all the sources
-    #
-    def sources
-       @sources ||= Setup::Source.search(rootdir, options)
-    end
+      # returns all the sources with their statuses, and sorted by their root value
+      #
+      #def stat_sources
+      def stat_sources &block
+         return @stat_sources if @stat_sources
 
-    # returns all the sources with their statuses, and sorted by a its root value
-    #
-    def stat_sources &block
-       @stat_sources =
-          sources.group_by { |x| x.name }.map do |(name, v)|
-             v.sort do |x,y|
-                c0 = Setup::Source::KINDS.index(x.class.to_s.to_sym) <=> Setup::Source::KINDS.index(y.class.to_s.to_sym)
-                c1 = c0 == 0 && y.version <=> x.version || c0
+         @stat_sources = Setup::Source.search(rootdir, options).group_by do |x|
+               [x.name, x.version].compact.join(":")
+            end.map do |(full_name, v)|
+               sorten =
+                  v.sort do |x,y|
+                     c0 = Setup::Source::KINDS.index(x.class.to_s.to_sym) <=> Setup::Source::KINDS.index(y.class.to_s.to_sym)
+                     c1 = c0 == 0 && y.version <=> x.version || c0
+                     c2 = c1 == 0 && x.name <=> y.name || c1
+                     c3 = c2 == 0 && y.source_names.grep(/gemspec/).count <=> x.source_names.grep(/gemspec/).count
 
-                c1 == 0 && x.root.size <=> y.root.size || c1
-             end.map.with_index do |source, index|
-                [source, source_status(source, index > 0)]
-             end
-          end.flatten(1).sort_by {|(x, _)| x.root.size }.each do |(source, status)|
-             block[source, status] if block_given?
-          end
-    end
+                     c2 == 0 && c3 == 0 && x.root.size <=> y.root.size || c3 != 0 && c3 || c2
+                  end.map.with_index do |source, index|
+                     [source, source_status(source, index > 0)]
+                  end
+   
+               sorten[1..-1].each { |x| sorten.first.first.alias_to(x.first) }
+   
+               sorten
+            end.flatten(1).sort_by {|(x, _)| x.root.size }.each do |(source, status)|
+               block[source, status] if block_given?
+            end
+      end
+
+      # returns status for the source for the project
+      #
+      def source_status source, dup
+         %i(valid duplicated disabled invalid).reduce() do |res, status|
+            STATES[status][self, source, dup] && status || res
+         end
+      end
 
     # Sets a source list from config
     #
-    def all_sources= value
-       @sources = value&.map do |source_in|
-          source_in[:aliases] = source_in[:aliases] | (config&.aliases || [])
-          case source_in.delete(:type)
-          when 'rakefile'
-             new_source(Setup::Source::Rakefile, source_in)
-          when 'gemfile'
-             new_source(Setup::Source::Gemfile, source_in)
-          when 'gem'
-             new_source(Setup::Source::Gem, source_in)
-          end
-       end
-    end
+    def stat_sources= value
+       @stat_sources = value&.map do |(source_in, source_status)|
+          source_in[:alias_names] = source_in[:alias_names] | (config&.aliases || [])
+          source =
+             case source_in.delete(:type)
+             when 'rakefile'
+                new_source(Setup::Source::Rakefile, source_in)
+             when 'gemfile'
+                new_source(Setup::Source::Gemfile, source_in)
+             when 'gem'
+                new_source(Setup::Source::Gem, source_in)
+             end
 
-    # returns source tree, and sorted, and then grouped by a its root value
-    #
-    def stat_source_tree
-      @stat_source_tree ||=
-         stat_sources.group_by {|(x, _)| x.root }.map do |(path, sources)|
-            [File.join('.', path[rootdir.size..-1]), sources]
-         end.to_h
-    end
-
-    # returns status for the source for the project
-    #
-    def source_status source, dup
-       %i(valid duplicated disabled invalid).reduce() do |res, status|
-          STATES[status][self, source, dup] && status || res
+          [source, source_status]
        end
     end
 
@@ -206,24 +203,28 @@ module Setup
 #       option_keys.map { |key| [ key, options_in[ key ]] }.to_h
 #    end
 
-    # Returns a root source
-    #
-    def root_source
-       @root_source ||= valid_sources.find { |source| rootdir == source.root }
-    end
+       # Returns a root source
+       #
+       def root_source
+          @root_source ||= valid_sources.find { |source| rootdir == source.root }
+       end
 
-    def has_gem?
-      sources.any? {|source| source.is_a?(Setup::Source::Gem) }
-    end
+      def has_gem?
+         stat_sources.any? {|(source, _)| source.is_a?(Setup::Source::Gem) }
+      end
 
     def is_disabled? source
-      config.ignore_path_tokens.any? { |t| /\/#{t}\// =~ source.source_file } || config.ignore_names.any? { |i| i === source.name }
+      config.ignore_path_tokens.map do |t|
+         t.is_a?(Regexp) && %r{/[^/]*#{t}[^/]*/} || %r{/#{t}/}
+      end.any? do |t|
+         t =~ source.source_file
+      end || config.ignore_names.any? { |i| i === source.name }
     end
-    #
-    #
-    def compilable?
-      sources.any? { |source| source.compilable? }
-    end
+      #
+      #
+      def compilable?
+         stat_sources.any? { |(source, _)| source.compilable? }
+      end
 
     #
     def yardopts
@@ -255,9 +256,9 @@ module Setup
     end
 
     def autoalias
-       source_names = sources.map(&:name)
+       source_names = valid_sources.map(&:name)
 
-       sources.each do |source|
+       valid_sources.each do |source|
           config.current_source_name = source.name
 
           name = source.name.gsub(/[_\-\.]+/, '-')

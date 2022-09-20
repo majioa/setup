@@ -78,15 +78,13 @@ module Setup::Loader::Mast
                end
             end
 
-         file = Tempfile.new(spec.name)
+         file = Tempfile.create(spec.name)
          file.puts(spec.to_ruby)
          file.close
          res = app_file(file.path)
-         file.unlink
          res
       end
    rescue Exception => e
-        binding.pry
       $stderr.puts "WARN [#{e.class}]: #{e.message}"
    end
 end

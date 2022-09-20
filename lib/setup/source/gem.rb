@@ -13,7 +13,7 @@ require 'setup/loader/git-version-gen'
 
 class Setup::Source::Gem < Setup::Source::Base
    extend ::Setup::Loader
-   extend ::Setup::Loader::YAML
+   extend ::Setup::Loader::Yaml
    extend ::Setup::Loader::Pom
    extend ::Setup::Loader::Mast
    extend ::Setup::Loader::Rookbook
@@ -22,13 +22,11 @@ class Setup::Source::Gem < Setup::Source::Base
 
    TYPE = 'Gem::Specification'
    BIN_IGNORES = %w(test)
-   OPTION_KEYS = %i(source_file source_names gemspec spec version replace_list aliases)
+   OPTION_KEYS = %i(source_file source_names gemspec spec version replace_list aliases alias_names)
 
    EXE_DIRS = ->(s) { s.spec.bindir || s.exedir || nil }
    EXT_DIRS = ->(s) do
-      s.spec.extensions.select do |file|
-         /extconf\.rb$/ =~ file
-      end.map do |file|
+      s.spec.extensions.map do |file|
          File.dirname(file)
       end.uniq
    end
@@ -105,9 +103,9 @@ class Setup::Source::Gem < Setup::Source::Base
             if load_result
                gemspecs = load_result.objects.reject do |s|
                   s.loaded_from && s.loaded_from !~ /#{dir}/
-               end.each {|x| x.loaded_from = f }
+               end.each {|x| x.loaded_from = f }.compact
                debug("load messages:\n\t" + load_result.log.join("\n\t")) if !load_result.log.blank?
-               debug("Load errors:\n\t" + load_result.errlogjoin("\n\t")) if !load_result.errlog.blank?
+               debug("Load errors:\n\t" + load_result.errlog.join("\n\t")) if !load_result.errlog.blank?
 
                res.merge({ f => gemspecs })
             else
@@ -130,9 +128,9 @@ class Setup::Source::Gem < Setup::Source::Base
 
    def gemfile
       @gemfile ||= Setup::Source::Gemfile.new(
-         source_file: gemfile_name && File.join(root, gemfile_name) || dsl.fake_gemfile,
+         source_file: gemfile_name && File.join(root, gemfile_name) || dsl.fake_gemfile_path,
          gem_version_replace: options[:gem_version_replace],
-         gem_skip_list: dsl.deps.map(&:name),
+         gem_skip_list: [], # dsl.deps.map(&:name),
          gem_append_list: [ self.dep ])
    end
 
@@ -160,39 +158,51 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def gemspec_path
-      gemspec_file = Tempfile.create('gem.')
-      gemspec_file.puts(dsl.to_ruby)
-      gemspec_file.rewind
-      gemspec_file.path
+      if !@gemspec_file && @gemspec_file ||= Tempfile.create('gemspec.')
+         @gemspec_file.puts(dsl.to_ruby)
+         @gemspec_file.close
+      end
+
+      @gemspec_path ||= @gemspec_file.path
    end
 
    def gemfile_path
       if gemfile.dsl.valid?
-         gemfile_file = Tempfile.create('Gemfile.')
-         gemfile_file.puts(gemfile.dsl.to_gemfile)
-         gemfile_file.rewind
-         gemfile_file.path
+         if !@gemfile_file && @gemfile_file ||= Tempfile.create('Gemfile.')
+            @gemfile_file.puts(gemfile.dsl.to_gemfile)
+            @gemfile_file.close
+         end
+
+         @gemfile_path ||= @gemfile_file.path
       end
    end
 
    # tree
-
    def datatree
       # TODO deep_merge
       @datatree ||= super { { '.' => spec.files } }
    end
 
    def allfiles
-      @allfiles =
+      @allfiles = (
          spec.require_paths.map {|x| File.absolute_path?(x) && x || File.join(x, '**', '*') }.map {|x| Dir[x] }.flatten |
          spec.executables.map {|x| Dir[File.join(spec.bindir, x)] }.flatten |
          spec.files
+      )
    end
 
    def allfiles_for list_in
       list_in.map do |(key, list)|
          [key, list & allfiles.map {|x| /^#{key}\/(?<rest>.*)/.match(x)&.[](:rest) }.compact ]
       end.to_h
+   end
+
+
+   def libdirs
+      @libdirs ||=
+         (libs = spec.require_paths.select {|x| File.directory?(File.join(root, x)) }
+
+         libs.empty? && super || libs)
    end
 
    def exttree
@@ -255,8 +265,18 @@ class Setup::Source::Gem < Setup::Source::Base
          paths.any? && paths || ['lib'])
    end
 
+   def original_spec
+      @original_spec ||= self.class.spec_for(options)
+   end
+
    def spec
-      @spec ||= self.class.spec_for(options)
+      return @spec if @spec
+
+      if aliases.any?
+         @spec ||= aliases.reduce(original_spec) { |spec, als| als.respond_to?(:original_spec) && spec.merge(als.original_spec) || spec }
+      else
+         original_spec
+      end
    end
 
    def rake
@@ -271,8 +291,8 @@ class Setup::Source::Gem < Setup::Source::Base
 
    def detect_root
       if spec
-          files = Dir['**/**/*']
-          (spec.files - files).any? && super || Dir.pwd
+         files = Dir['**/**/*']
+         (spec.files - files).any? && super || Dir.pwd
       else
          super
       end

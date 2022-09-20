@@ -28,7 +28,7 @@ class Setup::Target::Site
    end
 
    def dldir
-      File.join(RbConfig::CONFIG['sitearchdir'])
+      File.join(RbConfig::CONFIG['vendorarchdir'])
    end
 
    def ridir

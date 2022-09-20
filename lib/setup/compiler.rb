@@ -1,26 +1,35 @@
 require 'setup/base'
+require 'setup/rake_app'
+require 'setup/log'
 
 module Setup
-
-  #
    class Compiler < Base
-      class Extconf
-         attr_reader :config, :original_config, :makeconfig, :original_makeconfig, :argv
+      include Setup::Log
 
-         def initialize extfile, *args
-            @extfile = extfile
+      class Extconf
+         attr_reader :config, :original_config, :makeconfig, :original_makeconfig, :argv, :extdir, :source
+
+         def initialize extpath, source, *args
+            @extfile = extpath
+            @extdir = File.dirname(extpath)
             @argv = args
             @original_config = RbConfig::CONFIG.dup
             @original_makeconfig = RbConfig::MAKEFILE_CONFIG.dup
-            RbConfig::MAKEFILE_CONFIG["configure_args"] = args.join(" ")
-            require 'mkmf'
-            RbConfig::CONFIG["srcdir"] = RbConfig::MAKEFILE_CONFIG["srcdir"] = '.'
+            @source = source
 
-            init_mkmf(RbConfig::MAKEFILE_CONFIG, RbConfig::CONFIG)
+            Dir.chdir(@extdir) do
+               RbConfig::MAKEFILE_CONFIG["configure_args"] = args.join(" ")
+               require 'mkmf'
+               RbConfig::CONFIG["srcdir"] = RbConfig::MAKEFILE_CONFIG["srcdir"] = '.'
+
+               init_mkmf(RbConfig::MAKEFILE_CONFIG, RbConfig::CONFIG)
+            end
          end
 
          def configure
-            load(File.join('.', File.basename(@extfile)))
+            Dir.chdir(@extdir) do
+               load(File.join('.', File.basename(@extfile)))
+            end
 
             @config = RbConfig::CONFIG.dup
             @makeconfig = RbConfig::MAKEFILE_CONFIG.dup
@@ -40,9 +49,14 @@ module Setup
         project.valid_sources.map do |source|
           source.exttree.map do |dir_in, extfiles|
             extfiles.map do |extfile|
-              Dir.chdir(File.join(source.root, dir_in, File.dirname(extfile))) do
-                 # binding.pry
-                 Extconf.new(extfile, '--use-system-libraries', '--enable-debug-build', '--disable-static', '--srcdir=.').configure
+              extpath = File.join(source.root, dir_in, extfile)
+
+              if extpath =~ /rakefile(.rb)?$/i
+                 Setup::Rake.new(extpath, {source: source})
+              else
+                 cfg = Extconf.new(extpath, source, '--use-system-libraries', '--enable-debug-build', '--disable-static', '--srcdir=.')
+                 cfg.configure
+                 cfg
               end
             end
           end
@@ -53,30 +67,41 @@ module Setup
     def make
       chrpath_path = `which chrpath`.strip
 
-      project.valid_sources.each do |source|
-        source.exttree.each do |dir_in, extfiles|
-          extfiles.each do |extfile|
-            dir = File.join(source.root, dir_in, File.dirname(extfile))
-            headers = Dir.glob("*/**/*.{h,hpp}")
+      @configurations.each do |cfg|
+        case cfg
+        when Setup::Rake
+          cfg.run_task('default')
+          source = cfg.options[:source]
 
-            Dir.chdir(dir) do
-              puts "[#{dir}]$ make #{config.makeprog}"
-              make_task
+          soes = Dir.glob(File.join(source.root, "**", "*.so"))
+          if soes.any?
+              # NOTE gem hotwater
+              dd = File.join(source.root, ".so.#{source.name}", RbConfig::CONFIG['vendorarchdir'])
+              FileUtils.mkdir_p(dd)
 
-              # post make
-              if Dir.glob("**/*.so").any?
-                FileUtils.mkdir_p File.join(source.root, ".so.#{source.name}", RbConfig::CONFIG['sitearchdir'], target_prefix)
-                make_task('install', DESTDIR: File.join(source.root, ".so.#{source.name}"))
-                Dir.glob(File.join(source.root, ".so.#{source.name}/**/*.so")).each do |file|
-                  FileUtils.touch(File.join(File.dirname(file), 'gem.build_complete'))
-
-                  # remove RPATH if any
-                  bash(chrpath_path, '-d', file) if !chrpath_path.empty?
-                end
+              soes.map do |x|
+                FileUtils.touch(File.join(dd, 'gem.build_complete'))
+                FileUtils.cp(x, dd)
+                bash(chrpath_path, '-d', File.join(dd, File.basename(x))) if !chrpath_path.empty?
               end
+            end
+        when Extconf
+          headers = Dir.glob("*/**/*.{h,hpp}")
 
-              #cleanup
+          Dir.chdir(cfg.extdir) do
+            debug "[#{cfg.extdir}]$ make #{config.makeprog}"
+            make_task
 
+            # post make
+            if Dir.glob("**/*.so").any?
+              FileUtils.mkdir_p(File.join(cfg.source.root, ".so.#{cfg.source.name}", RbConfig::CONFIG['vendorarchdir'], target_prefix))
+              make_task('install', DESTDIR: File.join(cfg.source.root, ".so.#{cfg.source.name}"))
+              Dir.glob(File.join(cfg.source.root, ".so.#{cfg.source.name}/**/*.so")).each do |file|
+                FileUtils.touch(File.join(File.dirname(file), 'gem.build_complete'))
+
+                # remove RPATH if any
+                bash(chrpath_path, '-d', file) if !chrpath_path.empty?
+              end
             end
           end
         end
@@ -98,7 +123,7 @@ module Setup
 
     #
     def distclean
-      project.sources.each do |source|
+      project.valid_sources.each do |source|
         source.exttree.each do |dir_in, extfiles|
           extfiles.each do |extfile|
             Dir.chdir(File.join(source.root, dir_in, File.dirname(extfile))) do

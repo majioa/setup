@@ -8,8 +8,9 @@ class Setup::Rake
    class InvalidRakefileError < StandardError; end
 
    TYPE = 'Rake::Application'
+   PRELOAD_MATCHER = { /\/rakefile(.rb)?$/i => :preload }
 
-   attr_reader :app, :rakefile
+   attr_reader :app, :rakefile, :options
 
    def blank?
       !@app
@@ -24,23 +25,34 @@ class Setup::Rake
    end
 
    def run_task task_name
-      Rake.instance_variable_set(:@application, @app)
-      @app&.invoke_task(task_name)
+      if @app
+         Rake.instance_variable_set(:@application, @app)
+
+         Dir.chdir(@app.original_dir) do
+            @app.invoke_task(task_name)
+         end
+      end
    rescue Exception => e
       warn "#{e.class}: #{e.message}\n\t#{e.backtrace.join("\n\t")}"
    end
 
-   def initialize rakefile
+   def initialize rakefile, options = {}
       raise InvalidRakefileError unless File.file?(rakefile)
 
       @rakefile = rakefile
-      @app = self.class.load(rakefile)
+      @options = options
+      @app = self.class.load(rakefile).objects.first
+      @app&.load_imports
    end
 
    class << self
-      def load rakefile
+      # preload callback
+      def preload
          Rake.instance_variable_set(:@application, nil)
-         app_file(rakefile).objects.first
+      end
+
+      def load rakefile
+         app_file(rakefile)
       end
    end
 end

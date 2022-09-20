@@ -1,13 +1,11 @@
-module Setup::Loader::YAML
+module Setup::Loader::Yaml
    def yaml file
       spec = Gem::Specification.from_yaml(IO.read(file))
 
-      file = Tempfile.new(spec.name)
+      file = Tempfile.create(spec.name)
       file.puts(spec.to_ruby)
       file.close
-      res = app_file(file.path)
-      file.unlink
-      res
+      app_file(file.path)
    rescue => e
       nil
    end

@@ -28,7 +28,7 @@ class Setup::DSL
    end
 
    def gemfile
-      gemfiles.first || original_gemfile || fake_gemfile
+      gemfiles.first || original_gemfile || fake_gemfile_path
    end
 
    def original_gemfile
@@ -45,12 +45,26 @@ class Setup::DSL
       gemfile && Pathname.new(gemfile) || nil
    end
 
-   def fake_gemfile
-      @fake_gemfile = Tempfile.create('Gemfile').path
+   def fake_gemfile_path
+      if !@fake_gemfile && @fake_gemfile ||= Tempfile.create('Gemfile')
+         @fake_gemfile_path = @fake_gemfile.path
 
-      Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", @fake_gemfile
+         Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", @fake_gemfile_path
+         @fake_gemfile.close
+      end
 
-      @fake_gemfile
+      @fake_gemfile_path
+   end
+
+   def fake_gemlock_path
+      if !@fake_gemlock && @fake_gemlock ||= Tempfile.create('Gemfile.lock')
+         @fake_gemlock_path = @fake_gemlock.path
+
+         Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", @fake_gemlock_path
+         @fake_gemlock.close
+      end
+
+      @fake_gemlock_path
    end
 
    def dsl
@@ -63,6 +77,7 @@ class Setup::DSL
                   dsl
                end
          rescue LoadError,
+                TypeError,
                 Bundler::GemNotFound,
                 Bundler::GemfileNotFound,
                 Bundler::VersionConflict,
@@ -71,8 +86,8 @@ class Setup::DSL
                 ::Gem::InvalidSpecificationException => e
 
             dsl = Bundler::Dsl.new
-            dsl.instance_variable_set(:@gemfiles, [Pathname.new(fake_gemfile)])
-            dsl.to_definition(Tempfile.create('Gemfile.lock').path, {})
+            dsl.instance_variable_set(:@gemfiles, [Pathname.new(fake_gemfile_path)])
+            dsl.to_definition(fake_gemlock_path, {})
             Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", nil
 
             dsl
@@ -108,7 +123,13 @@ class Setup::DSL
    end
 
    def original_deps
-      @original_deps ||= definition.dependencies
+      @original_deps ||= definition.dependencies.map do |dep|
+         type = dep.groups.map {|g| GROUP_MAPPING[g]}.compact.uniq.sort.first || dep.type
+         dep.instance_variable_set(:@type, type)
+         valid = !dep.source.is_a?(Bundler::Source::Path)
+
+         valid && dep || nil
+      end.compact
    end
 
    def gemspecs
@@ -116,17 +137,25 @@ class Setup::DSL
    end
 
    def extracted_gemspec_deps
+      gemspecs.map { |gs| gs.dependencies }.flatten.uniq
+   end
+
+   def extracted_gemspec_runtime_deps
       gemspecs.map do |gs|
          gs.dependencies.select {|dep|dep.runtime?}
-      end.flatten
+      end.flatten.uniq
    end
 
    def runtime_deps kind = :gemspec
       if kind == :gemspec
-         deps_but(extracted_gemspec_deps)
+         deps_but(extracted_gemspec_runtime_deps)
       else
          deps_but(original_deps_for(:runtime))
       end
+   end
+
+   def development_deps kind = :gemspec
+      deps_but(original_deps_for(:development))
    end
 
    def defined_groups_for kinds_in = nil
@@ -168,12 +197,14 @@ class Setup::DSL
 
    def to_ruby
       spec = self.spec.dup
-      spec.dependencies.replace(deps_but(original_deps))
+      deps_in = deps_but(extracted_gemspec_deps)
+      deps = spec.dependencies.map {|x| deps_in.find {|a| a.name == x.name }}.compact
+      spec.dependencies.replace(deps)
       spec.to_ruby
    end
 
    def to_gemfile
-      deps.group_by { |d| d.name }.map do |name, deps|
+      deps_but(original_deps).group_by { |d| d.name }.map do |name, deps|
          reqs = deps.map do |dep|
             reqs = dep.requirement.requirements.map {|r| "'#{r[0]} #{r[1]}'" }.join(", ")
          end.join(", ")
@@ -197,7 +228,7 @@ class Setup::DSL
    end
 
    def required_ruby_version
-      @required_ruby_version ||= Gem::Requirement.new(dsl.instance_variable_get(:@ruby_version)&.engine_versions) || ">= 0"
+      @required_ruby_version ||= Gem::Requirement.new(dsl.instance_variable_get(:@ruby_version)&.engine_versions || ">= 0")
    end
 
    def required_ruby

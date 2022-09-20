@@ -161,13 +161,11 @@ module Setup
           $stdout = $stderr
 
           configuration.pre&.map do |task_name|
-            project.stat_source_tree.each do |(_path, stated_sources)|
-              stated_sources.each do |(source, status)|
+             project.stat_sources.each do |(source, status)|
                 if status == :valid && source.respond_to?(:rake) and source.rake.present?
                   source.rake.run_task(task_name)
                 end
-              end
-            end
+             end
           end
         ensure
           $stderr = $stdout
@@ -259,20 +257,29 @@ module Setup
 
     # #  C O N T R O L L E R S / M O D E L S  # #
 
-    def project_options
+    def default_project_options
       %w(dl ri inc ext lib app exe conf test man sup data docsrc log).map do |kind|
         name = "src#{kind}dirses"
         dirs = configuration.send(name)
         dirs && [ name.to_sym, dirs ]
-      end.compact.to_h.merge(config: configuration,
-                             aliases: configuration.aliases,
+      end.compact.to_h.merge(alias_names: configuration.aliases,
                              version_replaces: configuration.version_replaces,
                              gem_version_replace: (configuration.gem_version_replace || {}).merge(configuration.use_gem_dependencies || {}))
     end
 
+    def project_options
+      configuration.project && loaded_project_options_from(configuration.project) || default_project_options
+    end
+
+    def loaded_project_options_from value
+      new_options = configuration.new_options.to_h
+
+      new_options.merge(value.merge(value.dup.delete(:options)))
+    end
+
     #
     def project
-      @project ||= configuration.project || Project.new(project_options)
+      @project ||= Project.new(configuration, project_options)
     end
     #
     def configuration

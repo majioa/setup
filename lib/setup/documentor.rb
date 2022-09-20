@@ -1,5 +1,7 @@
 require 'setup/base'
 require 'rdoc'
+require 'rdoc/markdown'
+require 'rdoc/markdown/literals'
 
 module Setup
 
@@ -33,7 +35,7 @@ module Setup
     # @todo Should we run rdoc programmatically instead of shelling out?
     #
     def exec_ri
-      project.sources.reject { |s| s.docsrcfiles.empty? }.each do |source|
+      project.valid_sources.reject { |s| s.docsrcfiles.empty? }.each do |source|
         options = if source.is_a?(Setup::Source::Gem)
           ["--ri"]
         else
@@ -57,7 +59,7 @@ module Setup
         ::RDoc::RDoc.new.document(opts.dup << file)
 
         true
-      rescue StandardError => e
+      rescue Exception => e
         $stderr.puts "ri generation to documentate '#{file}' is failed" unless quiet?
         $stderr.puts "#{e.class}: #{e.message}\n\t#{e.backtrace.join("\n\t")}"
       end
@@ -66,7 +68,7 @@ module Setup
     #
     #
     def dirs
-       project.sources.map { |source| source.root }.flatten
+       project.valid_sources.map { |source| source.root }.flatten
     end
 
     #
@@ -137,7 +139,7 @@ module Setup
 
 
     def distclean
-      project.sources.each do |source|
+      project.valid_sources.each do |source|
         FileUtils.rm_rf(source.default_ridir)
       end
     end
