@@ -16,5 +16,5 @@
     - context:
          target_dir: <%= target.dldir %>
          target_prefix: <%= File.expand_path(config.install_prefix) %>
-         file: <%= File.join(File.dirname(file), 'gem.build_complete') %>
+         file: <%= 'gem.build_complete' %>
       actor: touch
