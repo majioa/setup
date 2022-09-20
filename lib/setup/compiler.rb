@@ -76,7 +76,7 @@ module Setup
           soes = Dir.glob(File.join(source.root, "**", "*.so"))
           if soes.any?
               # NOTE gem hotwater
-              dd = File.join(source.root, ".so.#{source.name}", RbConfig::CONFIG['vendorarchdir'])
+              dd = File.join(source.root, ".so.#{source.name}", RbConfig::CONFIG['sitearchdir'])
               FileUtils.mkdir_p(dd)
 
               soes.map do |x|
@@ -94,7 +94,7 @@ module Setup
 
             # post make
             if Dir.glob("**/*.so").any?
-              FileUtils.mkdir_p(File.join(cfg.source.root, ".so.#{cfg.source.name}", RbConfig::CONFIG['vendorarchdir'], target_prefix))
+              FileUtils.mkdir_p(File.join(cfg.source.root, ".so.#{cfg.source.name}", RbConfig::CONFIG['sitearchdir'], target_prefix))
               make_task('install', DESTDIR: File.join(cfg.source.root, ".so.#{cfg.source.name}"))
               Dir.glob(File.join(cfg.source.root, ".so.#{cfg.source.name}/**/*.so")).each do |file|
                 FileUtils.touch(File.join(File.dirname(file), 'gem.build_complete'))
