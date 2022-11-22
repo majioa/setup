@@ -34,8 +34,21 @@ Patch<%= i == :"0" && (i = "") || i %>:<%= " " * [ 9 - "#{i}".size, 1 ].max %><%
 <% build_pre_requires.each do |dep| -%>
 BuildRequires(pre): <%= dep %>
 <% end -%>
-<% build_requires.each do |dep| -%>
+<% pure_build_requires.each do |dep| -%>
 BuildRequires: <%= dep %>
+<% end -%>
+<% pure_build_conflicts.each do |dep| -%>
+BuildRequires: <%= dep %>
+<% end -%>
+<% if has_gem_build_requires? || has_gem_build_conflicts? -%>
+%if_with check
+<% gem_build_requires.each do |dep| -%>
+BuildRequires: <%= dep %>
+<% end -%>
+<% gem_build_conflicts.each do |dep| -%>
+BuildRequires: <%= dep %>
+<% end -%>
+%endif
 <% end -%>
 
 %add_findreq_skiplist %ruby_gemslibdir/**/*
@@ -165,7 +178,7 @@ Conflicts:     <%= dep %>
 
 %changelog
 <% changes.reverse.each do |c| -%>
-* <%= c.date %> <%= c.author %> <%= c.email && "<#{c.email}>" || "" %> <%= [ c.version, c.release ].compact.join("-") %>
+* <%= c.date %> <%= c.author %> <%= c.email && "<#{c.email}>" || "" %> <%= [ c.epoch, [ c.version, c.release ].compact.join("-") ].compact.join(":") %>
 <%= c.description %>
 
 <% end -%>

@@ -640,6 +640,7 @@ class Gem::Requirement
       Gem::Requirement.new(res.map {|x|x.join(" ")})
    end
 
+   # merging gem requirement with others strictizing the conditions
    def merge other_requirement
       reqs_tmp = self.requirements | other_requirement.requirements
 

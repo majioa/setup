@@ -169,7 +169,7 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def version
-      version = spec&.version&.to_s || ""
+      version = spec&.version&.to_s || "0"
       parts = version.split(".")
 
       (parts[0..2] + (parts[3..-1]&.map {|x| x.to_i <= 1024 && x || nil}&.compact || [])).join(".")
@@ -251,7 +251,10 @@ class Setup::Source::Gem < Setup::Source::Base
    # Returns true when name of the gem is set.
    #
    def valid?
-      !name.nil? && spec.version && spec.platform == 'ruby' && spec.name !~ /\u0000/
+      !name.nil? &&
+         spec.version &&
+         (spec.platform == 'ruby' || spec.platform == Gem::Platform::CURRENT) &&
+         spec.name !~ /\u0000/
       # && !($:&spec.full_require_paths).any? && !spec.full_require_paths.all? {|p| File.directory?(p) }
    end
 
@@ -329,11 +332,17 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def dependencies type = nil
-      spec.dependencies.select { |dep| !type || dep.type == type }
+      (dsl.deps | deps).group_by {|x| x.name }.map do |(_name, deps)|
+        binding.pry if deps.size > 1
+         deps.reduce do |r, dep|
+           binding.pry
+            r.requirement.merge(dep.requirement)
+         end
+      end.select { |dep| !type || dep.type == type }
    end
 
    def provide
-      spec.version && Gem::Dependency.new(spec.name, Gem::Requirement.new(["= #{spec.version}"]), :runtime)
+      spec.version && Gem::Dependency.new(spec.name, Gem::Requirement.new(["= #{spec.version}"]), :runtime) || Gem::Dependency.new(spec.name)
    end
 
    def licenses
@@ -344,8 +353,8 @@ class Setup::Source::Gem < Setup::Source::Base
 
    def detect_root
       if spec
-          files = Dir['**/**/*']
-          (spec.files - files).any? && super || Dir.pwd
+          files = Dir['**/**/**']
+          (!spec.files.any? || (spec.files - files).any?) && super || Dir.pwd
       else
          super
       end

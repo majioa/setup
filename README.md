@@ -29,6 +29,11 @@
     %ruby_alias_names parser_p,parser-p
     %ruby_on_build_rake_tasks build
 
+sudo /usr/bin/setup.rb -s $(find -name "*.spec~") -o _.spec  --maintainer-name="Pavel Skrylev" --maintainer-email="majioa@altlinux.org" -g/home/majioa/available-list.yaml spec --debug-io=- --verbose=debug --ignore-path-tokens=templates,example,examples,sample,samples,spec,test,features,fixtures,doc,docs,contrib,demo,acceptance,conformance,myapp,website,benchmarks,benchmark,gemfiles,misc,steep  2>/dev/null; sudo chown majioa:majioa . -R
+
+sudo /usr/bin/setup.rb -o $(echo $(pwd)|sed "s|.*/||").spec  --maintainer-name="Pavel Skrylev" --maintainer-email="majioa@altlinux.org" -g/home/majioa/available-list.yaml spec --debug-io=- --verbose=debug --ignore-path-tokens=templates,example,examples,sample,samples,spec,test,features,fixtures,doc,docs,contrib,demo,acceptance,conformance,myapp,website,benchmarks,benchmark,gemfiles,misc,steep  2>/dev/null; sudo chown majioa:majioa . -R
+
+
 Every well practiced Rubyist is aware of Minero Aoki's ever `setup.rb`
 script. It's how most of us used to install our Ruby programs before RubyGems
 came along. And it's still mighty useful in certain scenarios, not the

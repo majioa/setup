@@ -108,8 +108,16 @@ class Setup::Spec::Rpm
          seq: %w(of_options of_state),
          default: {}.to_os,
       },
+      build_dependencies: {
+         seq: %w(of_options of_state of_default _build_dependencies),
+         default: [],
+      },
       build_requires: {
          seq: %w(of_options of_state of_default _build_requires),
+         default: [],
+      },
+      build_conflicts: {
+         seq: %w(of_options of_state of_default _build_conflicts),
          default: [],
       },
       build_pre_requires: {
@@ -244,7 +252,7 @@ class Setup::Spec::Rpm
          seq: %w(of_options of_source of_state of_default _rake_build_tasks),
          default: ""
       }
-   }
+   }.to_os(hash: true)
 
    include Setup::RpmSpecCore
 
@@ -317,7 +325,6 @@ class Setup::Spec::Rpm
       packages = [ self ] | (of_state(:secondaries) || of_default(:secondaries))
 
       packages.map do |package|
-         # binding.pry
          package.options&.main_source ||
             case package.state_kind || package.name.kind || default_state_kind
             when "lib"
@@ -332,7 +339,7 @@ class Setup::Spec::Rpm
                         [ package.version, package.summaries&.[]("") ]
                      end
                end
-               #   binding.pry
+               # binding.pry
 
                Setup::Source::Gem.new({"spec" => spec})
             when "app"
@@ -341,6 +348,7 @@ class Setup::Spec::Rpm
                #   rootdir && rootdir.split("/").last
                name = package.pre_name
 
+               # binding.pry
                Setup::Source::Gemfile.new({
                   "rootdir" => rootdir,
                   "name" => name.to_s,
@@ -348,6 +356,30 @@ class Setup::Spec::Rpm
                })
             end
       end.compact
+   end
+
+   def pure_build_requires
+      build_requires.select {|r| r !~ /^gem\(.*\)/ }
+   end
+
+   def pure_build_conflicts
+      build_conflicts.select {|r| r !~ /^gem\(.*\)/ }
+   end
+
+   def gem_build_requires
+      build_requires.select {|r| r =~ /^gem\(.*\)/ }
+   end
+
+   def gem_build_conflicts
+      build_conflicts.select {|r| r =~ /^gem\(.*\)/ }
+   end
+
+   def has_gem_build_requires?
+      gem_build_requires.any?
+   end
+
+   def has_gem_build_conflicts?
+      gem_build_conflicts.any?
    end
 
    protected
@@ -358,10 +390,9 @@ class Setup::Spec::Rpm
 
    def _versioned_gem_list value_in
       dep_list = dep_list_intersect(value_in.to_os, available_gem_ranges, gem_versionings)
-      dependencies_with = dependencies | [provide_dep].compact
 
       dep_list.select do |n, dep_in|
-         dependencies_with.select { |dep| dep.name == n.to_s }.any? do |dep|
+         dependencies.select { |dep| dep.name == n.to_s }.any? do |dep|
             dep_ver = combine_deps(dep, dep_in)
             dep_ver.requirement.requirements != dep.requirement.expand.requirements
          end
@@ -434,7 +465,7 @@ class Setup::Spec::Rpm
                                         available_gem_list: available_gem_list })
 
          secondary_parts_for(sec, source)
-      end.concat(secondary_parts_for(self, source)).flatten.compact
+      end.concat(secondary_parts_for(self, source)).flatten.uniq {|x| x.name.fullname }
 
       # binding.pry
       secondaries = secondaries.map do |sec|
@@ -480,7 +511,7 @@ class Setup::Spec::Rpm
       end
    end
 
-   def _build_requires value_in
+   def _build_dependencies value_in
       deps_pre = value_in.map do |dep|
          if !m = dep.match(/gem\((.*)\) ([>=<]+) ([\w\d\.\-]+)/)
             dep
@@ -497,12 +528,36 @@ class Setup::Spec::Rpm
       reqs =
          append_versioning(filtered).reject do |n_in|
             n = n_in.is_a?(Gem::Dependency) && n_in.name || n_in
-            name.match?(n, true)
+            name.eql?(n, true)
          end
+   end
 
-      reqs.reduce([]) do |deps, dep|
+   def _build_requires value_in
+      # binding.pry
+      build_dependencies.reduce(value_in || []) do |deps, dep|
          deps |
             if dep.is_a?(Gem::Dependency)
+               #deph = Setup::Deps.lower_to_rpm(dep.requirement)
+               deph = Setup::Deps.to_rpm(dep.requirement)
+
+               [ deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }.join(" ") ]
+            else
+               name = Setup::Spec::Rpm::Name.parse(dep)
+               deps_pre.find do |dep_pre|
+                  if dep_pre.is_a?(Gem::Dependency)
+                     dep_pre.name == name.name
+                  end
+               end && [] || [ dep ]
+            end
+      end
+   end
+
+   def _build_conflicts value_in
+      # binding.pry
+      build_dependencies.reduce(value_in || []) do |deps, dep|
+         deps |
+            if dep.is_a?(Gem::Dependency)
+               #deph = Setup::Deps.upper_negate_to_rpm(dep.requirement)
                deph = Setup::Deps.to_rpm(dep.requirement)
 
                [ deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }.join(" ") ]
@@ -614,6 +669,7 @@ class Setup::Spec::Rpm
                date: Date.today.strftime("%a %b %d %Y"),
                author: packager_name,
                email: packager_email,
+               epoch: epoch,
                version: version,
                release: release,
                description: description
@@ -647,7 +703,7 @@ class Setup::Spec::Rpm
                                      gem_versionings: gem_versionings,
                                      available_gem_list: available_gem_list })
          end
-      end
+      end.compact
    end
 
    def source

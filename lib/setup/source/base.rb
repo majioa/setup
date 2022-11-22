@@ -304,7 +304,7 @@ class Setup::Source::Base
    end
 
    def provide
-      nil
+      Gem::Dependency.new(name)
    end
 
    # +summaries+ returns an open-struct formatted summaries with a default locale as a key
@@ -342,6 +342,18 @@ class Setup::Source::Base
 
    def alias_to *sources
       @aliases = aliases | sources.flatten
+   end
+
+   # rebases source_file to path base and returns.
+   def source_path_from path
+      file =
+         if source_file.include?(path)
+            source_file[path.size + 1..-1]
+         else
+            source_file
+         end
+
+      File.dirname(file)
    end
 
    protected

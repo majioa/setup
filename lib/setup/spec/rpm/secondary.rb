@@ -60,7 +60,7 @@ class Setup::Spec::Rpm::Secondary
       },
       descriptions: {
          seq: %w(of_options of_state of_source of_default _descriptions _format_descriptions),
-         default: {}.to_os
+         default: {}
       },
       readme: {
          seq: %w(of_options of_source _readme of_state),
@@ -108,13 +108,13 @@ class Setup::Spec::Rpm::Secondary
       },
       available_gem_ranges: {
          seq: %w(of_options of_state _available_gem_ranges),
-         default: {}.to_os
+         default: {}
       },
       rootdir: {
          seq: %w(of_options of_state),
          default: nil
       }
-   }
+   }.to_os(hash: true)
 
    include Setup::RpmSpecCore
 
@@ -129,7 +129,7 @@ class Setup::Spec::Rpm::Secondary
    def state_kind
       return @state_kind if @state_kind
 
-      binding.pry
+      # binding.pry
       @state_kind ||= options.source.is_a?(Setup::Source::Gem) && "lib" || file_list.blank? && "app" || pre_name&.kind
    end
 

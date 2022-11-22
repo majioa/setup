@@ -9,12 +9,13 @@ class Setup::DSL
    # group to kind mapping
    GROUP_MAPPING = {
       default: :development,
+      integration: :development,
       development: :development,
       test: :development,
       debug: :development,
       production: :runtime,
-      true => :runtime,
-   }
+      true => :development,
+   }.reduce(Hash.new(:development)) {|r,(k,v)| r.merge(k => v) }
 
    # attributes
    attr_reader :source_file, :replace_list, :skip_list, :append_list, :spec

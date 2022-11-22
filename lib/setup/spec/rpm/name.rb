@@ -28,23 +28,23 @@ class Setup::Spec::Rpm::Name
       end
    end
 
-   def match? other, deep = false
+   def eql? other, deep = false
       case other
       when self.class
-         self.match_by?(:kind, other) && self.match_by?(:name, other)
+         self.eql_by?(:kind, other) && self.eql_by?(:name, other)
       when String, Symbol
          ([ autoname, fullname ] | [ aliases ].flatten).include?(other.to_s)
       else
          other.to_s == self.fullname
-      end || deep && self.match_by?(:support_name, other)
+      end || deep && self.eql_by?(:support_name, other)
    end
 
    def == other
-      match?(other)
+      eql?(other)
    end
 
    def === other
-      match?(other)
+      eql?(other)
    end
 
    def to_s
@@ -60,7 +60,7 @@ class Setup::Spec::Rpm::Name
       self.class.new(options.merge(aliases: self.aliases | other.aliases))
    end
 
-   def match_by? value, other
+   def eql_by? value, other
       case value
       when :name
          ([ self.name, self.aliases ].flatten & [ other.name, other.aliases ].flatten).any?

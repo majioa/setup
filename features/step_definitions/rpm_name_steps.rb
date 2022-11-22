@@ -19,19 +19,19 @@ When('the name has support name object:') do |table|
 end
 
 Then('the names are fully matched:') do
-   names.combination(2).each { |(n1, n2)| expect(n1.match?(n2)).to be_truthy }
+   names.combination(2).each { |(n1, n2)| expect(n1.eql?(n2)).to be_truthy }
 end
 
 Then('the names are matched in part of {string}') do |attr|
-   names.combination(2).each { |(n1, n2)| expect(n1.match_by?(attr.to_sym, n2)).to be_truthy }
+   names.combination(2).each { |(n1, n2)| expect(n1.eql_by?(attr.to_sym, n2)).to be_truthy }
 end
 
 Then('the names are not matched in part of {string}') do |attr|
-   names.combination(2).each { |(n1, n2)| expect(n1.match_by?(attr.to_sym, n2)).to be_falsey }
+   names.combination(2).each { |(n1, n2)| expect(n1.eql_by?(attr.to_sym, n2)).to be_falsey }
 end
 
 Then('the names are fully not matched') do
-   names.combination(2).each { |(n1, n2)| expect(n1.match?(n2)).to be_falsey }
+   names.combination(2).each { |(n1, n2)| expect(n1.eql?(n2)).to be_falsey }
 end
 
 Then('the name\'s full name is :') do |text|

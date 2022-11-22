@@ -137,10 +137,16 @@ class Setup::Space
       @dependencies ||= valid_sources.map do |source|
          source.respond_to?(:dependencies) && source.dependencies || []
       end.flatten.reject do |dep|
-         sources.any? do |s|
+         match_platform?(dep) || sources.any? do |s|
             dep.name == s.name &&
             dep.requirement.satisfied_by?(Gem::Version.new(s.version))
          end
+      end
+   end
+
+   def match_platform? dep
+      if dep.respond_to?(:platforms)
+         (dep.platforms & options.skip_platforms).any?
       end
    end
 
@@ -166,24 +172,27 @@ class Setup::Space
    # space.sources => # [#<Setup::Source:...>, #<...>]
    #
    def sources
-      @sources ||= read_attribute(:sources) || Setup::Source.search_in(rootdir, options)
+      @sources ||= stat_sources.map { |x| x.first }
    end
 
    # +valid_sources+ returns all the valid sources based on the current source list.
    #
    # space.valid_sources => # [#<Setup::Source:...>, #<...>]
    #
+#   def valid_sources
+#      @valid_sources ||= sources.select do |source|
+#         source.valid? && is_regarded?(source)
+#      end
+#   end
    def valid_sources
-      @valid_sources ||= sources.select do |source|
-         source.valid? && is_regarded?(source)
-      end
+      @valid_sources = stat_sources.map {|(source, status)| status == :valid && source || nil }.compact
    end
 
-   def is_regarded? source
-      regarded_names.any? {|i| i === source.name } ||
-         !ignored_names.any? {|i| i === source.name } &&
-         !ignored_path_tokens.any? {|t| /\/#{t}\// =~ source.source_file }
-   end
+#   def is_regarded? source
+#      regarded_names.any? {|i| i === source.name } ||
+#         !ignored_names.any? {|i| i === source.name } &&
+#         !ignored_path_tokens.any? {|t| /\/#{t}\// =~ source.source_file }
+#   end
 
    def ignored_names
       @ignored_names ||= (read_attribute(:ignored_names) || [])
@@ -272,7 +281,7 @@ class Setup::Space
       info("Sources:")
       stat_source_tree.each do |(path_in, stated_sources)|
          stated_sources.each do |(source, status)|
-            path = File.join(path_in, File.basename(source.source_file)) if source.source_file
+            path = source.source_path_from(rootdir) if source.source_file
             stat = [STATUS_CHARS[status], TYPE_CHARS[source.type.to_sym]].join(" ")
             namever = [source.name, source.version].compact.join(":")
             info_in = "#{stat}#{namever} [#{path}]"
@@ -285,20 +294,26 @@ class Setup::Space
    # returns all the sources with their statuses, and sorted by a its rootdir value
    #
    def stat_sources &block
-      @stat_sources =
-         sources.group_by { |x| x.name }.map do |(name, v)|
-            # aliasing
-            v.each {|x| x.alias_to(v) }
+      return @stat_sources if @stat_sources
 
-            # statusing
-            v.sort do |x,y|
-               c0 = Setup::Source::TYPES.keys.index(x.class.to_s.to_sym) <=> Setup::Source::TYPES.keys.index(y.class.to_s.to_sym)
-               c1 = c0 == 0 && y.version <=> x.version || c0
+      @stat_sources = read_attribute(:stat_sources) || Setup::Source.search_in(rootdir, options).group_by do |x|
+            [x.name, x.version].compact.join(":")
+         end.map do |(full_name, v)|
+            sorten =
+               v.sort do |x,y|
+                  c0 = Setup::Source::TYPES.values.index(x.class.to_s) <=> Setup::Source::TYPES.values.index(y.class.to_s)
+                  c1 = c0 == 0 && x.name <=> y.name || c0
+                  c2 = c1 == 0 && y.version <=> x.version || c1
+                  c3 = c2 == 0 && y.source_names.grep(/gemspec/).count <=> x.source_names.grep(/gemspec/).count
 
-               c1 == 0 && x.rootdir.size <=> y.rootdir.size || c1
-            end.map.with_index do |source, index|
-               [source, source_status(source, index > 0)]
-            end
+                  c2 == 0 && c3 == 0 && x.rootdir.size <=> y.rootdir.size || c3 != 0 && c3 || c2
+               end.map.with_index do |source, index|
+                  [source, source_status(source, index > 0)]
+               end
+
+            sorten[1..-1].each { |x| sorten.first.first.alias_to(x.first) }
+
+            sorten
          end.flatten(1).sort_by {|(x, _)| x.rootdir.size }.each do |(source, status)|
             block[source, status] if block_given?
          end

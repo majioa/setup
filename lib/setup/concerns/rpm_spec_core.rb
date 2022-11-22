@@ -41,7 +41,7 @@ module Setup::RpmSpecCore
 
    def read_attribute name, seq = nil
       aa = (seq || self.class::STATE[name][:seq]).reduce(nil) do |value_in, func|
-       #binding.pry if name == :summaries
+       # binding.pry if name == :context
          if func[0] == "_"
             send(func, value_in)
          elsif value_in.blank?
@@ -50,7 +50,7 @@ module Setup::RpmSpecCore
             value_in
          end
       end
-      # binding.pry if name == :summaries
+      # binding.pry if name == :context
       aa
    end
 
@@ -74,13 +74,6 @@ module Setup::RpmSpecCore
       @state = value.to_os
    end
 
-#   def context
-#      #require 'pry';binding.pry
-#      @context ||= self["context"] ||
-#         self.respond_to?(:spec) && self.spec.context ||
-#         OpenStruct.new
-#   end
-#
    def summary
       summaries[""]
    end
@@ -193,7 +186,7 @@ module Setup::RpmSpecCore
                [ first, rest ].compact.join("\n\n")
             else
                locale = Setup::I18n.default_locale
-               value_in[locale] || value_in[locale_in] || descriptions_in[locale_in]
+               value_in[locale] || value_in[locale_in] || descriptions_in[locale] || descriptions_in[locale_in]
             end
          else
             summary_in = summaries_in[locale_in]
@@ -231,7 +224,7 @@ module Setup::RpmSpecCore
    end
 
    def _version value_in
-      reversion = gem_versionings.select {|n,v| name.match?(n, true) }.to_h.values.first
+      reversion = gem_versionings.select {|n,v| name.eql?(n, true) }.to_h.values.first
       value = reversion || value_in
 
       case value
@@ -247,7 +240,7 @@ module Setup::RpmSpecCore
    end
 
    def _readme _in
-      files.grep(/(readme|чтимя).*/i).join(" ")
+      files.grep(/(readme|чтимя).*/i).group_by {|x| File.basename(x) }.map {|(name, a)| a.first }.join(" ")
    end
 
    def _requires_plain_only value_in
@@ -289,7 +282,7 @@ module Setup::RpmSpecCore
       versioning_list = available_gem_ranges.merge(gem_versionings)
 
       deps_in.map do |dep_in|
-         if dep_in.is_a?(Gem::Dependency)
+         if dep_in.is_a?(Gem::Dependency) && provide_dep.name != dep_in.name
             dep = versioning_list[dep_in.name]
 
             if dep
@@ -328,7 +321,7 @@ module Setup::RpmSpecCore
    end
 
    def variables
-      @variables ||= context.__macros
+      @variables ||= context.__macros || {}.to_os
    end
 
    def render_deps deps_in
@@ -344,7 +337,7 @@ module Setup::RpmSpecCore
    end
 
    def provide_dep
-      gem_versionings.select {|n,v| name.match?(n, true) }.to_h.values.first || source&.provide
+      gem_versionings.select {|n,v| name.eql?(n, true) }.to_h.values.first || source&.provide
    end
 
    def _provides value_in

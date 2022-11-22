@@ -27,7 +27,8 @@ class Setup::CLI
       warn_io: 'stderr',
       error_io: 'stderr',
       info_io: 'stdout',
-      debug_io: 'stderr'
+      debug_io: 'stderr',
+      skip_platforms: %i(jruby)
    }.to_os
 
    def option_parser

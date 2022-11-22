@@ -180,25 +180,25 @@ class Setup::Spec::Rpm::Parser
 
    def store_value opts, match, key, flow, context
       data = SCHEME[key]
-      rule = data.is_a?(OpenStruct) && data[:rule] || data
-      parse_func = data.is_a?(OpenStruct) && data[:parse_func] || :parse_default
-      non_contexted = data.is_a?(OpenStruct) && data[:non_contexted]
+      rule = data.is_a?(OpenStruct) && data.rule || data
+      parse_func = data.is_a?(OpenStruct) && data.parse_func || :parse_default
+      non_contexted = data.is_a?(OpenStruct) && data.non_contexted
       reflown = reeval(flow, opts)
       rematched = match.to_a.map { |x| x.is_a?(String) && reeval(x, opts) || x }
       value = method(parse_func)[rematched, reflown, opts, context]
-      mode = data.is_a?(OpenStruct) && data[:mode] || :append
-      copts = !non_contexted && context[:name] && opts["secondaries"].find do |sec|
-      #binding.pry
+      mode = data.is_a?(OpenStruct) && data.mode || :append
+      copts = !non_contexted && context.name && opts.secondaries.find do |sec|
+         #binding.pry
          sec.name == Setup::Spec::Rpm::Name.parse(
-            context[:name],
-            support_name: opts["name"],
+            context.name,
+            support_name: opts.name,
             aliases: aliased_names(opts))
       end || opts
       #binding.pry if context[:kind]
-      if !non_contexted && context[:kind] && context[:kind].to_s != copts["name"].kind
+      if !non_contexted && context.kind && context.kind.to_s != copts["name"].kind
          copts["name"] =
             Setup::Spec::Rpm::Name.parse(copts["name"].original_fullname,
-               kind: context[:kind],
+               kind: context.kind,
                support_name: copts["name"].support_name)
       end
 
@@ -226,17 +226,17 @@ class Setup::Spec::Rpm::Parser
    end
 
    def secondary_for_context opts, context
-      opts["secondaries"].find do |sec|
+      opts.secondaries.find do |sec|
       #binding.pry
          sec.name == Setup::Spec::Rpm::Name.parse(
-            context[:name],
-            support_name: opts["name"],
+            context.name,
+            support_name: opts.name,
             aliases: aliased_names(opts))
       end
    end
 
    def reeval flow, opts
-      opts.deep_merge(opts["context"]).reduce(flow) do |reflown, (name, value)|
+      opts.deep_merge(opts.context).reduce(flow) do |reflown, name, value|
          reflown.gsub(/%({#{name}}|#{name})/, value.to_s)
       end || flow
    end
@@ -260,7 +260,7 @@ class Setup::Spec::Rpm::Parser
          exec: /_bindir/,
       }.find { |(k, re)| re =~ flow }&.[](0)
       context.replace(parse_context_line(match[1], opts).merge(kind: kind))
-      flow.split("\n")[1..-1].join("\n")
+      splitten_flow(flow)
    end
 
    def parse_changes _, flow, *_
@@ -275,6 +275,7 @@ class Setup::Spec::Rpm::Parser
             email: email,
             version: Gem::Version.new(version),
             release: release,
+            epoch: epoch,
             description: row[1..-1].join("\n")
          }.to_os
       end.reverse
@@ -290,20 +291,20 @@ class Setup::Spec::Rpm::Parser
    end
 
    def parse_plain_section _, flow, *_
-      flow.split("\n")[1..-1].join("\n")
+      splitten_flow(flow)
    end
 
    # secondary without suffix by default has kind of lib
    def parse_secondary match, flow, opts, context
       context.replace(parse_context_line(match[1], opts))
-      name = Setup::Spec::Rpm::Name.parse(context[:name], support_name: opts["name"], aliases: aliased_names(opts))
+      name = Setup::Spec::Rpm::Name.parse(context.name, support_name: opts.name, aliases: aliased_names(opts))
 
-      [ { "name" => name, "version" => opts["version"], "release" => opts["release"], "summaries" => opts["summaries"] }.to_os ]
+      [{ "name" => name, "version" => opts.version, "release" => opts.release, "summaries" => opts.summaries }.to_os ]
    end
 
    def parse_description match, flow, opts, context
       context.replace(parse_context_line(match[1], opts))
-      { context[:cp] || "" => flow.split("\n")[1..-1].join("\n") }.to_os
+      { context.cp || "" => splitten_flow(flow) }.to_os
    end
 
    def parse_license match, *_
@@ -332,7 +333,7 @@ class Setup::Spec::Rpm::Parser
 
    def parse_context_line line, opts
       key = nil
-      context = line.to_s.split(/\s+/).reduce({}) do |res, arg|
+      context = line.to_s.split(/\s+/).reduce({}.to_os) do |res, arg|
       #binding.pry
          case arg
          when '-l'
@@ -342,19 +343,19 @@ class Setup::Spec::Rpm::Parser
          else
             case key
             when :cp
-               res[:cp] = arg
+               res.cp = arg
             when :fullname
-               res[:name] = arg
+               res.name = arg
             else
-               res[:name] = "#{opts["name"]}-#{arg}"
+               res.name = "#{opts.name}-#{arg}"
             end
          end
 
          res
       end
 
-      if context[:name]
-         opts["secondaries"] ||= []
+      if context.name
+         opts.secondaries ||= []
 #         name = Setup::Spec::Rpm::Name.parse(context[:name])
 #      binding.pry
 #         sel = opts["secondaries"].select { |sec| sec.name == name }
@@ -367,7 +368,13 @@ class Setup::Spec::Rpm::Parser
    end
 
    def aliased_names opts
-      opts["context"]["__options"]&.aliased_names
+      opts.context.__options&.aliased_names
+   end
+
+   protected
+
+   def splitten_flow flow
+      (flow.split("\n")[1..-1] || []).join("\n")
    end
 
    class << self
