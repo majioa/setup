@@ -40,7 +40,13 @@ class Setup::Source::Base
 
    OPTIONS_IN = {
       aliases: ->(o, name) { o.is_a?(Hash) && [ o[nil], o[name], o.values.map {|x|x.flatten}.select {|x|x.include?(name)}.map {|x|x.first}.flatten ].flatten.compact.uniq || o },
-      alias_names: ->(o, name) { o.is_a?(Hash) && [ o[nil], o[name], o.values.map {|x|x.flatten}.select {|x|x.include?(name)}.map {|x|x.first}.flatten ].flatten.compact.uniq || o },
+      alias_names: ->(o, name) do
+        o.is_a?(Hash) && [
+          o[nil].select {|g| g.grep(name).size > 0 },
+          o[name],
+          o.values.map {|x|x.flatten}.select {|x|x.include?(name)}.map {|x|x.first}.flatten
+        ].flatten.compact.uniq || o
+      end,
       version_replaces: true,
       gem_version_replace: true,
       source_file: true,

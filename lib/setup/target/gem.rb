@@ -44,7 +44,7 @@ class Setup::Target::Gem
    end
 
    def ridir
-      source.spec.ri_dir
+      source.spec.doc_dir('ri')
    end
 
    def specdir

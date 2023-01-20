@@ -6,6 +6,8 @@ module Setup
    class Compiler < Base
       include Setup::Log
 
+      ARGS = %w(--use-system-libraries --enable-system-libraries --enable-debug-build --disable-static --enable-force-compile --srcdir=.)
+
       class Extconf
          attr_reader :config, :original_config, :makeconfig, :original_makeconfig, :argv, :extdir, :source
 
@@ -54,7 +56,7 @@ module Setup
               if extpath =~ /rakefile(.rb)?$/i
                  Setup::Rake.new(extpath, {source: source})
               else
-                 cfg = Extconf.new(extpath, source, '--use-system-libraries', '--enable-debug-build', '--disable-static', '--srcdir=.')
+                 cfg = Extconf.new(extpath, source, *ARGS)
                  cfg.configure
                  cfg
               end
