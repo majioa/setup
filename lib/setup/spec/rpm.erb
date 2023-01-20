@@ -12,7 +12,7 @@ Epoch:         <%= epoch %>
 Version:       <%= version %>
 Release:       <%= release %>
 <% summaries.each_pair do |cp, summary| -%>
-Summary<%= !cp.blank? && "(#{cp})" || nil %>:<%= " " * (cp.blank? && 7 || 1 ) %><%= summary %>
+Summary<%= Setup::I18n.is_default?(cp) ? nil : "(#{cp})" %>:<%= " " * (Setup::I18n.is_default?(cp) ? 7 : 1 ) %><%= summary %>
 <% end -%>
 License:       <%= licenses.join(" or ") %>
 Group:         <%= group %>
@@ -85,7 +85,7 @@ Conflicts:     <%= dep %>
 
 <% end -%>
 <% descriptions.each_pair do |cp, description| -%>
-%description<%= !cp.blank? && "         -l #{cp}" || nil %>
+%description<%= Setup::I18n.is_default?(cp) ? nil : "         -l #{cp}" %>
 <%= description %>
 
 <% end -%>
@@ -95,7 +95,7 @@ Conflicts:     <%= dep %>
 Version:       <%= secondary.version %>
 Release:       <%= secondary.release %>
 <% secondary.summaries.each_pair do |cp, summary| -%>
-Summary<%= !cp.blank? && "(#{cp})" || nil %>:<%= " " * (cp.blank? && 7 || 1 ) %><%= summary %>
+Summary<%= Setup::I18n.is_default?(cp) ? nil : "(#{cp})" %>:<%= " " * (Setup::I18n.is_default?(cp) ? 7 : 1 ) %><%= summary %>
 <% end -%>
 Group:         <%= secondary.group %>
 <% unless secondary.is_lib? and secondary.has_compilables? -%>
@@ -116,7 +116,7 @@ Conflicts:     <%= dep %>
 <% end -%>
 
 <% secondary.descriptions.each_pair do |cp, description| -%>
-%description   -n <%= secondary.name %><%= !cp.blank? && " -l #{cp}" || nil %>
+%description   -n <%= secondary.name %><%= Setup::I18n.is_default?(cp) ? nil : " -l #{cp}" %>
 <%= description %>
 
 <% end -%>

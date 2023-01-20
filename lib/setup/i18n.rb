@@ -47,6 +47,10 @@ module Setup::I18n
          end
       end
 
+      def is_default? locale
+         default_locale == locale.to_s
+      end
+
       def t path, options = {}
          t!(path, options)
       rescue NoMethodError

@@ -140,7 +140,7 @@ module Setup::RpmSpecCore
       source_name = source&.name
       summaries_in = @host && host.summaries || of_source(:summaries) || {}.to_os
 
-      Setup::I18n.defaulted_locales.map do |locale_in|
+      Setup::I18n.locales.map do |locale_in|
          locale = locale_in.blank? && Setup::I18n.default_locale || locale_in
          summary_pre = !%i(lib app).include?(self.kind) && summaries_in[locale_in] || value_in[locale] || value_in[locale_in] || nil
          summary = summary_pre&.match("(.*?)[\-\.,_\s]*?$")&.[](1)
@@ -168,29 +168,29 @@ module Setup::RpmSpecCore
 
    def _descriptions value_in
       source_name = of_source(:name)
-      summaries_in = @host && summaries || { "": of_source(:summary)&.match("(.*?)[\.,-_\s]+$")&.[](1) }
+      summary = of_source(:summary)&.match("(.*?)[\.,-_\s]+$")&.[](1) # NOTE required for eval
+      summaries_in = @host && summaries || { Setup::I18n.default_locale => summary }
       descriptions_in = @host && host.descriptions || of_source(:descriptions) || of_source(:summaries) || {}.to_os
 
-      Setup::I18n.defaulted_locales.map do |locale|
+      Setup::I18n.locales.map do |locale|
          sum = t(:"spec.rpm.#{self.kind}.description", locale: locale, binding: binding)
 
          [ locale, sum ]
       end.to_os.map do |locale_in, summary_in|
-         if locale_in.blank?
+         if locale_in.to_s == Setup::I18n.default_locale
             if !%i(lib app).include?(self.kind)
                summary_in = summaries_in[locale_in]
                first = summary_in && (summary_in + ".")
                rest_in = descriptions_in[locale_in]
                /(?<re>.*)\.$/ =~ rest_in
-               rest = !first&.include?(re || rest_in || "") && rest_in || nil
+               rest = first&.include?(re || rest_in || "") ? nil : rest_in
                [ first, rest ].compact.join("\n\n")
             else
-               locale = Setup::I18n.default_locale
-               value_in[locale] || value_in[locale_in] || descriptions_in[locale] || descriptions_in[locale_in]
+               value_in[locale_in] || descriptions_in[locale_in]
             end
          else
             summary_in = summaries_in[locale_in]
-            summary_in && summary_in + "." || value_in[locale_in]
+            /(?<s>.+)\.?$/ =~ summary_in && s && "#{s}." || value_in[locale_in]
          end
       end.compact
    end

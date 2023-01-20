@@ -118,7 +118,7 @@ class Setup::Spec::Rpm::Parser
       },
       context: {
          non_contexted: true,
-         regexp: /^%(?:(?:define|global)|([^\s]+))\s+(?:([^\s]+)\s+([^\s].*)|(.*))/i,
+         regexp: /^%(?:(?:define|global)|(?!description|package|files))\s+(?:([^\s]+)\s+([^\s].*)|(.*))/i,
          parse_func: :parse_context
       },
       comment: {
@@ -150,6 +150,7 @@ class Setup::Spec::Rpm::Parser
             if match
                if matched.name
                   if matched.name != key
+   #               binding.pry if matched[:match][0] =~ /description/
                      store_value(state, matched[:match], matched[:name], matched[:flow], context)
                      matched = { name: key.to_s, flow: "", match: match }.to_os
                   end
@@ -304,7 +305,7 @@ class Setup::Spec::Rpm::Parser
 
    def parse_description match, flow, opts, context
       context.replace(parse_context_line(match[1], opts))
-      { context.cp || "" => splitten_flow(flow) }.to_os
+      { context.cp || Setup::I18n.default_locale => splitten_flow(flow) }.to_os
    end
 
    def parse_license match, *_
@@ -312,7 +313,7 @@ class Setup::Spec::Rpm::Parser
    end
 
    def parse_summary match, *_
-      { match[1] || "" => match[2] }.to_os
+      { match[1] || Setup::I18n.default_locale => match[2] }.to_os
    end
 
    def parse_context match, *_
