@@ -132,8 +132,10 @@ class Setup::DSL
       end.compact
    end
 
+   # +gemspecs+ returns either self spec array for a gem DSL, or DSL's gemspec array for Gemfile
+   #
    def gemspecs
-      dsl.gemspecs | [spec].compact
+      spec ? [spec] : dsl.gemspecs
    end
 
    def extracted_gemspec_deps

@@ -109,11 +109,11 @@ class Setup::Deps
    end
 
    def deps_gem source
-      [ "gem(#{source.name})", source.version ].compact.join(' = ')
+      ["gem(#{source.name})", source.version].compact.join(' = ')
    end
 
    def deps_gem_ext source
-      %w(gem ruby-gem rubygem).map do |kind|
+      %w(gem).map do |kind|
          "#{kind}(#{source.name}) = #{source.version}"
       end
    end

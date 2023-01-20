@@ -159,7 +159,12 @@ class Hoe
          @spec.spec.executables = @spec.spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
          @spec.spec.bindir = 'bin'
 
-         version = IO.read(history_file).split("\n").reduce(nil) { |res, x| res || /(=+|#+) v?(?<version>[^ ]+)/ =~ x && version }
+         version =
+            if history_file
+               IO.read(history_file).split("\n").reduce(nil) { |res, x| res || /(=+|#+) v?(?<version>[^ ]+)/ =~ x && version }
+            else
+               instance_eval(`grep VERSION . -r|sed s,.*:,,`.strip)
+            end
          @spec.spec.version = version
 
          readme = IO.read(readme_file)
