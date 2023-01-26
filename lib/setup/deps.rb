@@ -68,6 +68,10 @@ class Setup::Deps
       end.to_h
    end
 
+   def prefix
+     'gem'
+   end
+
    ## deps
    def deps_gem_dsl dsl, set = 'lib'
       deps =
@@ -85,18 +89,12 @@ class Setup::Deps
       list = []
 
       deps.each do |dep|
-         self.class.to_rpm(dep.requirement).map do |a, b|
-            list << "gem(#{dep.name}) #{a} #{b}"
-         end
+         list << (["#{prefix}(#{dep.name})"] | self.class.lower_to_rpm(dep.requirement)).join(" ")
       end
 
-      ruby = dsl.required_ruby
-      ruby_version = dsl.required_ruby_version
-      rubygems_version = dsl.required_rubygems_version
-
       if /lib|bin/ =~ set
-         list << self.class.to_rpm(ruby_version).map { |a, b| "#{ruby} #{a} #{b}" }
-         list << "rubygems #{rubygems_version}"
+         list << ([dsl.required_ruby] | self.class.lower_to_rpm(Gem::Requirement.new(["#{dsl.required_ruby_version}"]))).join(" ")
+         list << "rubygems #{dsl.required_rubygems_version}"
       end
 
       list
@@ -185,20 +183,67 @@ class Setup::Deps
    end
 
    class << self
-      def to_rpm req
-         req.requirements.reduce({}) do |s, r|
-            ver = Gem::Version.new("#{r[1]}".gsub(/x/, '0'))
+      def lower_to_rpm req
+         req.requirements.reduce([]) do |res, r|
+            merge(res, debound(r))
+         end
+      end
 
-            tmp = case r[0]
-                  when "~>"
-                     {'>=' => ver.release, '<' => ver.bump}
-                  when "!="
-                     {'>' => ver.release}
-                  else
-                     {r[0] => ver}
-                  end
+      # TODO for requirement
+      # +debound+ crop upper limitation bound from the requirement rule
+      #
+      def debound req
+         ver = Gem::Version.new("#{req[1]}".gsub(/x/, '0'))
 
-            s.merge(tmp)
+         case req[0]
+         when "~>"
+            ['>=', ver.release]
+         when ">=", ">", "="
+            [req[0], ver.release]
+         when "!="
+            ['>', ver.release]
+         else
+            nil
+         end
+      end
+
+      # TODO for requirement
+      # +merge+ enstricts requirement
+      # >= 4 & >= 5 => >= 5
+      # > 5 ^ > 4 => > 5
+      #
+      # > 5 & >= 4 => > 5
+      # > 4 & >= 4 => > 4
+      # > 4 & >= 4.x => >= 4.x
+      #
+      # >= 4 & > 4 => > 4
+      # >= 4 & > 5 => > 5
+      # >= 5 & > 4 => >= 5
+      #
+      MERGE_CONDS = {
+         ">=" => {
+            code: -1,
+         }
+      }
+
+      def merge req1, req2
+         return req1 if req2.blank?
+         return req2 if req1.blank?
+
+         m = [req1[1], req2[1]].max
+
+         if req1[0] == req2[0]
+            [req1[0], m]
+         elsif req1[0] == ">="
+            req1[1] <= req2[1] ? [">", m] : [">=", m]
+         elsif req1[0] == ">"
+            req1[1] >= req2[1] ? [">", m] : [">=", m]
+         elsif %w(= < <=).include?(req1[0])
+            # unsupported
+            req2
+         else
+            # unsupported
+            req1
          end
       end
    end
