@@ -46,7 +46,7 @@ BuildRequires: <%= dep %>
 BuildRequires: <%= dep %>
 <% end -%>
 <% gem_build_conflicts.each do |dep| -%>
-BuildRequires: <%= dep %>
+BuildConflicts: <%= dep %>
 <% end -%>
 %endif
 <% end -%>
@@ -65,14 +65,14 @@ BuildRequires: <%= dep %>
 <% requires.each do |dep| -%>
 Requires:      <%= dep %>
 <% end -%>
+<% conflicts.each do |dep| -%>
+Conflicts:     <%= dep %>
+<% end -%>
 <% obsoletes.each do |dep| -%>
 Obsoletes:     <%= dep %>
 <% end -%>
 <% provides.each do |dep| -%>
 Provides:      <%= dep %>
-<% end -%>
-<% conflicts.each do |dep| -%>
-Conflicts:     <%= dep %>
 <% end -%>
 
 <% if has_rake_build_tasks? or has_use_gem_version_list? -%>
@@ -105,14 +105,14 @@ BuildArch:     <%= secondary.build_arch %>
 <% secondary.requires.each do |dep| -%>
 Requires:      <%= dep %>
 <% end -%>
+<% secondary.conflicts.each do |dep| -%>
+Conflicts:     <%= dep %>
+<% end -%>
 <% secondary.obsoletes.each do |dep| -%>
 Obsoletes:     <%= dep %>
 <% end -%>
 <% secondary.provides.each do |dep| -%>
 Provides:      <%= dep %>
-<% end -%>
-<% secondary.conflicts.each do |dep| -%>
-Conflicts:     <%= dep %>
 <% end -%>
 
 <% secondary.descriptions.each_pair do |cp, description| -%>
@@ -124,6 +124,9 @@ Conflicts:     <%= dep %>
 <% end -%>
 %prep
 %setup
+<% if has_patches? -%>
+%autopatch
+<% end -%>
 
 %build
 %ruby_build

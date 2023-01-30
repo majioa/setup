@@ -251,7 +251,7 @@ class Setup::Space
          elsif spec_pre.is_a?(String)
             YAML.load(spec_pre)
          elsif options&.spec_file
-            Setup::Spec.load_from(IO.read(options.spec_file))
+            Setup::Spec.load_from(IO.read(options.spec_file), options)
          elsif @spec_type || options&.spec_typae
             Setup::Spec.find(@spec_type || options.spec_type).new
          end
@@ -304,12 +304,16 @@ class Setup::Space
                   c0 = Setup::Source::TYPES.values.index(x.class.to_s) <=> Setup::Source::TYPES.values.index(y.class.to_s)
                   c1 = c0 == 0 && x.name <=> y.name || c0
                   c2 = c1 == 0 && y.version <=> x.version || c1
-                  c3 = c2 == 0 && y.source_names.grep(/gemspec/).count <=> x.source_names.grep(/gemspec/).count
+                  c3 = c2 == 0 && y.platform <=> x.platform || c2
+                  c4 = c3 == 0 && y.source_names.grep(/gemspec/).count <=> x.source_names.grep(/gemspec/).count
 
-                  c2 == 0 && c3 == 0 && x.rootdir.size <=> y.rootdir.size || c3 != 0 && c3 || c2
-               end.map.with_index do |source, index|
-                  [source, source_status(source, index > 0)]
-               end
+                  c2 == 0 && c3 == 0 && c4 == 0 && x.rootdir.size <=> y.rootdir.size || c4 != 0 && c4 || c3 != 0 && c3 || c2
+               end.reduce([[], 0]) do |(res, index), source|
+                  dup = source.valid? && index > 0
+                  dup_index = source.valid? && index + 1 || index
+
+                  [res | [[source, source_status(source, dup)]], dup_index]
+               end.first
 
             sorten[1..-1].each { |x| sorten.first.first.alias_to(x.first) }
 

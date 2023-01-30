@@ -38,16 +38,16 @@ class Setup::Spec::Rpm::Secondary
          seq: %w(of_options of_state of_default _requires_plain_only _requires),
          default: [],
       },
+      conflicts: {
+         seq: %w(of_options of_state of_default _conflicts_plain_only _conflicts),
+         default: [],
+      },
       provides: {
          seq: %w(of_options of_state of_default _provides),
          default: [],
       },
       obsoletes: {
          seq: %w(of_options of_state of_default _obsoletes),
-         default: [],
-      },
-      conflicts: {
-         seq: %w(of_options of_state),
          default: [],
       },
       file_list: {
@@ -80,6 +80,10 @@ class Setup::Spec::Rpm::Secondary
       },
       devel_requires: {
          seq: %w(of_options of_state _devel_requires),
+         default: nil,
+      },
+      devel_conflicts: {
+         seq: %w(of_options of_state _devel_conflicts),
          default: nil,
       },
       devel_sources: {

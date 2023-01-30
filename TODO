@@ -80,3 +80,5 @@ vcs_url for snaky_hash gem
 [setup.rb][INFO]> X *RubyGems:3.3.7 [./Rakefile]
 [setup.rb][INFO]> X *Ruby:3.1.1.18 [./Rakefile]
 
+
+структура дерева mustermann и обьединение жемов из подпроектов, если они одноимённые:)

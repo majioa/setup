@@ -63,16 +63,16 @@ class Setup::Spec::Rpm
          seq: %w(of_options of_state of_default _requires_plain_only _requires),
          default: [],
       },
+      conflicts: {
+         seq: %w(of_options of_state of_default _conflicts_plain_only _conflicts),
+         default: [],
+      },
       provides: {
          seq: %w(of_options of_state of_default _provides),
          default: [],
       },
       obsoletes: {
          seq: %w(of_options of_state of_default _obsoletes),
-         default: [],
-      },
-      conflicts: {
-         seq: %w(of_options of_state),
          default: [],
       },
       file_list: {
@@ -198,6 +198,10 @@ class Setup::Spec::Rpm
       },
       devel_requires: {
          seq: %w(of_options of_state _devel_requires),
+         default: nil,
+      },
+      devel_conflicts: {
+         seq: %w(of_options of_state _devel_conflicts),
          default: nil,
       },
       devel_sources: {
@@ -533,43 +537,11 @@ class Setup::Spec::Rpm
    end
 
    def _build_requires value_in
-      # binding.pry
-      build_dependencies.reduce(value_in || []) do |deps, dep|
-         deps |
-            if dep.is_a?(Gem::Dependency)
-               #deph = Setup::Deps.lower_to_rpm(dep.requirement)
-               deph = Setup::Deps.to_rpm(dep.requirement)
-
-               [ deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }.join(" ") ]
-            else
-               name = Setup::Spec::Rpm::Name.parse(dep)
-               deps_pre.find do |dep_pre|
-                  if dep_pre.is_a?(Gem::Dependency)
-                     dep_pre.name == name.name
-                  end
-               end && [] || [ dep ]
-            end
-      end
+      render_deps(build_dependencies)
    end
 
    def _build_conflicts value_in
-      # binding.pry
-      build_dependencies.reduce(value_in || []) do |deps, dep|
-         deps |
-            if dep.is_a?(Gem::Dependency)
-               #deph = Setup::Deps.upper_negate_to_rpm(dep.requirement)
-               deph = Setup::Deps.to_rpm(dep.requirement)
-
-               [ deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }.join(" ") ]
-            else
-               name = Setup::Spec::Rpm::Name.parse(dep)
-               deps_pre.find do |dep_pre|
-                  if dep_pre.is_a?(Gem::Dependency)
-                     dep_pre.name == name.name
-                  end
-               end && [] || [ dep ]
-            end
-      end
+      render_deps(build_dependencies, :negate)
    end
 
    def _vcs value_in

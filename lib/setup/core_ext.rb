@@ -590,6 +590,58 @@ class Gem::Requirement
       self.class.expand_requirements(self.requirements | other_requirement.requirements)
    end
 
+   def strictize
+      reqs_tmp =
+         requirements.reduce({}) do |s, r|
+            ver = Gem::Version.new("#{r[1]}".gsub(/x/, '0'))
+            tmp =
+               case r[0]
+               when "~>"
+                  {'>=' => [ver.release, s['>=']].compact.max, '<' => [ver.bump, s['<']].compact.min}
+               when ">="
+                  {'>=' => [ver.release, s['>=']].compact.max}
+               when ">"
+                  {'>' => [ver.release, s['>']].compact.max}
+               when "!=", ">"
+                  {'>' => [ver.release, s['>']].compact.max}
+               when "<="
+                  {'<=' => [ver.release, s['<=']].compact.min}
+               when "<"
+                  {'<' => [ver.release, s['<']].compact.min}
+               when "="
+                  {'=' => ver.release}
+               end
+
+            s.merge(tmp)
+         end
+
+      relas =
+         Gem::Requirement::MERGE_RELAS.map do |(op, prc)|
+            selected = reqs_tmp.map { |(rel, version)| rel == op && version || nil }.compact
+
+            prc.is_a?(Proc) && prc[selected] || selected.send(prc)
+         end
+
+      binding.pry 
+      reqs =
+         if relas[0]
+            [ relas[0] ]
+         else
+            e = [ relas[3], relas[5], relas[6].begin ].compact.max
+            b = [ relas[2], relas[4], relas[6].end ].compact.min
+
+            bounds =
+               [ b && Gem::Requirement.new(">#{b != relas[2] && "=" || ""} #{b}") || nil,
+                 e && Gem::Requirement.new("<#{e != relas[3] && "=" || ""} #{e}") || nil ].compact
+
+            nes = relas[1].select {|ver| bounds.all? {|b| b.satisfied_by?(ver) }}
+
+            bounds | nes
+         end
+
+      Gem::Requirement.new(reqs)
+   end
+
    def expand
       self.class.expand_requirements(self.requirements)
    end

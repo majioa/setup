@@ -173,6 +173,11 @@ class Setup::Source::Base
       end
    end
 
+   # ruby platform is default for non-gem sources
+   def platform
+      'ruby'
+   end
+
    def rootdir
       @rootdir ||= detect_root
    end

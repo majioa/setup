@@ -129,7 +129,7 @@ module Setup::RpmSpecCore
    end
 
    def _devel_sources _in = nil
-      files.grep(/.*\.h/)
+      files.grep(/.*\.h(pp)?$/)
    end
 
    def _docs _in = nil
@@ -150,14 +150,17 @@ module Setup::RpmSpecCore
    end
 
    def _devel_requires value_in
-      value_in ||= source&.dependencies(:development) || []
+      value_tmp = value_in || source&.dependencies(:development) || []
+      deps_versioned = replace_versioning(value_tmp)
 
-      deps_versioned = replace_versioning(value_in)
-      append_versioning(deps_versioned).reduce([]) do |deps, dep|
-         depa = Setup::Deps.to_rpm(dep.requirement).map {|(rel, version)| "#{rel} #{version}"}
+      render_deps(append_versioning(deps_versioned))
+   end
 
-         deps | [ Gem::Dependency.new(dep.name, Gem::Requirement.new(depa)) ]
-      end
+   def _devel_conflicts value_in
+      value_tmp = value_in || source&.dependencies(:development) || []
+      deps_versioned = replace_versioning(value_tmp)
+
+      render_deps(append_versioning(deps_versioned), :negate)
    end
 
    def _files _in
@@ -247,6 +250,10 @@ module Setup::RpmSpecCore
       @requires_plain_only ||= value_in&.reject {|dep| dep.match(/gem\((.*)\) ([>=<]+) ([\w\d\.\-]+)/) }
    end
 
+   def _conflicts_plain_only value_in
+      @conflicts_plain_only ||= value_in&.reject {|dep| dep.match(/gem\((.*)\) ([>=<]+) ([\w\d\.\-]+)/) }
+   end
+
    def _pre_name value_in
       return value_in if value_in.is_a?(Setup::Spec::Rpm::Name)
 
@@ -275,6 +282,19 @@ module Setup::RpmSpecCore
       deps = replace_versioning(deps_pre | value_in)
 
       render_deps(deps)
+   end
+
+   def _conflicts value_in
+      deps_pre =
+         if %i(lib app).include?(self.kind)
+            source&.dependencies(:runtime) || []
+         else
+            reqs = self.kind == :devel && devel_conflicts || []
+         end
+
+      deps = replace_versioning(deps_pre | value_in)
+
+      render_deps(deps, :negate)
    end
 
    #
@@ -324,14 +344,22 @@ module Setup::RpmSpecCore
       @variables ||= context.__macros || {}.to_os
    end
 
-   def render_deps deps_in
+   def render_deps deps_in, mode = :debound
+      func = mode == :debound ? :lower_to_rpm : :upper_negate_to_rpm
+
       deps_in.reduce([]) do |deps, dep|
          deps |
             if dep.is_a?(Gem::Dependency)
-               deph = Setup::Deps.to_rpm(dep.requirement)
-               [ deph.map {|a, b| "#{prefix}(#{dep.name}) #{a} #{b}" }.join(" ") ]
+               deph = Setup::Deps.send(func, dep.requirement)
+
+               deph.blank? ? [] : ["#{prefix}(#{dep.name}) #{deph.first} #{deph.last}"]
             else
-               [ dep ]
+               name = Setup::Spec::Rpm::Name.parse(dep)
+               deps_in.find do |dep_in|
+                  if dep_in.is_a?(Gem::Dependency)
+                     dep_in.name == name.name
+                  end
+               end && [] || [ dep ]
             end
       end
    end

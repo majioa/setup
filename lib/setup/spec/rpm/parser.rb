@@ -138,9 +138,14 @@ class Setup::Spec::Rpm::Parser
 
    def parse source_in, options = {}
       context = {}.to_os
-      state_in = { "context" => { "__options" => options.to_os }}.to_os(hash: true)
       matched = {}.to_os
       match = nil
+      state_in = {
+         "context" => {
+            "__options" => options.to_os,
+            "__custom" => { 'gemname' => '%pkgname' }.to_os
+         }
+      }.to_os(hash: true)
 
       state = source(source_in).reduce(state_in) do |state, line|
          SCHEME.find do |key, rule|
@@ -237,9 +242,16 @@ class Setup::Spec::Rpm::Parser
    end
 
    def reeval flow, opts
-      opts.deep_merge(opts.context).reduce(flow) do |reflown, name, value|
-         reflown.gsub(/%({#{name}}|#{name})/, value.to_s)
-      end || flow
+      #binding.pry if flow =~ /%gemname/
+      [opts.context.__options, opts.context.__macros, opts, opts.context.__custom].compact.reduce(flow) do |reflown_in, source|
+         source.reduce(reflown_in) do |reflown, name, value|
+            next reflown if /context|__macros|__options/ =~ name
+
+            #binding.pry if flow =~ /%gemname/ && name =~ /%gemname/
+            r = reflown.dup
+            r.gsub!(/%({#{name}}|#{name})/, value.to_s) && value.is_a?(String) && /^%/ =~ value ? reeval(r, opts) : r
+         end
+      end || raise #flow
    end
 
    def parse_name match, *_
@@ -312,13 +324,18 @@ class Setup::Spec::Rpm::Parser
       match[1].split(/(?: or |\/)/).map(&:strip)
    end
 
-   def parse_summary match, *_
+   def parse_summary match, _, opts, *_
+      opts.summary = match[2]
       { match[1] || Setup::I18n.default_locale => match[2] }.to_os
    end
 
    def parse_context match, *_
       if match[1]
-         { "__macros" => { match[1] => match[4] || "#{match[2]} #{match[3]}" }}.to_os(hash: true)
+         {
+            "__macros" => {
+               match[1] => match[4]&.strip || [match[2], match[3]].compact.join(" ").strip
+            }
+         }.to_os(hash: true)
       else
          { match[2] => match[3] }.to_os
       end

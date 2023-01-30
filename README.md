@@ -23,6 +23,8 @@
 [code-climate]: https://codeclimate.com/github/cucumber/cucumber-ruby
 
 ## Introduction
+    
+%ruby_use_gem_version 
 
     %ruby_use_gem_dependency simplecov >= 0.16.1,simplecov < 1
     %ruby_use_gem_version coveralls:0.8.23.1

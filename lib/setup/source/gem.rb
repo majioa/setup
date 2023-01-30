@@ -248,14 +248,21 @@ class Setup::Source::Gem < Setup::Source::Base
    # Queries
 
    # +valid?+ returns state of validity of the gem: true or false
-   # Returns true when name of the gem is set.
+   # Returns true when all the conditiona are true:
+   # * gem's name of the gem is set
+   # * gem's name is not a system's one (has zero char)
+   # * gem's version is present
+   # * gem's platform is "ruby" or current one
    #
    def valid?
       !name.nil? &&
          spec.version &&
-         (spec.platform == 'ruby' || spec.platform == Gem::Platform::CURRENT) &&
+         (platform == 'ruby' || platform == Gem::Platform::CURRENT) &&
          spec.name !~ /\u0000/
-      # && !($:&spec.full_require_paths).any? && !spec.full_require_paths.all? {|p| File.directory?(p) }
+   end
+
+   def platform
+      spec.platform
    end
 
    def compilable?
@@ -333,10 +340,8 @@ class Setup::Source::Gem < Setup::Source::Base
 
    def dependencies type = nil
       (dsl.deps | deps).group_by {|x| x.name }.map do |(_name, deps)|
-        binding.pry if deps.size > 1
          deps.reduce do |r, dep|
-           binding.pry
-            r.requirement.merge(dep.requirement)
+            Gem::Dependency.new(r.name, r.requirement.merge(dep.requirement), [r.type, dep.type].max)
          end
       end.select { |dep| !type || dep.type == type }
    end
