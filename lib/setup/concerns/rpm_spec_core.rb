@@ -169,6 +169,10 @@ module Setup::RpmSpecCore
       []
    end
 
+   def _proceed_description value_in
+      value_in.map { |_locale, desc| desc.is_a?(Array) ? desc.join("\n") : desc }
+   end
+
    def _descriptions value_in
       source_name = of_source(:name)
       summary = of_source(:summary)&.match("(.*?)[\.,-_\s]+$")&.[](1) # NOTE required for eval

@@ -2,6 +2,7 @@
 <%= comment -%>
 <% end -%>
 <% if source.is_a?(Setup::Source::Gem) -%>
+%define        _unpackaged_files_terminate_build 1
 %define        gemname <%= source.name %>
 
 <% end -%>

@@ -136,7 +136,7 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def dep
-      Bundler::Dependency.new(name, Gem::Requirement.new(["~> #{version}"]), options: { type: :runtime })
+      Bundler::Dependency.new("#{name}", Gem::Requirement.new(["~> #{version}"]), options: { type: :runtime })
    end
 
    def fullname

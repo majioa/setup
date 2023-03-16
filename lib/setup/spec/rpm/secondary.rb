@@ -59,7 +59,7 @@ class Setup::Spec::Rpm::Secondary
          default: [],
       },
       descriptions: {
-         seq: %w(of_options of_state of_source of_default _descriptions _format_descriptions),
+         seq: %w(of_options of_state of_source of_default _proceed_description _descriptions _format_descriptions),
          default: {}
       },
       readme: {

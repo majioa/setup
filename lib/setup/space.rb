@@ -78,6 +78,9 @@ class Setup::Space
       @rootdir ||= read_attribute(:rootdir) || Dir.pwd
    end
 
+   # +main_source+ selects main source from the list of sources when source root dir is the space's one and
+   # source's name contains minimum name size among the matching sources
+   #
    def main_source
       return @main_source if @main_source
 
@@ -86,7 +89,7 @@ class Setup::Space
          specen_source = reals.find { |real| spec.state["name"] === real.name }
       end
 
-      root_source ||= valid_sources.find { |source| source.rootdir == rootdir }
+      root_source ||= valid_sources.sort {|x, y| x.name.size <=> y.name.size }.find { |source| source.rootdir == rootdir }
       @main_source =
          specen_source || root_source.is_a?(Setup::Source::Fake) && reals.size == 1 && reals.first || root_source
    end

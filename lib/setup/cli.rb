@@ -156,7 +156,7 @@ class Setup::CLI
       end.map do |action_name, actor|
          actor.apply_to(space)
       end
-   rescue SystemExit
+   rescue SystemExit, Interrupt
    rescue Exception => e
       binding.pry
       error("[#{e.class}]: #{e.message}\n\t#{e.backtrace.join("\n\t")}")
