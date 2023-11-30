@@ -230,7 +230,7 @@ class Setup::DSL
    end
 
    def required_ruby_version
-      @required_ruby_version ||= Gem::Requirement.new(dsl.instance_variable_get(:@ruby_version)&.engine_versions || ">= 0")
+      @required_ruby_version ||= Gem::Requirement.new(">= #{dsl.instance_variable_get(:@ruby_version)&.engine_versions&.first || 0}")
    end
 
    def required_ruby
