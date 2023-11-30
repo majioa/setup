@@ -85,6 +85,10 @@ module Bones
       def use_gmail
       end
 
+      def ensure_in_path *args
+         true
+      end
+
       def depend_on name, version = nil, options = {}
          if options[:development]
             Bones.config.gem._spec.add_development_dependency name, version

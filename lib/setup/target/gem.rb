@@ -18,7 +18,7 @@ class Setup::Target::Gem
    end
 
    def lexedir
-      lexedir = RbConfig::CONFIG['bindir']
+      lexedir = options["bindir"] || RbConfig::CONFIG['bindir']
 
       lexedir != exedir && lexedir || nil
    end

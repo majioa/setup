@@ -13,6 +13,8 @@
          target_prefix: <%= File.expand_path(config.install_prefix) %>
          file: <%= file %>
       actor: link
+ - match: \.build_complete$
+   proc:
     - context:
          target_dir: <%= target.dldir %>
          target_prefix: <%= File.expand_path(config.install_prefix) %>

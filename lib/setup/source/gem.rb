@@ -206,7 +206,7 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def exttree
-      @exttree ||= super
+      @exttree ||= super.merge(extdirs.map {|x| [x, ['gem.build_complete']] }.to_h)
    end
 
    def testtree

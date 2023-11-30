@@ -3,8 +3,6 @@
 #
 class Jeweler
    class Tasks
-      attr_reader :spec
-
       class Files
          attr_reader :data
 
@@ -31,6 +29,10 @@ class Jeweler
          IO.read("VERSION")
       end
 
+      def spec
+         @@spec
+      end
+
       protected
 
       def initialize
@@ -38,7 +40,7 @@ class Jeweler
 
          yield(self)
 
-         @spec =
+         @@spec =
             Gem::Specification.new do |g|
                @data.each_pair do |name, value|
                   if g.respond_to?("#{name}=")

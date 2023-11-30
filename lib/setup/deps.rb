@@ -93,7 +93,12 @@ class Setup::Deps
       end
 
       if /lib|bin/ =~ set
-         list << ([dsl.required_ruby] | self.class.lower_to_rpm(Gem::Requirement.new(["#{dsl.required_ruby_version}"]))).join(" ")
+         list |=
+            dsl.required_ruby_version.requirements.map do |(cond, ver)|
+               self.class.lower_to_rpm(Gem::Requirement.new("#{cond} #{ver}"))
+            end.reject {|x| x.blank? }.map do |req|
+               [dsl.required_ruby] | req
+            end.map {|x| x.join(" ") }
          list << "rubygems #{dsl.required_rubygems_version}"
       end
 

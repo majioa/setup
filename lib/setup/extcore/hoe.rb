@@ -29,8 +29,10 @@ class Hoe
          @plugins ||= ["hoe"]
       end
 
-      def add_include_dirs lib
-         try_require(lib.split("/").find {|x| x =~ /[a-zA-Z]/ })
+      def add_include_dirs *args
+         args.each do |lib|
+            try_require(lib.split("/").find {|x| x =~ /[a-zA-Z]/ })
+         end
       end
 
       def try_require lib

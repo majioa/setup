@@ -34,9 +34,8 @@ module Setup
     include Setup::Log
     
        STATES = {
-          invalid: ->(_, source, _) { !source.valid? },
-          disabled: ->(space, source, _) { space.is_disabled?(source) },
-          duplicated: ->(_, _, dup) { dup },
+          invalid: ->(_, source) { !source.valid? },
+          disabled: ->(space, source) { space.is_disabled?(source) },
        }
 
        TYPE_CHARS = {
@@ -144,11 +143,21 @@ module Setup
 
                      c2 == 0 && c3 == 0 && x.root.size <=> y.root.size || c3 != 0 && c3 || c2
                   end.map.with_index do |source, index|
-                     [source, source_status(source, index > 0)]
+                     [source, source_status(source)]
                   end
    
-               sorten[1..-1].each { |x| sorten.first.first.alias_to(x.first) }
-   
+               if primary = sorten.find { |(_, x)| x == :valid  }
+                  sorten = sorten.map do |(x, status)|
+                     if x != primary.first && status == :valid &&
+                        x.alias_to(primary.first)
+
+                        [x, :duplicated]
+                     else
+                        [x, status]
+                     end
+                  end
+               end
+
                sorten
             end.flatten(1).sort_by {|(x, _)| x.root.size }.each do |(source, status)|
                block[source, status] if block_given?
@@ -157,9 +166,9 @@ module Setup
 
       # returns status for the source for the project
       #
-      def source_status source, dup
-         %i(valid duplicated disabled invalid).reduce() do |res, status|
-            STATES[status][self, source, dup] && status || res
+      def source_status source
+         %i(valid disabled invalid).reduce() do |res, status|
+            STATES[status][self, source] && status || res
          end
       end
 
@@ -288,11 +297,11 @@ module Setup
             valid_sources.map do |source|
                case source
                when Setup::Source::Gem
-                  Setup::Target::Gem.new(source: source, options: options)
+                  Setup::Target::Gem.new(source: source, options: options.merge(config.to_h))
                when Setup::Source::Gemfile
-                  Setup::Target::Site.new(source: source, options: options)
+                  Setup::Target::Site.new(source: source, options: options.merge(config.to_h))
                when Setup::Source::Rakefile
-                  Setup::Target::Site.new(source: source, options: options)
+                  Setup::Target::Site.new(source: source, options: options.merge(config.to_h))
                end
             end)
       end

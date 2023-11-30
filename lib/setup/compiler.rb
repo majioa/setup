@@ -82,11 +82,12 @@ module Setup
               FileUtils.mkdir_p(dd)
 
               soes.map do |x|
-                FileUtils.touch(File.join(dd, 'gem.build_complete'))
                 FileUtils.cp(x, dd)
                 bash(chrpath_path, '-d', File.join(dd, File.basename(x))) if !chrpath_path.empty?
               end
             end
+
+          FileUtils.touch(File.join(source.root, 'gem.build_complete'))
         when Extconf
           headers = Dir.glob("*/**/*.{h,hpp}")
 
@@ -99,12 +100,12 @@ module Setup
               FileUtils.mkdir_p(File.join(cfg.source.root, ".so.#{cfg.source.name}", RbConfig::CONFIG['sitearchdir'], target_prefix))
               make_task('install', DESTDIR: File.join(cfg.source.root, ".so.#{cfg.source.name}"))
               Dir.glob(File.join(cfg.source.root, ".so.#{cfg.source.name}/**/*.so")).each do |file|
-                FileUtils.touch(File.join(File.dirname(file), 'gem.build_complete'))
-
                 # remove RPATH if any
                 bash(chrpath_path, '-d', file) if !chrpath_path.empty?
               end
             end
+
+            FileUtils.touch('gem.build_complete')
           end
         end
       end
@@ -150,9 +151,12 @@ module Setup
     end
 
     def target_prefix
-      IO.read("Makefile").split("\n").select do |l|
-        l =~ /target_prefix *=/
-      end.first.split('=')[1..-1].join('=').strip
+      target_list =
+        IO.read("Makefile").split("\n").select do |l|
+          l =~ /target_prefix *=/
+        end.first
+
+      target_list ? target_list.split('=')[1..-1].join('=').strip : './'
     end
 
   end
