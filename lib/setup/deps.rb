@@ -68,24 +68,61 @@ class Setup::Deps
       end.to_h
    end
 
+   def target_names target, set
+      targets.map do |target|
+         names_in = ([target.source.name] | target.source.alias_names).map {|n| [prefix, n.gsub(/[_\-\.]+/, '-')].join("-") }.uniq
+
+         names =
+         case set
+         when 'bin'
+            target.source.exefiles.map {|x|x.gsub(/[_\-\.]+/, '-')}
+         when 'lib'
+            names_in
+         when 'devel'
+            names_in.map {|n| "#{n}-devel" }
+         when 'doc'
+            names_in.map {|n| "#{n}-doc" }
+         end
+      end.flatten.compact
+   end
+
+   def target_req_list
+      targets.reduce({}) do |res, target|
+         target_reqs(target).reduce(res) do |res, (set, reqs)|
+            res.merge(target_names(target, set) => reqs)
+         end
+      end
+   end
+
+   def target_prov_list
+      targets.reduce({}) do |res, target|
+         target_provs(target).reduce(res) do |res, (set, reqs)|
+            res.merge(target_names(target, set) => reqs)
+         end
+      end
+   end
+
    def prefix
      'gem'
    end
 
    ## deps
-   def deps_gem_dsl dsl, set = 'lib'
-      deps =
-         case set
-         when 'bin'
-            # TODO remove gemspec deps in favor of gemfile
-            # dsl.runtime_deps(:gemfile)
-            dsl.runtime_deps(:gemspec)
-         when 'devel'
-            dsl.development_deps(:gemspec)
-         else
-            dsl.runtime_deps(:gemspec)
-         end
+   def deps_gem_dsl source, set = 'lib'
+      case set
+      when 'bin'
+         # TODO remove gemspec deps in favor of gemfile
+         # dsl.runtime_deps(:gemfile)
+         source.dsl.runtime_deps(:gemspec) | [source.dep]
+      when 'devel'
+         source.dsl.development_deps(:gemspec) | [source.dep]
+      when 'doc'
+         [source.dep]
+      else
+         source.dsl.runtime_deps(:gemspec)
+      end
+   end
 
+   def render_deps_gem_dsl deps, dsl, set = 'lib'
       list = []
 
       deps.each do |dep|
@@ -125,10 +162,18 @@ class Setup::Deps
       root = project.config.dep_sources[set]
       name = (root[source.name] || root[nil]).first
       if name == 'auto'
-         kind == :dsl && deps_gem_dsl(source.dsl, set) || deps_gem(source)
+         if kind == :dsl
+            deps = deps_gem_dsl(source, set)
+
+            render_deps_gem_dsl(deps, source.dsl, set)
+         else
+            deps_gem(source)
+         end
       else
          project.select_source(name).map do |source|
-            deps_gem_dsl(source.dsl)
+            deps = deps_gem_dsl(source)
+
+            render_deps_gem_dsl(deps, source.dsl)
          end
       end
    end
@@ -260,3 +305,4 @@ class Setup::Deps
       @options = options
    end
 end
+require 'setup'

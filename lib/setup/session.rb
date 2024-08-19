@@ -122,6 +122,7 @@ module Setup
       config
       make
       document
+      predeps
     end
 
     #
@@ -252,6 +253,24 @@ module Setup
 
       reqs.each do |req|
          io.puts(req)
+      end
+    end
+
+    def predeps
+      io.puts("Generating predeps:") unless quiet?
+
+      FileUtils.mkdir_p("/var/tmp/reqs")
+      depper.target_req_list.each do |names, deps|
+         names.each do |name|
+            File.open(File.join("/var/tmp/reqs", name), "w+") { |f| f.puts(deps) }
+         end
+      end
+
+      FileUtils.mkdir_p("/var/tmp/provs")
+      depper.target_prov_list.each do |names, deps|
+         names.each do |name|
+            File.open(File.join("/var/tmp/provs", name), "w+") { |f| f.puts(deps) }
+         end
       end
     end
 

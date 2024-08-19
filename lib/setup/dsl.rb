@@ -80,7 +80,6 @@ class Setup::DSL
                 TypeError,
                 Bundler::GemNotFound,
                 Bundler::GemfileNotFound,
-                Bundler::VersionConflict,
                 Bundler::Dsl::DSLError,
                 Errno::ENOENT,
                 ::Gem::InvalidSpecificationException => e

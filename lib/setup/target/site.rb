@@ -89,8 +89,12 @@ class Setup::Target::Site
       libdir && libdir != logdir
    end
 
-   def require_libdir
+   def require_fulllibdir
       File.join(libdir, source.name)
+   end
+
+   def require_libdir
+      File.join(File.dirname(libdir), source.name)
    end
 
    protected

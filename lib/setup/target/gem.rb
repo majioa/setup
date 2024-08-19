@@ -75,6 +75,10 @@ class Setup::Target::Gem
       datadir
    end
 
+   def plugindir
+      File.join(home, 'plugins')
+   end
+
    # files
 
    def exefiles
@@ -98,6 +102,12 @@ class Setup::Target::Gem
    end
 
    def require_libdir
+      (source.spec.require_paths | [ '.' ]).select do |x|
+         x !~ /^\//
+      end.first
+   end
+
+   def require_fulllibdir
       (source.spec.require_paths | [ '.' ]).select do |x|
          x !~ /^\//
       end.map do |x|

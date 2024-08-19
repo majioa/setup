@@ -55,9 +55,10 @@ module Setup::Loader
          begin
             push
             Dir.chdir(File.dirname(file)) do
-               _file = File.basename(file).untaint
+               _file = File.basename(file)
+               _file.untaint if _file.respond_to?(:untaint)
                code = File.read(file, mode: 'r:UTF-8:-')
-               code.untaint
+               code.untaint if code.respond_to?(:untaint)
 
                value =
                   begin
@@ -67,13 +68,15 @@ module Setup::Loader
                      instance_eval(code, _file)
                   rescue Exception => e
                      # thrown for setup gem
-                     STDERR.puts("###### #{e.class}: #{e.message}")
+                     STDERR.puts("Setup::Loader.load_file.chdir > #{e.class}: #{e.message}")
                      # store hash
                      store_object_hash(type_hash)
                      load(File.basename(file), true)
                   end
             end
          rescue Exception => e
+            STDERR.puts("Setup::Loader.load_file > #{e.class}: #{e.message}")
+
             store_object_hash(type_hash)
 
             raise e

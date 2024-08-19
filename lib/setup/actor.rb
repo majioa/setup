@@ -25,7 +25,7 @@ module Setup::Actor
                   # TODO cache it by match or index
                   context_in = ERB.new(data['context'].to_yaml)
                   c = yield(data['actor'], context_in)
-                  c.merge('$' => actors[data['actor']])
+                  c.merge('$' => actors[data['actor']], "source_file" => file)
                end
             end
          end.compact
@@ -48,3 +48,4 @@ end
 require 'setup/actor/link'
 require 'setup/actor/touch'
 require 'setup/actor/copy'
+require 'setup/actor/gen'

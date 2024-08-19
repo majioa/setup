@@ -55,7 +55,7 @@ module Setup
 
               if extpath =~ /rakefile(.rb)?$/i
                  Setup::Rake.new(extpath, {source: source})
-              else
+              elsif extpath !~ /gem.build_complete/i
                  cfg = Extconf.new(extpath, source, *ARGS)
                  cfg.configure
                  cfg
@@ -86,8 +86,6 @@ module Setup
                 bash(chrpath_path, '-d', File.join(dd, File.basename(x))) if !chrpath_path.empty?
               end
             end
-
-          FileUtils.touch(File.join(source.root, 'gem.build_complete'))
         when Extconf
           headers = Dir.glob("*/**/*.{h,hpp}")
 
@@ -104,8 +102,6 @@ module Setup
                 bash(chrpath_path, '-d', file) if !chrpath_path.empty?
               end
             end
-
-            FileUtils.touch('gem.build_complete')
           end
         end
       end

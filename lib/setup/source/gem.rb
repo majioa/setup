@@ -139,7 +139,7 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def dep
-      Bundler::Dependency.new(name, Gem::Requirement.new(["~> #{version}"]), options: { type: :runtime })
+      Bundler::Dependency.new(name, Gem::Requirement.new(["= #{version}"]), options: { type: :runtime })
    end
 
    def fullname
@@ -206,7 +206,13 @@ class Setup::Source::Gem < Setup::Source::Base
    end
 
    def exttree
-      @exttree ||= super.merge(extdirs.map {|x| [x, ['gem.build_complete']] }.to_h)
+      @exttree ||= super.merge(spec.extensions.reduce({}) do |res, ext|
+         res[File.dirname(ext)] ||= []
+
+         res[File.dirname(ext)] |= [File.basename(ext), 'gem.build_complete']
+
+         res
+      end)
    end
 
    def testtree

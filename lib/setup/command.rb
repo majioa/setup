@@ -50,6 +50,7 @@ module Setup
     task 'uninstall', "uninstall previously installed files"
     task 'provides' , "show provides for all or specified sources"
     task 'requires' , "show requires for all or specffied sources"
+    task 'predeps'  , "stores requires and provides for all sources"
 
     # Run command.
 
