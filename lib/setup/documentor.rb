@@ -40,13 +40,15 @@ module Setup
           ["--ri"]
         else
           ["--ri-site"]
-        end + ['-q', '-o', source.default_ridir]
+        end + ['-q', '--force-update', '-o', source.default_ridir]
+        @options = RDoc::Options.load_options
+        @options.parse(options)
 
         Dir.chdir(source.root) do
           source.docsrctree.each do |dir, files|
-            if dir == '.' || !documentate(options, dir)
+            if dir == '.' || !documentate(dir)
               Dir.chdir(dir) do
-                files.each { |file| documentate(options, file) }
+                files.each { |file| documentate(file) }
               end
             end
           end
@@ -54,9 +56,11 @@ module Setup
       end
     end
 
-    def documentate opts, file
+    def documentate file
       begin
-        ::RDoc::RDoc.new.document(opts.dup << file)
+        rdoc = ::RDoc::RDoc.new
+        @options.files = File.directory?(file) ? Dir["#{file}/**/*"] : file
+        rdoc.document(@options)
 
         true
       rescue Exception => e
