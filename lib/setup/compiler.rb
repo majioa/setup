@@ -39,9 +39,12 @@ module Setup
 
             @config = RbConfig::CONFIG.dup
             @makeconfig = RbConfig::MAKEFILE_CONFIG.dup
-         rescue SystemExit
          rescue Exception => e
-            $stderr.puts("[#{e.class}]> #{e.message}\t\n#{e.backtrace.join("\t\n")}")
+            unless e.is_a?(SystemExit) && e.status == 0
+               $stderr.puts("[#{e.class}]> #{e.message}\t\n#{e.backtrace.join("\t\n")}")
+
+               raise(e)
+            end
          ensure
             RbConfig::CONFIG.replace(@original_config)
             RbConfig::MAKEFILE_CONFIG.replace(@original_makeconfig)
