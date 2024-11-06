@@ -229,7 +229,10 @@ class Setup::DSL
    end
 
    def required_ruby_version
-      @required_ruby_version ||= Gem::Requirement.new(">= #{dsl.instance_variable_get(:@ruby_version)&.engine_versions&.first || 0}")
+      (f, s) = (dsl.instance_variable_get(:@ruby_version)&.engine_versions&.first || "0").split(/\s+/)
+      cv = [ s ? f : ">=", s || f].join(" ")
+
+      @required_ruby_version ||= Gem::Requirement.new(cv)
    end
 
    def required_ruby
