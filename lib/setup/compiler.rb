@@ -24,7 +24,11 @@ module Setup
                require 'mkmf'
                RbConfig::CONFIG["srcdir"] = RbConfig::MAKEFILE_CONFIG["srcdir"] = '.'
 
-               init_mkmf(RbConfig::MAKEFILE_CONFIG, RbConfig::CONFIG)
+               config = RbConfig::MAKEFILE_CONFIG.dup.merge({"CFLAGS" => RbConfig::MAKEFILE_CONFIG["CFLAGS"] + " -fpermissive " +
+                  "-Wdeclaration-missing-parameter-type -Wimplicit-function-declaration -Wimplicit-int " +
+                  "-Wincompatible-pointer-types -Wint-conversion -Wreturn-mismatch"})
+
+               init_mkmf(config, RbConfig::CONFIG)
             end
          end
 
