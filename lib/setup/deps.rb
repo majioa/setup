@@ -192,10 +192,10 @@ class Setup::Deps
          if match = /#!\s*(?<exec>\S+)/.match(line)
             match[:exec]
          else
-            $stderr.puts "Invalid shebang line '#{line}'"
+            $stderr.puts "Invalid shebang line '#{line[0..20]}'"
             nil
          end
-      end.uniq
+      end.compact.uniq
    end
 
    def deps_execs target
