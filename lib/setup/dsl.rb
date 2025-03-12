@@ -16,6 +16,10 @@ class Setup::DSL
       true => :runtime,
    }
 
+   DSL_CONT_EXCEPTIONS = %w(LoadError SyntaxError TypeError Bundler::GemNotFound Bundler::VersionConflict
+      Bundler::GemfileNotFound Bundler::Dsl::DSLError Bundler::GemspecError
+      Errno::ENOENT Gem::InvalidSpecificationException)
+
    # attributes
    attr_reader :source_file, :replace_list, :skip_list, :append_list, :spec
 
@@ -67,30 +71,32 @@ class Setup::DSL
       @fake_gemlock_path
    end
 
-   def dsl
-      @dsl ||= (
-         begin
-            dsl =
-               Dir.chdir(File.dirname(source_file)) do
-                  dsl = Bundler::Dsl.new
-                  dsl.eval_gemfile(original_gemfile)
-                  dsl
-               end
-         rescue LoadError,
-                TypeError,
-                Bundler::GemNotFound,
-                Bundler::GemfileNotFound,
-                Bundler::Dsl::DSLError,
-                Errno::ENOENT,
-                ::Gem::InvalidSpecificationException => e
+   def default_dsl
+      dsl = Bundler::Dsl.new
+      dsl.instance_variable_set(:@gemfiles, [Pathname.new(fake_gemfile_path)])
+      dsl.to_definition(fake_gemlock_path, {})
+      Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", nil
 
+      dsl
+   end
+
+   def source_file_dsl
+      dsl =
+         Dir.chdir(File.dirname(source_file)) do
             dsl = Bundler::Dsl.new
-            dsl.instance_variable_set(:@gemfiles, [Pathname.new(fake_gemfile_path)])
-            dsl.to_definition(fake_gemlock_path, {})
-            Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", nil
-
+            dsl.eval_gemfile(original_gemfile)
             dsl
-         end)
+         end
+   rescue Exception => e
+      unless DSL_CONT_EXCEPTIONS.find {|ec| ec == e.class.to_s }
+         debug("dsl error: #{e.class} #{e.message}")
+
+         raise e
+      end
+   end
+
+   def dsl
+      @dsl ||= source_file_dsl || default_dsl
    end
 
    def edsl
