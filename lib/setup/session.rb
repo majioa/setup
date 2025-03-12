@@ -163,7 +163,7 @@ module Setup
 
           configuration.pre&.map do |task_name|
              project.stat_sources.each do |(source, status)|
-                if status == :valid && source.respond_to?(:rake) and source.rake.present?
+                if status == :valid && source.respond_to?(:rake) and !source.rake.blank?
                   source.rake.run_task(task_name)
                 end
              end
