@@ -32,7 +32,7 @@ class Setup::Source::Base
             s.confdirs | s.testdirs | s.mandirs | s.supdirs |
             s.ridirs | s.dldirs | s.incdirs | s.logdirs | s.statedirs
 
-         dirs.empty? && /.*/ || /^(?!.*#{dirs.join('\b|').gsub('.', '\\\\.')}\b)/
+         dirs.empty? && /.*/ || /^(?!#{dirs.join('\b|').gsub('.', '\\\\.')}\b)/
       end
    DOCSRC_RE = /\.rb$/
 
