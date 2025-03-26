@@ -156,23 +156,29 @@ module Setup
     alias_method :setup, :make
 
     def pre
-      if defined? Rake
-        begin
-          stdout = $stdout
-          $stdout = $stderr
-
+       if defined? Rake
           configuration.pre&.map do |task_name|
              project.stat_sources.each do |(source, status)|
-                if status == :valid && source.respond_to?(:rake) and !source.rake.blank?
-                  source.rake.run_task(task_name)
+                if status == :valid && source.respond_to?(:rakes) and !source.rakes.blank?
+                   task =
+                      source.rakes.reduce(nil) do |t, rake|
+                         t || rake.tasks.select {|x|x.name == task_name}.first
+                      end
+
+                   begin
+                      stdout = $stdout
+                      $stdout = $stderr
+
+                      FileUtils.chdir(source.root) { task.invoke }
+                   rescue Exception => e
+                   ensure
+                      $stderr = $stdout
+                      $stdout = stdout
+                   end
                 end
              end
           end
-        ensure
-          $stderr = $stdout
-          $stdout = stdout
-        end
-      end
+       end
     end
 
     #

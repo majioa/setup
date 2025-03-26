@@ -286,11 +286,11 @@ class Setup::Source::Gem < Setup::Source::Base
       end
    end
 
-   def rake
-      return @rake if @rake
+   def rakes
+      return @rakes unless @rakes.blank?
 
-      files = Dir["{#{Rake::Application::DEFAULT_RAKEFILES.join(",")}}"]
-      @rake ||= Setup::Rake.new(File.join(root, files.first)) unless files.blank?
+      files = Dir[File.join(root, "{#{Rake::Application::DEFAULT_RAKEFILES.join(",")}}")]
+      @rakes = files.map {|file| Setup::Rake.new(file) }
    end
 
    def gemspec
