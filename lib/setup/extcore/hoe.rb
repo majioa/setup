@@ -21,7 +21,7 @@ class Hoe
    end
 
    class << self
-      def plugin plugin
+      def plugin plugin, *args
          @plugins = plugins | [plugin.to_s]
       end
 

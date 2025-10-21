@@ -89,6 +89,7 @@ module Kernel
       'olddoc' => 'setup/extcore/olddoc',
       'wrongdoc' => 'setup/extcore/wrongdoc',
       'bones' => 'setup/extcore/bones',
+      'levitate' => 'setup/extcore/levitate',
       'echoe' => 'setup/extcore/echoe',
       'jeweler' => 'setup/extcore/jeweler',
       'hoe' => 'setup/extcore/hoe',
@@ -112,8 +113,6 @@ module Kernel
    end
 
    def require mod
-      __setup_orig_require(mod)
-   rescue Exception => e
       if MODULES[mod]
          if MODULES[mod].is_a?(Proc)
             MODULES[mod][]
@@ -121,11 +120,11 @@ module Kernel
             begin
                __setup_orig_require(MODULES[mod])
             rescue => e1
-               raise e, e1
+               __setup_orig_require(mod)
             end
          end
       else
-         raise e
+         __setup_orig_require(mod)
       end
    end
 
@@ -256,6 +255,12 @@ class Symbol
 
    def make_singular
       to_s.make_singular.to_sym
+   end
+end
+
+class OpenStruct
+   def to_hash
+      to_h
    end
 end
 

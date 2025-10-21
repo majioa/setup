@@ -32,13 +32,16 @@ module Setup
   #
   class Project
     include Setup::Log
-    
+
        STATES = {
-          invalid: ->(_, source) { !source.valid? },
-          disabled: ->(space, source) { space.is_disabled?(source) },
+          invalid: ->(_, source, _, _) { !source.valid? },
+          disabled: ->(prj, source, _, _) { prj.is_disabled?(source) },
+          obsoleted: ->(_, _, dup, obsoleted) { !dup && obsoleted },
+          duplicated: ->(_, _, dup, _) { dup },
        }
 
        TYPE_CHARS = {
+          fake: '·',
           gem: '*',
           gemfile: '&',
           rakefile: '^',
@@ -47,11 +50,23 @@ module Setup
        STATUS_CHARS = {
           invalid: 'X',
           disabled: '-',
+          obsoleted: '\\',
           duplicated: '=',
           valid: 'V',
        }
 
-     attr_reader :config, :version_replaces
+       DEFAULT_IGNORE_PATH_TOKES =
+         %w(templates example examples sample samples spec test features
+            fixtures doc docs contrib demo acceptance conformance myapp website benchmarks benchmark
+            gemfiles misc steep)
+
+   PLATFORMS = {
+      ruby: true,
+      jruby: false,
+      mingw: false,
+   }
+
+       attr_reader :config, :version_replaces
 
     #
     def initialize config, options = {}
@@ -86,10 +101,15 @@ module Setup
 
     def show_tree
        info("Source list are the following:")
-       stat_sources.each do |(source, status)|
-          path = File.join(source.root, File.basename(source.source_file))
-          info_in = "#{STATUS_CHARS[status]} #{TYPE_CHARS[source.type.to_sym]}#{[source.name, source.version].compact.join(":")} [#{path}]"
-          info(info_in)
+       stat_source_tree.each do |(path_in, stated_sources)|
+          stated_sources.each do |(source, status)|
+             path = File.join(source.root, File.basename(source.source_file)) if source.source_file
+             stat = [STATUS_CHARS[status], TYPE_CHARS[source.type.to_sym]].join(" ")
+             namever = [source.name, source.version, source.platform.to_s].compact.join(":")
+             info_in = "#{stat}#{namever} [#{path}]"
+
+             info(info_in)
+          end
        end
     end
 
@@ -127,48 +147,59 @@ module Setup
 
       # returns all the sources with their statuses, and sorted by their root value
       #
-      #def stat_sources
       def stat_sources &block
          return @stat_sources if @stat_sources
 
          @stat_sources = Setup::Source.search(rootdir, options).group_by do |x|
-               [x.name, x.version].compact.join(":")
-            end.map do |(full_name, v)|
+               x.name
+            end.reduce([[],[]]) do |(r, used_in), (full_name, v)|
                sorten =
                   v.sort do |x,y|
-                     c0 = Setup::Source::KINDS.index(x.class.to_s.to_sym) <=> Setup::Source::KINDS.index(y.class.to_s.to_sym)
-                     c1 = c0 == 0 && y.version <=> x.version || c0
-                     c2 = c1 == 0 && x.name <=> y.name || c1
-                     c3 = c2 == 0 && y.source_names.grep(/gemspec/).count <=> x.source_names.grep(/gemspec/).count
+                     c0 = Setup::Source.loaders.index(x.loader) <=> Setup::Source.loaders.index(y.loader)
+                     c1 = c0 == 0 && x.name <=> y.name || c0
+                     c2 = c1 == 0 && y.version <=> x.version || c1
+                     c3 = c2 == 0 && y.platform.to_s <=> x.platform.to_s || c2
+                     c4 = c3 == 0 && y.source_names.grep(/gemspec/).count <=> x.source_names.grep(/gemspec/).count
 
-                     c2 == 0 && c3 == 0 && x.root.size <=> y.root.size || c3 != 0 && c3 || c2
-                  end.map.with_index do |source, index|
-                     [source, source_status(source)]
-                  end
-   
-               if primary = sorten.find { |(_, x)| x == :valid  }
-                  sorten = sorten.map do |(x, status)|
-                     if x != primary.first && status == :valid &&
-                        x.alias_to(primary.first)
-
-                        [x, :duplicated]
-                     else
-                        [x, status]
+                     c2 == 0 && c3 == 0 && c4 == 0 && x.root.size <=> y.root.size || c4 != 0 && c4 || c3 != 0 && c3 || c2
+                  end.reduce([[], 0]) do |(res, index, base), source|
+                     dup = used_in.include?(source.name) && base && base.platform.to_s == source.platform.to_s && base.version == source.version
+                     dup_index = dup ? index + 1 : index
+                     obs = used_in.include?(source.name) && !dup
+                     if source.valid? && !is_disabled?(source)
+                        base = source
+                        used_in = used_in | [source.name]
                      end
-                  end
-               end
 
-               sorten
-            end.flatten(1).sort_by {|(x, _)| x.root.size }.each do |(source, status)|
+                     [res | [[source, source_status(source, dup, obs)]], dup_index, base]
+                  end.first
+
+               sorten[1..-1].each { |x| sorten.first.first.alias_to(x.first) }
+
+               [r|[sorten], used_in]
+            end.first.flatten(1).sort_by {|(x, _)| x.root.size }.each do |(source, status)|
                block[source, status] if block_given?
             end
+
+         show_tree
+
+         @stat_sources
+      end
+
+      # returns source tree, and sorted, and then grouped by a its rootdir value
+      #
+      def stat_source_tree
+         @stat_source_tree ||=
+            stat_sources.group_by {|(x, _)| x.root }.map do |(path, sources)|
+               [File.join('.', path[rootdir.size..-1] || ''), sources]
+            end.to_h
       end
 
       # returns status for the source for the project
       #
-      def source_status source
-         %i(valid disabled invalid).reduce() do |res, status|
-            STATES[status][self, source] && status || res
+      def source_status source, dup, obs
+         %i(valid duplicated obsoleted disabled invalid).reduce() do |res, status|
+            STATES[status][self, source, dup, obs] && status || res
          end
       end
 
@@ -187,15 +218,23 @@ module Setup
                 new_source(Setup::Source::Gem, source_in)
              end
 
-          [source, source_status]
-       end
+          source ? [source, source_status] : nil
+       end&.compact
     end
 
     # returns the valid sources for the project
     #
     def valid_sources
-       @valid_sources = stat_sources.map {|(source, status)| status == :valid && source || nil }.compact
+       @valid_sources ||= begin
+          sources = stat_sources.map {|(source, status)| status == :valid ? source : nil }.compact
+          main = sources.find { |source| source.root == rootdir }
+          main && main.valid? ? sources : sources | [default_fake_source]
+       end
     end
+
+   def default_fake_source
+      Source::Fake.new(source_file: File.join(rootdir, ".fake"))
+   end
 
     # options for the object
     #
@@ -222,15 +261,34 @@ module Setup
          stat_sources.any? {|(source, _)| source.is_a?(Setup::Source::Gem) }
       end
 
-    def is_disabled? source
-      config.ignore_path_tokens.map do |t|
-         t.is_a?(Regexp) && %r{/[^/]*#{t}[^/]*/} || %r{/#{t}/}
-      end.any? do |t|
-         t =~ source.source_file
-      end || config.ignore_names.any? { |i| i === source.name }
-    end
-      #
-      #
+   def ignored_path_tokens
+      @ignored_path_tokens ||= (config.ignore_path_tokens || []) | DEFAULT_IGNORE_PATH_TOKES
+   end
+
+   def is_platform_allowed? platform
+      case platform
+      when Gem::Platform
+         PLATFORMS.any? {|(name, valid)| platform === name ? valid : nil }
+      when String
+         PLATFORMS[platform.to_sym]
+      when NilClass
+         true
+      else
+         raise
+      end
+   end
+
+   def is_disabled? source
+      !is_platform_allowed?(source.platform) ||
+         ignored_path_tokens.map do |t|
+            t.is_a?(Regexp) && %r{/[^/]*#{t}[^/]*/} || %r{/#{t}/}
+         end.any? do |t|
+            t =~ source.source_file
+         end ||
+         config.regard_names.all? { |i| !i.match?(source.name) } &&
+         config.ignore_names.any? { |i| i === source.name }
+   end
+
       def compilable?
          stat_sources.any? { |(source, _)| source.compilable? }
       end
@@ -300,7 +358,7 @@ module Setup
                   Setup::Target::Gem.new(source: source, options: options.merge(config.to_h))
                when Setup::Source::Gemfile
                   Setup::Target::Site.new(source: source, options: options.merge(config.to_h))
-               when Setup::Source::Rakefile
+               when Setup::Source::Rakefile, Setup::Source::Fake, Setup::Source::Base
                   Setup::Target::Site.new(source: source, options: options.merge(config.to_h))
                end
             end)

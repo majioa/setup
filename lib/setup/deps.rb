@@ -70,19 +70,24 @@ class Setup::Deps
 
    def target_names target, set
       targets.map do |target|
-         names_in = ([target.source.name] | target.source.alias_names).map {|n| [prefix, n.gsub(/[_\-\.]+/, '-')].join("-") }.uniq
+         names_in =
+            ([target.source.name] | target.source.alias_names).compact.map do |n|
+               [prefix, n.gsub(/[_\-\.]+/, '-')].join("-")
+            end.uniq
 
          names =
-         case set
-         when 'bin'
-            target.source.exefiles.map {|x|x.gsub(/[_\-\.]+/, '-')}
-         when 'lib'
-            names_in
-         when 'devel'
-            names_in.map {|n| "#{n}-devel" }
-         when 'doc'
-            names_in.map {|n| "#{n}-doc" }
-         end
+            if names_in
+               case set
+               when 'bin'
+                  target.source.exefiles.map {|x|x.gsub(/[_\-\.]+/, '-')}
+               when 'lib'
+                  names_in
+               when 'devel'
+                  names_in.map {|n| "#{n}-devel" }
+               when 'doc'
+                  names_in.map {|n| "#{n}-doc" }
+               end
+            end
       end.flatten.compact
    end
 

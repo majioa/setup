@@ -50,17 +50,13 @@ class Setup::Source::Gem < Setup::Source::Base
    }
 
    class << self
-      def load spec_in
-         Kernel.yaml_load(spec_in)
-      end
-
       def spec_for options_in = {}
          spec_in = options_in[:spec]
-         spec = spec_in.is_a?(String) && load(spec_in) || spec_in
+         spec = spec_in.is_a?(String) && Setup.load(spec_in) || spec_in
          version =
             if options_in[:version_replaces] && options_in[:version_replaces][spec.name]
                options_in[:version_replaces][spec.name]
-            elsif !options_in[:gem_version_replace].empty?
+            elsif options_in[:gem_version_replace] && !options_in[:gem_version_replace].empty?
                prever = options_in[:gem_version_replace].find {|(n,v)| n == spec.name }&.last
                /([=><]+\s*)?(?<version>.*)/ =~ prever
                version
@@ -97,23 +93,23 @@ class Setup::Source::Gem < Setup::Source::Base
 
                   result = send(method_name, f)
 
-                  result && result.objects.any? && result
+                  result && result.objects.any? && [result, method_name]
                end
 
             if load_result
-               gemspecs = load_result.objects.reject do |s|
+               gemspecs = load_result.first.objects.reject do |s|
                   s.loaded_from && s.loaded_from !~ /#{dir}/
                end.each {|x| x.loaded_from = f }.compact
-               debug("load messages:\n\t" + load_result.log.join("\n\t")) if !load_result.log.blank?
-               debug("Load errors:\n\t" + load_result.errlog.join("\n\t")) if !load_result.errlog.blank?
+               debug("load messages:\n\t" + load_result.first.log.join("\n\t")) if !load_result.first.log.blank?
+               debug("Load errors:\n\t" + load_result.errlog.join("\n\t")) if !load_result.first.errlog.blank?
 
-               res.merge({ f => gemspecs })
+               res.merge({ f => { gemspecs: gemspecs, loader: load_result.last }})
             else
                res
             end
-         end.map do |(f, gemspecs)|
-            gemspecs.map do |gemspec|
-               new_if_valid(gemspec, { source_file: f }.merge(options_in))
+         end.map do |(f, data)|
+            data[:gemspecs].map do |gemspec|
+               self.new(source_options(options_in.merge(spec: gemspec, source_file: f, loader: data[:loader])))
             end
          end.flatten.compact
       end
@@ -122,6 +118,7 @@ class Setup::Source::Gem < Setup::Source::Base
          if spec && spec.version && (spec.platform == 'ruby' ||
               spec.platform.cpu == RbConfig::CONFIG["target_cpu"]) && spec.name !~ /\u0000/
                # !($:&spec.full_require_paths).any? && !spec.full_require_paths.all? {|p| File.directory?(p) }
+            self.new(source_options(options_in.merge(spec: spec, source_file: f, loader: data[:loader])))
             self.new(source_options({ spec: spec }.merge(options_in)))
          end
       end
@@ -145,6 +142,26 @@ class Setup::Source::Gem < Setup::Source::Base
 
    def fullname
       [ name, version ].compact.join('-')
+   end
+
+   def original_spec
+      return @original_spec if @original_spec.is_a?(Gem::Specification)
+
+      @original_spec =
+         if @original_spec.is_a?(String)
+            Setup.load(@original_spec)
+         else
+            self.class.spec_for(options)
+         end
+   end
+
+   def spec
+      if aliases.any?
+         @spec ||= aliases.reduce(original_spec) { |spec, als|
+            spec.merge(als.original_spec) }
+      else
+         original_spec
+      end
    end
 
    def name
@@ -181,14 +198,14 @@ class Setup::Source::Gem < Setup::Source::Base
    # tree
    def datatree
       # TODO deep_merge
-      @datatree ||= super { { '.' => spec.files } }
+      @datatree ||= super { { '.' => spec.files | default_files } }
    end
 
    def allfiles
       @allfiles = (
          spec.require_paths.map {|x| File.absolute_path?(x) && x || File.join(x, '**', '*') }.map {|x| Dir[x] }.flatten |
          spec.executables.map {|x| Dir[File.join(spec.bindir, x)] }.flatten |
-         spec.files
+         spec.files | default_files
       )
    end
 
@@ -242,11 +259,22 @@ class Setup::Source::Gem < Setup::Source::Base
    # Returns true when name of the gem is set.
    #
    def valid?
-      !name.nil?
+      !name.nil? &&
+         spec.version &&
+         (platform == 'ruby' || platform.cpu == RbConfig::CONFIG["target_cpu"]) &&
+         spec.name !~ /\u0000/
+   end
+
+   def platform
+      spec.platform
    end
 
    def compilable?
       extfiles.any?
+   end
+
+   def files kind = nil, &block
+      kind ? super : spec.files | default_files
    end
 
    def to_h
@@ -272,20 +300,6 @@ class Setup::Source::Gem < Setup::Source::Base
          paths.any? && paths || ['lib'])
    end
 
-   def original_spec
-      @original_spec ||= self.class.spec_for(options)
-   end
-
-   def spec
-      return @spec if @spec
-
-      if aliases.any?
-         @spec ||= aliases.reduce(original_spec) { |spec, als| als.respond_to?(:original_spec) && spec.merge(als.original_spec) || spec }
-      else
-         original_spec
-      end
-   end
-
    def rakes
       return @rakes unless @rakes.blank?
 
@@ -301,8 +315,8 @@ class Setup::Source::Gem < Setup::Source::Base
 
    def detect_root
       if spec
-         files = Dir['**/**/*']
-         (spec.files - files).any? && super || Dir.pwd
+         files = Dir['**/**/**']
+         (!spec.files.any? || (spec.files - files).any?) && super || Dir.pwd
       else
          super
       end

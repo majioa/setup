@@ -391,10 +391,10 @@ module Setup
        @new_options ||= {
       rootdir: Dir.pwd,
       spec_type: "rpm",
-      ignored_names: [],
-      regarded_names: [],
+      ignore_names: [],
+      regard_names: [],
       aliased_names: [],
-      ignored_path_tokens: [],
+      ignore_path_tokens: [],
       spec_file: nil,
       maintainer_name: nil,
       maintainer_email: nil,

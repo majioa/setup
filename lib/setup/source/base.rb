@@ -4,7 +4,8 @@ require 'setup/log'
 class Setup::Source::Base
    extend ::Setup::Log
 
-   OPTION_KEYS = %i(source_file source_names replace_list aliases alias_names)
+   OPTION_KEYS = %i(source_file source_names replace_list aliases alias_names loader)
+   DEFAULT_FILES = %i(readme contrib history changelog license copying code_of_conduct)
 
    DL_DIRS     = ->(s) { ".so.#{s.name}#{RbConfig::CONFIG['sitearchdir']}" }
    RI_DIRS     = ->(s) { [ s.default_ridir, 'ri' ] }
@@ -49,7 +50,8 @@ class Setup::Source::Base
       end,
       version_replaces: true,
       gem_version_replace: true,
-      source_file: true,
+      source_file: ->(file, _name) { file.is_a?(String) && File.file?(file) && file || nil },
+      loader: true,
       gemspec: true,
       source_names: true,
       srcridirses: :name_or_default,
@@ -82,7 +84,7 @@ class Setup::Source::Base
       srcstatedirs: true,
    }
 
-   attr_reader :options
+   attr_reader :options, :source_file, :loader
    attr_writer :replace_list, :source_names
 
    class << self
@@ -144,24 +146,23 @@ class Setup::Source::Base
          version)
    end
 
+   # ruby platform is default for non-gem sources
+   def platform
+      'ruby'
+   end
+
    def root
       @root ||= detect_root
    end
 
-   def source_file
-      return @source_file if @source_file 
-
-      raise unless File.file?(options[:source_file])
-
-      @source_file = options[:source_file]
+   def default_files
+      Dir.chdir(File.join(root)) { Dir.glob('*') }.select { |f| /#{DEFAULT_FILES.join("|")}/i =~ f }
+   rescue Errno::ENOENT
+      []
    end
 
    def source_names
       @source_names ||= options[:source_names] || source_file && [File.basename(source_file)] || []
-   end
-
-   def replace_list
-      @replace_list ||= options[:replace_list] || {}
    end
 
    def dsl
@@ -174,7 +175,7 @@ class Setup::Source::Base
    end
 
    def replace_list
-      options[:gem_version_replace]
+      @gem_version_replace ||= options[:gem_version_replace] || {}
    end
 
    def alias_names
@@ -361,6 +362,16 @@ class Setup::Source::Base
    end
 
    def initialize options_in = {}
+      parse(options_in)
+
       @options = { replace_list: {} }.merge(options_in)
+
+      @loader ||= self.class.to_s.split('::').last.downcase.to_sym
+   end
+
+   def parse options_in
+      self.class.source_options(options_in).each do |option, value|
+         instance_variable_set(:"@#{option}", value)
+      end
    end
 end

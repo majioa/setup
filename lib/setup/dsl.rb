@@ -44,7 +44,7 @@ class Setup::DSL
    end
 
    def find_gemfile
-      gemfile = Dir[File.join(File.dirname(source_file), '{Gemfile,gemfile}')].first
+      gemfile = source_file && Dir[File.join(File.dirname(source_file), '{Gemfile,gemfile}')].first
 
       gemfile && Pathname.new(gemfile) || nil
    end
@@ -276,7 +276,7 @@ class Setup::DSL
 
    #
    def initialize source_file, options = {}
-      raise unless File.file?(source_file)
+      #raise unless File.file?(source_file)
 
       @source_file = source_file
       @spec = options[:spec]

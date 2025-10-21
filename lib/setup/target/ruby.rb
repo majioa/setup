@@ -1,5 +1,7 @@
+require 'setup/target'
+
 class Setup::Target::Ruby
-   attr_reader :home
+   attr_reader :source, :home
 
    def libdir
       spec_path(home && File.join(home, 'lib'), RbConfig::CONFIG['rubylibdir'])

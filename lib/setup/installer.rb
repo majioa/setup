@@ -10,7 +10,7 @@ module Setup
   class Installer < Base
 
      def targets
-        project.targets
+       @targets ||= project.targets.select {|t| t.source.valid? && !project.is_disabled?(t.source) }
      end
     #
     def install_prefix

@@ -59,7 +59,7 @@ module Setup
     def documentate file
       begin
         rdoc = ::RDoc::RDoc.new
-        @options.files = File.directory?(file) ? Dir["#{file}/**/*"] : file
+        @options.files = File.directory?(file) ? Dir["#{file}/**/*"] : [file]
         rdoc.document(@options)
 
         true
