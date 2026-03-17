@@ -143,9 +143,14 @@ class Setup::Source::Base
    end
 
    def version
-      @version ||= (
-         /-(?<version>[\d\.]+)$/ =~ fullname
-         version)
+      @version ||=
+         root.split("/").reverse.reduce(nil) do |v, token|
+            return v if v
+
+            /-(?<version>[\d\.]+)$/ =~ token
+
+            version
+         end
    end
 
    # ruby platform is default for non-gem sources
