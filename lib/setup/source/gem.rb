@@ -113,15 +113,6 @@ class Setup::Source::Gem < Setup::Source::Base
             end
          end.flatten.compact
       end
-
-      def new_if_valid spec, options_in = {}
-         if spec && spec.version && (spec.platform == 'ruby' ||
-              spec.platform.cpu == RbConfig::CONFIG["target_cpu"]) && spec.name !~ /\u0000/
-               # !($:&spec.full_require_paths).any? && !spec.full_require_paths.all? {|p| File.directory?(p) }
-            self.new(source_options(options_in.merge(spec: spec, source_file: f, loader: data[:loader])))
-            self.new(source_options({ spec: spec }.merge(options_in)))
-         end
-      end
    end
 
    def gemfile

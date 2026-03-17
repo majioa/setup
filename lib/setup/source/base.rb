@@ -54,6 +54,8 @@ class Setup::Source::Base
       loader: true,
       gemspec: true,
       source_names: true,
+      name: true,
+      version: true,
       srcridirses: :name_or_default,
       srcincdirses: :name_or_default,
       srcextdirses: :name_or_default,
@@ -174,6 +176,12 @@ class Setup::Source::Base
             append_list: options[:gem_append_list])
    end
 
+   def all_dependencies
+      compilables # NOTE required to collect build deps
+
+      dsl.all_dependencies
+   end
+
    def replace_list
       @gem_version_replace ||= options[:gem_version_replace] || {}
    end
@@ -280,6 +288,19 @@ class Setup::Source::Base
       GROUPS.map do |set|
          yield(set, send("#{set}tree"))
       end
+   end
+
+   def compilables
+      # TODO make compilables from ext
+      extfiles
+   end
+
+   def provide
+      Bundler::Dependency.new(name, "= #{version || "0"}", "group" => [:default])
+   end
+
+   def dependencies *types
+      all_dependencies.select {|dep| types.empty? || types.include?(dep.type) }
    end
 
    def + other

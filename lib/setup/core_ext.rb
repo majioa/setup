@@ -2,6 +2,7 @@
 # Ruby Extensions
 #
 require 'bundler'
+require 'ostruct'
 
 Encoding.default_external = Encoding::UTF_8
 
@@ -339,7 +340,18 @@ class Object
    end
 
    def to_os
-      OpenStruct.new(self.to_h.map {|(x, y)| [x.to_s, y] }.to_h)
+      def to_os hash: false, array: false
+         self.to_h.reduce(::OpenStruct.new) do |res, (x, y_in)|
+            res[x.to_s] =
+               if hash && y_in.is_a?(Hash) || array && y_in.is_a?(Array)
+                  y_in.to_os(hash: hash, array: array)
+               else
+                  y_in
+               end
+
+            res
+         end
+      end
    end
 end
 
@@ -549,6 +561,54 @@ class Dir
 
       def [] *args, base: nil, sort: true
          dir_cache[[Dir.pwd, args.first]] ||= __system_brackets(*args, base: base)
+      end
+   end
+end
+
+# Forcely replace method/class
+require 'rubygems/dependency_installer.rb'
+module Gem
+   class Dependency
+      class InvalidDependencyNameError < StandardError; end
+
+      alias :orig_merge :merge
+
+      def merge dep_in
+         raise InvalidDependencyNameError if self.name != dep_in.name
+
+         options = {
+            "type" => :runtime,
+            "group" => (self.groups || []) | (dep_in.groups || []),
+         }
+         if self.respond_to?(:platforms) && dep_in.respond_to?(:platforms)
+            options["platforms"] = self.platforms & dep_in.platforms
+         end
+
+         Bundler::Dependency.new(self.name, orig_merge(dep_in).requirement.expand.merge(dep_in.requirement), options)
+      rescue
+        binding.pry
+      end
+   end
+
+   class DependencyInstaller
+      class << self
+         def deps
+            @deps ||= []
+         end
+
+         def store dep
+            path = caller[1].scan(/^(.*):(\d+)(?::.*`(.*)')?\Z/).first.first
+
+            deps << [path, dep]
+         end
+
+         def clean
+            @deps = []
+         end
+      end
+
+      def install dep
+         self.class.store(dep)
       end
    end
 end

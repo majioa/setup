@@ -52,6 +52,7 @@ module Setup
           disabled: '-',
           obsoleted: '\\',
           duplicated: '=',
+          regarded: 'R',
           valid: 'V',
        }
 
@@ -65,6 +66,10 @@ module Setup
       jruby: false,
       mingw: false,
    }
+       VERSIONS = {
+          /nonrelease/ => false 
+       }
+
 
        attr_reader :config, :version_replaces
 
@@ -145,46 +150,70 @@ module Setup
        config.gem_version_replace.first.last
     end
 
-      # returns all the sources with their statuses, and sorted by their root value
-      #
-      def stat_sources &block
-         return @stat_sources if @stat_sources
+   def pre_sources
+      @pre_sources ||=
+         Setup::Source.search(rootdir, options).group_by do |x|
+            [x.name, x.version].compact.join(":")
+         end
+   end
 
-         @stat_sources = Setup::Source.search(rootdir, options).group_by do |x|
-               x.name
-            end.reduce([[],[]]) do |(r, used_in), (full_name, v)|
-               sorten =
-                  v.sort do |x,y|
-                     c0 = Setup::Source.loaders.index(x.loader) <=> Setup::Source.loaders.index(y.loader)
-                     c1 = c0 == 0 && x.name <=> y.name || c0
-                     c2 = c1 == 0 && y.version <=> x.version || c1
-                     c3 = c2 == 0 && y.platform.to_s <=> x.platform.to_s || c2
-                     c4 = c3 == 0 && y.source_names.grep(/gemspec/).count <=> x.source_names.grep(/gemspec/).count
+   # returns all the sources with their statuses, and sorted by a its rootdir value
+   #
+   def stat_sources &block
+      return @stat_sources if @stat_sources
 
-                     c2 == 0 && c3 == 0 && c4 == 0 && x.root.size <=> y.root.size || c4 != 0 && c4 || c3 != 0 && c3 || c2
-                  end.reduce([[], 0]) do |(res, index, base), source|
-                     dup = used_in.include?(source.name) && base && base.platform.to_s == source.platform.to_s && base.version == source.version
-                     dup_index = dup ? index + 1 : index
-                     obs = used_in.include?(source.name) && !dup
-                     if source.valid? && !is_disabled?(source)
-                        base = source
-                        used_in = used_in | [source.name]
-                     end
+      @stat_sources = proceed_sources(&block)
 
-                     [res | [[source, source_status(source, dup, obs)]], dup_index, base]
-                  end.first
+      show_tree
 
-               sorten[1..-1].each { |x| sorten.first.first.alias_to(x.first) }
+      @stat_sources
+   end
 
-               [r|[sorten], used_in]
-            end.first.flatten(1).sort_by {|(x, _)| x.root.size }.each do |(source, status)|
-               block[source, status] if block_given?
+   def proceed_sources &block
+      pre = 
+         pre_sources.reduce([[],[],[]]) do |(r, used_in, deps_in), (_full_name, v)|
+            sorten =
+               v.sort do |x,y|
+                  c0 = ::Setup::Source.loaders.index(x.loader) <=> ::Setup::Source.loaders.index(y.loader)
+                  c1 = c0 == 0 && x.name <=> y.name || c0
+                  c2 = c1 == 0 && y.version <=> x.version || c1
+                  c3 = c2 == 0 && y.platform.to_s <=> x.platform.to_s || c2
+                  c4 = c3 == 0 && y.source_names.grep(/gemspec/).count <=> x.source_names.grep(/gemspec/).count
+
+                  c2 == 0 && c3 == 0 && c4 == 0 && x.root.size <=> y.root.size || c4 != 0 && c4 || c3 != 0 && c3 || c2
+               end.reduce([[], 0]) do |(res, index, base), source|
+                  dup = used_in.include?(source.name) && base && base.platform.to_s == source.platform.to_s && base.version == source.version && base.class == source.class
+                  dup_index = dup ? index + 1 : index
+                  obs = used_in.include?(source.name) && !dup
+                  if source.valid? && !is_disabled?(source)
+                     base = source
+                     used_in = used_in | [source.name]
+                  end
+
+                  [res | [[source, source_status(source, dup, obs)]], dup_index, base]
+               end.first
+
+            deps = deps_in | sorten.map {|source, status| status == :valid ? source.dependencies : [] }.flatten
+
+            sorten[1..-1].each { |x| sorten.first.first.alias_to(x.first) }
+
+            [r|[sorten], used_in, deps]
+         end
+
+      pre.first.flatten(1).map do |(source, status)|
+            if status == :disabled &&
+               pre[2].any? do |dep|
+                  dep.name == source.name && source.is_a?(Setup::Source::Gem) &&
+                  dep.requirement.satisfied_by?(source.provide.requirement.requirements.last.last)
+               end
+               [source, :regarded]
+            else
+               [source, status]
             end
-
-         show_tree
-
-         @stat_sources
-      end
+         end.sort_by {|(x, _)| x.root.size }.each do |(source, status)|
+            block[source, status] if block_given?
+         end
+   end
 
       # returns source tree, and sorted, and then grouped by a its rootdir value
       #
@@ -226,7 +255,7 @@ module Setup
     #
     def valid_sources
        @valid_sources ||= begin
-          sources = stat_sources.map {|(source, status)| status == :valid ? source : nil }.compact
+          sources = stat_sources.map {|(source, status)| %i(valid regarded).include?(status) ? source : nil }.compact
           main = sources.find { |source| source.root == rootdir }
           main && main.valid? ? sources : sources | [default_fake_source]
        end
@@ -265,21 +294,36 @@ module Setup
       @ignored_path_tokens ||= (config.ignore_path_tokens || []) | DEFAULT_IGNORE_PATH_TOKES
    end
 
+   def regarded_path_tokens
+      @regarded_path_tokens ||= (config.regard_path_tokens || [])
+   end
+
    def is_platform_allowed? platform
       case platform
       when Gem::Platform
          PLATFORMS.any? {|(name, valid)| platform === name ? valid : nil }
       when String
-         PLATFORMS[platform.to_sym]
+         !!PLATFORMS[platform.to_sym]
       when NilClass
          true
       else
-         raise
+         false
+      end
+   end
+
+   def is_version_allowed? version
+      if /^[0-9\.]+(\.(?<post>[a-z]*|))?$/ =~ version
+         !post || VERSIONS.reduce(true) {|res, (re, v)| res && (re =~ post ? v : false) }
       end
    end
 
    def is_disabled? source
-      !is_platform_allowed?(source.platform) ||
+      !is_platform_allowed?(source.platform) || !is_version_allowed?(source.version) ||
+         regarded_path_tokens.map do |t|
+            t.is_a?(Regexp) && %r{/[^/]*#{t}[^/]*/} || %r{/#{t}/}
+         end.all? do |t|
+            t !~ source.source_file
+         end &&
          ignored_path_tokens.map do |t|
             t.is_a?(Regexp) && %r{/[^/]*#{t}[^/]*/} || %r{/#{t}/}
          end.any? do |t|

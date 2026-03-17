@@ -323,6 +323,11 @@ module Setup
         configuration.ignore_names = val
       end
 
+      # regard path token list
+      parser.on('--regard-path-tokens LIST', 'Regard sources by a token contained in its path, which is specified in the comma-separated list') do |val|
+        configuration.regard_path_tokens = val
+      end
+
       # regard name list
       parser.on('--regard-names LIST', 'Regard sources by a name specified in the comma-separated list') do |val|
         configuration.regard_names = val

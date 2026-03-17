@@ -12,6 +12,10 @@ class Setup::Source::Fake < Setup::Source::Base
          append_list: options[:gem_append_list])
    end
 
+   def tree *_
+      []
+   end
+
    def valid?
       @valid
    end

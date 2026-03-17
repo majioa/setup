@@ -91,6 +91,8 @@ module Setup
 
     option :'ignore-path-tokens' , :pick, 'ignore sources with the specified comma-separated list of path tokens'
 
+    option :'regard-path-tokens' , :pick, 'regard sources with the specified comma-separated list of path tokens'
+
     option :shebang         , :pick, 'replace a shebang line for a newly installed executables ("",auto,env,ruby,<custom>)'
 
     option :use             , :pick, 'apply the following to the module options'
@@ -175,6 +177,24 @@ module Setup
 
     def ignore_path_tokens
        @ignore_path_tokens || []
+    end
+
+    def regard_path_tokens= value
+      @regard_path_tokens =
+      if value.is_a?(String)
+        tokens = (value || '').split(/[,;:]/)
+        tokens.map(&:strip).select {|x| x.size > 0 }.map do |x|
+           m = /^\/(?<name>.*)\/?$/.match(x)
+
+           m && m[:name] && Regexp.new(m[:name]) || x
+        end
+      else
+        value
+      end
+    end
+
+    def regard_path_tokens
+       @regard_path_tokens || []
     end
 
     def ignore_names= value
@@ -395,6 +415,7 @@ module Setup
       regard_names: [],
       aliased_names: [],
       ignore_path_tokens: [],
+      regard_path_tokens: [],
       spec_file: nil,
       maintainer_name: nil,
       maintainer_email: nil,

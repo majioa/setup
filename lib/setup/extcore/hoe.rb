@@ -76,6 +76,10 @@ class Hoe
          @extras ||= {}
       end
 
+      def spec_extras= value
+         @extras = spec_extras.merge(value)
+      end
+
       def extra_rdoc_files
          @extra_rdoc_files ||= []
       end
@@ -221,7 +225,7 @@ class Hoe
          if Hoe.respond_to?(method_name)
             Hoe.send(method_name, *args)
          else
-            super
+            $stderr.puts("[MethodMissing]: #{method_name} with args #{args.inspect} is missing")
          end
       end
    end

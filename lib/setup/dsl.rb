@@ -117,6 +117,30 @@ class Setup::DSL
          end
    end
 
+   def external_dependencies
+      return [] unless source_file
+
+      dir = File.dirname(source_file)
+
+      (Gem::DependencyInstaller.instance_variable_get(:@deps) || []).map do |(path, dep)|
+         if path[0...dir.size] == dir
+            Bundler::Dependency.new(dep.name, dep.requirement, "group" => :development)
+         end
+      end.compact
+   end
+
+   def spec_dependencies
+      (spec&.dependencies || []).map do |dep|
+         group_in = :test
+         options = {
+            "group" => dep.type == :development ? [group_in] : [:runtime, group_in],
+            "platforms" => dep.respond_to?(:platforms) ? dep.platforms : []
+         }
+
+         Bundler::Dependency.new(dep.name, dep.requirement, options)
+      end
+   end
+
    def original_deps_for kinds_in = nil
       groups = defined_groups_for(kinds_in)
 
@@ -125,6 +149,10 @@ class Setup::DSL
           dep.should_include? # &&
          # (dep.autorequire || [ true ]).all? { |r| r }
       end
+   end
+
+   def all_dependencies
+      Setup::DSL.merge_dependencies(additional_dependencies, external_dependencies, dsl.dependencies, spec_dependencies)
    end
 
    def original_deps
@@ -163,6 +191,44 @@ class Setup::DSL
 
    def development_deps kind = :gemspec
       deps_but(original_deps_for(:development))
+   end
+
+   class << self
+      def match_kind_dep dep, *kinds_in
+         groups = defined_groups_for(kinds_in)
+
+         (dep.groups & groups).any?
+      end
+
+      def defined_groups_for *kinds_in
+         kinds_in.flatten.map do |k|
+            GROUP_MAPPING.map do |(g, k_in)|
+               [k_in].flatten.include?(k) && g || nil
+            end.compact
+         end.flatten.select {|x| x.is_a?(Symbol) }
+      end
+
+      def merge_dependencies *depses
+         depses.reduce({}) do |res, deps|
+            deps&.reduce(res.dup) do |r, x|
+               r[x.name] =
+                  if r[x.name]
+                     req = r[x.name].requirement.merge(x.requirement)
+                     group = (x.groups || []) | r[x.name].groups
+
+                     Bundler::Dependency.new(x.name, req, "type" => r[x.name].type, "group" => group)
+                  else
+                     x
+                  end
+
+               r
+            end || res
+         end.values
+      end
+
+      def filter_dependencies type, *depses
+         depses.map { |deps| deps.select {|x|x.type == type }}
+      end
    end
 
    def defined_groups_for kinds_in = nil
@@ -258,6 +324,10 @@ class Setup::DSL
       end
 
       self
+   end
+
+   def additional_dependencies
+      @additional_dependencies ||= []
    end
 
    protected
